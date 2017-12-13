@@ -1,15 +1,27 @@
 class Mgba < Formula
   desc "Game Boy Advance emulator"
   homepage "https://mgba.io/"
-  url "https://github.com/mgba-emu/mgba/archive/0.6.1.tar.gz"
-  sha256 "7c78feb0aa12930b993ca1b220d282ed178e306621559e48bb168623030eb876"
+  revision 1
   head "https://github.com/mgba-emu/mgba.git"
+
+  stable do
+    url "https://github.com/mgba-emu/mgba/archive/0.6.1.tar.gz"
+    sha256 "7c78feb0aa12930b993ca1b220d282ed178e306621559e48bb168623030eb876"
+
+    # Remove for > 0.6.1
+    # Fix "MemoryModel.cpp:102:15: error: no viable overloaded '='"
+    # Upstream commit from 11 Dec 2017 "Qt: Fix build with Qt 5.10"
+    patch do
+      url "https://github.com/mgba-emu/mgba/commit/e31373560.patch?full_index=1"
+      sha256 "5311b19dea0848772bdd00b354f9fca741b2bfd2cf65eab8a8c556e6fb748b8e"
+    end
+  end
 
   bottle do
     cellar :any
-    sha256 "eb516a5e5001154133f861a2759dd0125da62d364880a005f1aea223254d6674" => :high_sierra
-    sha256 "7305169fad212707dc3e3d46ecd9ede327f79d892c2bf9ccd91fde212d42a0e5" => :sierra
-    sha256 "c146125ac5a0ff122b503203e75733ec4b30170207267afc09fc488d3244d339" => :el_capitan
+    sha256 "3a84cea85a0429ef1e213acd82b31b9eaf95724e39ea26bdc336a899b95c8e37" => :high_sierra
+    sha256 "7599ea9e1fe16fc52933760d484a76bc2c9fceebb26279123f995ae140b0633a" => :sierra
+    sha256 "5ff36a9a5e0f0e2970045d93970e49f6825a3e718f3308c5ba3c581c96e9c2a5" => :el_capitan
   end
 
   depends_on "cmake" => :build
@@ -23,6 +35,12 @@ class Mgba < Formula
   depends_on "sdl2"
 
   def install
+    # Fix "error: 'future<void>' is unavailable: introduced in macOS 10.8"
+    # Reported 11 Dec 2017 https://github.com/mgba-emu/mgba/issues/944
+    if MacOS.version <= :el_capitan
+      ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+    end
+
     # Install .app bundle into prefix, not prefix/Applications
     inreplace "src/platform/qt/CMakeLists.txt", "Applications", "."
 
