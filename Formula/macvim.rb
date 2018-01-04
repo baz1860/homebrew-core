@@ -2,15 +2,16 @@
 class Macvim < Formula
   desc "GUI for vim, made for macOS"
   homepage "https://github.com/macvim-dev/macvim"
-  url "https://github.com/macvim-dev/macvim/archive/snapshot-143.tar.gz"
-  version "8.0-143"
-  sha256 "474c7059b2c5bf3c331bbe8e46be828ec9170eee5e1abb477ff605c9db06b998"
+  url "https://github.com/macvim-dev/macvim/archive/snapshot-144.tar.gz"
+  version "8.0-144"
+  sha256 "23e1eaa00e9268eaa9a9061ea6018ad20f288bd6c03c1d8553a745d72527d33f"
+  revision 2
   head "https://github.com/macvim-dev/macvim.git"
 
   bottle do
-    sha256 "57a5ac2ecb18b7a88c75d034dff796be623a31338a823ae1de4956803c2f8c6c" => :high_sierra
-    sha256 "4d6fe604dd745820680b0608d0a5897155aac86e1a59daaa84235994367aad1d" => :sierra
-    sha256 "c97f39847665848c9037098bcb9fd4c9580daf8c41fa403d14d3882f2116f49f" => :el_capitan
+    sha256 "068a656c96c2659b08be1ead6aab00a69862d673c625eca06c34d6ea8953a66a" => :high_sierra
+    sha256 "5128f85f0a76bb3d7ef135d0637e3920a103ae2b1f6a4e7c2d54e19b032012bd" => :sierra
+    sha256 "115298ef9d64acc445408e1a8a18b5a706385816c0f940f6d9364ab7d0fa9957" => :el_capitan
   end
 
   option "with-override-system-vim", "Override system vim"
@@ -19,17 +20,14 @@ class Macvim < Formula
 
   depends_on :xcode => :build
   depends_on "cscope" => :recommended
+  depends_on "python" => :recommended
   depends_on "lua" => :optional
   depends_on "luajit" => :optional
-
-  if MacOS.version >= :mavericks
-    option "with-custom-python", "Build with a custom Python 2 instead of the Homebrew version."
-  end
-
-  depends_on :python => :recommended
-  depends_on :python3 => :optional
+  depends_on "python3" => :optional
 
   def install
+    ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
+
     # Avoid issues finding Ruby headers
     if MacOS.version == :sierra || MacOS.version == :yosemite
       ENV.delete("SDKROOT")

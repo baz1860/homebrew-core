@@ -1,19 +1,20 @@
 class Python3 < Formula
   desc "Interpreted, interactive, object-oriented programming language"
   homepage "https://www.python.org/"
-  url "https://www.python.org/ftp/python/3.6.3/Python-3.6.3.tar.xz"
-  sha256 "cda7d967c9a4bfa52337cdf551bcc5cff026b6ac50a8834e568ce4a794ca81da"
+  url "https://www.python.org/ftp/python/3.6.4/Python-3.6.4.tar.xz"
+  sha256 "159b932bf56aeaa76fd66e7420522d8c8853d486b8567c459b84fe2ed13bcaba"
+  revision 1
   head "https://github.com/python/cpython", :using => :git
 
   bottle do
-    sha256 "4790e06c30036c19b62f7a3a188363f776ad58bdb8f58185b8b14f4f3e936718" => :high_sierra
-    sha256 "057f4c743c787a77e10c81b446a9251c5cdfefd799a110a75c2b68ea0c87cf4b" => :sierra
-    sha256 "c3bc7112f01d803c6e5db81d22f7e580594f7efc9e7bd5c5b703a8142ec8a6fb" => :el_capitan
+    sha256 "198565470a15ba2f296e9bfb3229ffb3f80e6dfa518e807a6c8ae11b2dcf9154" => :high_sierra
+    sha256 "6100cbf5f8df857968ef4a4ac6d1015a0278609c054256e618d50c8bf46142f8" => :sierra
+    sha256 "666c838aba92c6f1fae366a5f00857a3965622132e796f43cf6972bbb0c50e9b" => :el_capitan
   end
 
   devel do
-    url "https://www.python.org/ftp/python/3.7.0/Python-3.7.0a2.tar.xz"
-    sha256 "3e5adaa8a264b0c8eeab7b8a0185acec053b0d1547d2712ebc915153c4a52f28"
+    url "https://www.python.org/ftp/python/3.7.0/Python-3.7.0a3.tar.xz"
+    sha256 "3432d3ddf97483339badda961f7d0564595460fee166dd8f106dc4201e68446e"
   end
 
   option "with-tcl-tk", "Use Homebrew's Tk instead of macOS Tk (has optional Cocoa and threads support)"
@@ -173,6 +174,11 @@ class Python3 < Formula
     inreplace Dir[lib_cellar/"config*/Makefile"],
               /^LINKFORSHARED=(.*)PYTHONFRAMEWORKDIR(.*)/,
               "LINKFORSHARED=\\1PYTHONFRAMEWORKINSTALLDIR\\2"
+
+    # Fix for https://github.com/Homebrew/homebrew-core/issues/21212
+    inreplace Dir[lib_cellar/"**/_sysconfigdata_m_darwin_darwin.py"],
+              %r{('LINKFORSHARED': .*?)'(Python.framework/Versions/3.\d+/Python)'}m,
+              "\\1'#{opt_prefix}/Frameworks/\\2'"
 
     # A fix, because python and python3 both want to install Python.framework
     # and therefore we can't link both into HOMEBREW_PREFIX/Frameworks
@@ -351,6 +357,7 @@ class Python3 < Formula
     system "#{bin}/python#{xy}", "-c", "import sqlite3"
     # Check if some other modules import. Then the linked libs are working.
     system "#{bin}/python#{xy}", "-c", "import tkinter; root = tkinter.Tk()"
+    system "#{bin}/python#{xy}", "-c", "import _gdbm"
     system bin/"pip3", "list"
   end
 end

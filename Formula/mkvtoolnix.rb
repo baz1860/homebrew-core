@@ -1,13 +1,14 @@
 class Mkvtoolnix < Formula
   desc "Matroska media files manipulation tools"
   homepage "https://www.bunkus.org/videotools/mkvtoolnix/"
-  url "https://www.bunkus.org/videotools/mkvtoolnix/sources/mkvtoolnix-18.0.0.tar.xz"
-  sha256 "b8282d6d279caa86038721d2a49471d1dd25a465ee1a779ee9c2a99bc8ff972f"
+  url "https://mkvtoolnix.download/sources/mkvtoolnix-19.0.0.tar.xz"
+  sha256 "4b4af84cfdf3062f8ca4ab3c37854be7cd9a71bcf5c46b8ca805a101d414b6a1"
+  revision 1
 
   bottle do
-    sha256 "de777359b55b4467f54570f40ee143e6575e5049163c74ed1c383f25c570b5d9" => :high_sierra
-    sha256 "64a0975c2cbbe26b1b012073a3f312e45e0bb90fefbdf944075af122edcfa181" => :sierra
-    sha256 "eac1ed9b45eb5020f7a0d662c71671bb8aa2adade63cd0ff2cc319c5c4661a16" => :el_capitan
+    sha256 "5cf269cfd06131fb79196e4fb5c7e9e78f6d1f9aff2f4fe1bfa0a90e88cee977" => :high_sierra
+    sha256 "7a63e0f6804e269015b702d2155045cfec5b013164339630850ef6895fdceec6" => :sierra
+    sha256 "0808e15cf8eac4519a0d97398e410c48f50a2b9f736d0d93d2bb5064e449e75c" => :el_capitan
   end
 
   head do

@@ -1,26 +1,20 @@
 class BoostMpi < Formula
   desc "C++ library for C++/MPI interoperability"
   homepage "https://www.boost.org/"
-  url "https://dl.bintray.com/boostorg/release/1.65.1/source/boost_1_65_1.tar.bz2"
-  sha256 "9807a5d16566c57fd74fb522764e0b134a8bbe6b6e8967b83afefd30dcd3be81"
-  revision 1
+  url "https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.bz2"
+  sha256 "5721818253e6a0989583192f96782c4a98eb6204965316df9f5ad75819225ca9"
   head "https://github.com/boostorg/boost.git"
 
   bottle do
-    sha256 "ab1599905ccc3891aaf12ccb8fc7d82a48f3c62c5a0b949c9594fcec41f11f96" => :high_sierra
-    sha256 "c6a68706caf6d58e6e2efed6d96a56877c9b198bb4ea9036013b144fc589f5d3" => :sierra
-    sha256 "268a16ac0a424bf62366591a4b6b8a1347ab82705aa70d3ede245fd81e9565f1" => :el_capitan
+    sha256 "d1a48aa7d25eb648f1f3eb77b27f5cfc973fcaf1fe31e3cb4e0d3a5bf6d3274e" => :high_sierra
+    sha256 "ab52d2180c815a33cd73ccdd25a1ca7bd99a48e9e6285216a31c43137922017b" => :sierra
+    sha256 "1ddf6ac3b0e986199bb82ad6e7ce90fdbddc63c9c9d6ac2269a48c9d46412433" => :el_capitan
   end
 
-  option :cxx11
+  depends_on "boost"
+  depends_on :mpi => [:cc, :cxx]
 
-  if build.cxx11?
-    depends_on "boost" => "c++11"
-    depends_on "open-mpi" => "c++11"
-  else
-    depends_on "boost"
-    depends_on :mpi => [:cc, :cxx]
-  end
+  needs :cxx11
 
   def install
     # "layout" should be synchronized with boost
@@ -33,16 +27,11 @@ class BoostMpi < Formula
             "threading=multi,single",
             "link=shared,static"]
 
-    # Build in C++11 mode if boost was built in C++11 mode.
     # Trunk starts using "clang++ -x c" to select C compiler which breaks C++11
     # handling using ENV.cxx11. Using "cxxflags" and "linkflags" still works.
-    if build.cxx11?
-      args << "cxxflags=-std=c++11"
-      if ENV.compiler == :clang
-        args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++"
-      end
-    elsif Tab.for_name("boost").cxx11?
-      odie "boost was built in C++11 mode so boost-mpi must be built with --c++11."
+    args << "cxxflags=-std=c++11"
+    if ENV.compiler == :clang
+      args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++"
     end
 
     open("user-config.jam", "a") do |file|

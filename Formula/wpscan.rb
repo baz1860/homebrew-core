@@ -3,14 +3,14 @@ class Wpscan < Formula
   homepage "https://wpscan.org"
   url "https://github.com/wpscanteam/wpscan/archive/2.9.3.tar.gz"
   sha256 "1bacc03857cca5a2fdcda060886bf51dbf73b129abbb7251b8eb95bc874e5376"
-  revision 1
+  revision 3
 
   head "https://github.com/wpscanteam/wpscan.git"
 
   bottle do
-    sha256 "668b13f2a60e4882aa17479309551a934fae6f71178b05b1293b3ab7fe0cfb5f" => :high_sierra
-    sha256 "6dd163f2679959fc2ee5e340d61ab0e500efb350e395a26063d535ae09b18592" => :sierra
-    sha256 "54522adbec639a9a4e743730b39e97199f45b2f21d4a23533e7f3cd5afb0d6ae" => :el_capitan
+    sha256 "e93c2fa55c6319b06fa73187f91258d43b7f7195d263754b48f55e74a013a2e5" => :high_sierra
+    sha256 "675a23f1373ffa03263646f7cfc9e3d51aa2057f9c1597ce1534f8e8a3572eee" => :sierra
+    sha256 "469a94fdf86b201508e72fbc3900aed3c82b3891393dda1d7fa5d4e042754442" => :el_capitan
   end
 
   depends_on :ruby => "2.1.9"

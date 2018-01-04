@@ -3,22 +3,26 @@ class Sip < Formula
   homepage "https://www.riverbankcomputing.com/software/sip/intro"
   url "https://downloads.sourceforge.net/project/pyqt/sip/sip-4.19.6/sip-4.19.6.tar.gz"
   sha256 "9dda27ae181bea782ebc8768d29f22f85ab6e5128ee3ab21f491febad707925a"
+  revision 2
+
   head "https://www.riverbankcomputing.com/hg/sip", :using => :hg
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "d0886b0789975637f27eaa7c4b3688ab54c81d9bb5471fd02961c6a7a6c45935" => :high_sierra
-    sha256 "87dd330b2ad778cd581820def38a9c1d1acc864fafae9560bab45a34ad0833bc" => :sierra
-    sha256 "01911c287b03a581c1038b6316416be599ddd28aff90f4dc145e6ab1768ab8c4" => :el_capitan
+    sha256 "4227e24d3dab570719ed42b3a9efeada8e55cb7a43edb1ec299df2a257719987" => :high_sierra
+    sha256 "7a5b384c3b50e7d99bd2e3c48c62ee7164b1f1b65269b1737a37944bc77b78f8" => :sierra
+    sha256 "00d8e3cb6d44be04906bc31f5aee21db624924c0e25e3e481b3afc6e593a108e" => :el_capitan
   end
 
-  depends_on :python => :recommended
-  depends_on :python3 => :recommended
+  depends_on "python" => :recommended
+  depends_on "python3" => :recommended
 
   def install
     if build.without?("python3") && build.without?("python")
       odie "sip: --with-python3 must be specified when using --without-python"
     end
+
+    ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
 
     if build.head?
       # Link the Mercurial repository into the download directory so

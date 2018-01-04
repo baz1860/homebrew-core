@@ -3,12 +3,13 @@ class TerraformLandscape < Formula
   homepage "https://github.com/coinbase/terraform-landscape"
   url "https://github.com/coinbase/terraform-landscape/archive/v0.1.17.tar.gz"
   sha256 "ffc89c435d673de353db17f9e9796de95c55e1236071178dc35102a99917fd45"
+  revision 2
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "6b34dbc792bece0dd339f6792a145ab9420a24a3098fb753382b93cdf8f078eb" => :high_sierra
-    sha256 "2494cb04ffce1e281b8f2dd06454d0a05f6a6afe573c81d34fc4b7a4dc2f32e2" => :sierra
-    sha256 "c36753b35273d97777ec4d8cb940ec1af4fd79f084230b8d3e9a4f091c6002df" => :el_capitan
+    sha256 "a5a8950f096e73c3772a6c0057e79e2c684a137e4d20132ef3ebd285094ad5ae" => :high_sierra
+    sha256 "ed315e7ae5b08add61f0123182baa140fbdcaa94c1389e0f38e7e7b3a794b1a0" => :sierra
+    sha256 "79e90addf0aa4f99cd1efae47a51aa4fbebf2bddc6a695d1d9bd7f52766fb678" => :el_capitan
   end
 
   depends_on :ruby => "2.0"

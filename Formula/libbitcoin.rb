@@ -1,15 +1,15 @@
 class Libbitcoin < Formula
   desc "Bitcoin Cross-Platform C++ Development Toolkit"
   homepage "https://libbitcoin.org/"
-  url "https://github.com/libbitcoin/libbitcoin/archive/v3.3.0.tar.gz"
-  sha256 "391913a73615afcb42c6a7c4736f23888cfc999a899fc38395ddcbd560251d94"
-  revision 4
+  url "https://github.com/libbitcoin/libbitcoin/archive/v3.4.0.tar.gz"
+  sha256 "e30dca732991b52d7d014f4f46f896ef3217cde465b9601c1dc0a85eb865e45f"
+  revision 1
 
   bottle do
     cellar :any
-    sha256 "c824bd50f96cf55e751f9f0735b35509b0c37167277df22f8d98b246c38124c4" => :high_sierra
-    sha256 "889c3811c26837bd2c90585d93a4a5050926f017641b43710c675899f1ebaa16" => :sierra
-    sha256 "fd225da66b5908773a0f715f3aa35c838e807795ca2bdde5e0e53d9e99c3ab58" => :el_capitan
+    sha256 "8a8773c7a8ed02bf4a8228bb783398a8e152ffe20aa42416a934fd50860d967d" => :high_sierra
+    sha256 "d5f7efa26ef9c63c83459c49e51ef3fa35c38e09f1aa902377fe6c2ac3ac741f" => :sierra
+    sha256 "554d243b18c404a47314cbb98803514824c4414233d060bfe69c1f5b2b4330b9" => :el_capitan
   end
 
   depends_on "autoconf" => :build

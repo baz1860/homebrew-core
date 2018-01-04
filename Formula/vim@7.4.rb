@@ -3,12 +3,12 @@ class VimAT74 < Formula
   homepage "http://www.vim.org/"
   url "https://github.com/vim/vim/archive/v7.4.2367.tar.gz"
   sha256 "a9ae4031ccd73cc60e771e8bf9b3c8b7f10f63a67efce7f61cd694cd8d7cda5c"
-  revision 4
+  revision 6
 
   bottle do
-    sha256 "3ef8f4d5c5bec24bca69c67fc827017d87b884f8d44fb53e113d5aa12e911f79" => :high_sierra
-    sha256 "ce9cf505a9bc21212b309b62b8b8972859f67b048e51c9ca9b13b4543e5a9a1b" => :sierra
-    sha256 "cbb4a60db7146875d5df859a57eb6eb38d8336d9983e27d3df2000c38215d071" => :el_capitan
+    sha256 "0b7b258b8f27817c480d8f1504a264b04ed828f6d370601db39bcf05154d53a0" => :high_sierra
+    sha256 "cd6e36f85919d76a547f1b269546a2e37c5ef5d3aab462a55834e0ab3abcf282" => :sierra
+    sha256 "14227e1c8700a89c9925f15101a27f79a9cdeb4717471af5bf9d5026290eb219" => :el_capitan
   end
 
   keg_only :versioned_formula
@@ -35,7 +35,7 @@ class VimAT74 < Formula
   end
 
   depends_on :python => :recommended
-  depends_on :python3 => :optional
+  depends_on "python3" => :optional
   depends_on :ruby => "1.8" # Can be compiled against 1.8.x or >= 1.9.3-p385.
   depends_on :perl => "5.3"
   depends_on "lua" => :optional

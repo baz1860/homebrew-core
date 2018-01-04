@@ -3,25 +3,25 @@ class Emscripten < Formula
   homepage "https://kripken.github.io/emscripten-site/"
 
   stable do
-    url "https://github.com/kripken/emscripten/archive/1.37.24.tar.gz"
-    sha256 "f0bea0b044887aa6c188cbf31dfe6d2a5ada7702370782bea6d1ba038f787a47"
+    url "https://github.com/kripken/emscripten/archive/1.37.27.tar.gz"
+    sha256 "a345032415362a0a66e4886ecd751f6394237ff764b1f1c40dde25410792991c"
 
     resource "fastcomp" do
-      url "https://github.com/kripken/emscripten-fastcomp/archive/1.37.24.tar.gz"
-      sha256 "c7d5715b88c8e93409382b2f278b7a49332ba058dd45a4d22c631e2327d317c6"
+      url "https://github.com/kripken/emscripten-fastcomp/archive/1.37.27.tar.gz"
+      sha256 "409055d32dca9788b7ef15fbe81bd1df82a0ab91337f15be3254c11d5743043a"
     end
 
     resource "fastcomp-clang" do
-      url "https://github.com/kripken/emscripten-fastcomp-clang/archive/1.37.24.tar.gz"
-      sha256 "d19a6a48a084df02b5a8d0b648344526d689ee1bd7d57064cfbc198840c4ba04"
+      url "https://github.com/kripken/emscripten-fastcomp-clang/archive/1.37.27.tar.gz"
+      sha256 "bd532912eab4e52bd83f603c7fb4d2fe770b99ede766e2b9a82f5f3f68f4a168"
     end
   end
 
   bottle do
     cellar :any
-    sha256 "92bc99835446e7d2e6d24809bfd8d3deaeac3d3b2147d0049e27aa3ab2d3375b" => :high_sierra
-    sha256 "b99b30b498864fb5e146ad378b1563e2f1d7a96157bcd1c620242d26f54fe19b" => :sierra
-    sha256 "6fce19d41629a0de4225e837b8805219831a372cf11fe1464c8187b6cf31b5d1" => :el_capitan
+    sha256 "b1b5446899999b05b42b39c077cc85921445bc52be18dd43267b13a2a16ff1f6" => :high_sierra
+    sha256 "3ec139eed4daef97b6db27ed73b07724811e10a8c91963eb4d98a4042084e46f" => :sierra
+    sha256 "56a041e8bb5d449222d7ce63b663b536f41ecb4d225d82169b7f066e61a82d54" => :el_capitan
   end
 
   head do
@@ -38,7 +38,7 @@ class Emscripten < Formula
 
   needs :cxx11
 
-  depends_on :python if MacOS.version <= :snow_leopard
+  depends_on "python" if MacOS.version <= :snow_leopard
   depends_on "cmake" => :build
   depends_on "node"
   depends_on "closure-compiler" => :optional

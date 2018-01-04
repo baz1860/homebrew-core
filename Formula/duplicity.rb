@@ -5,21 +5,20 @@ class Duplicity < Formula
   homepage "http://www.nongnu.org/duplicity/"
   url "https://code.launchpad.net/duplicity/0.7-series/0.7.14/+download/duplicity-0.7.14.tar.gz"
   sha256 "7a3eb74a2a36b004b10add2970b37cfbac0bd693d79513e6311c8e4b8c3dd73e"
-  revision 1
+  revision 2
 
   bottle do
     cellar :any
-    rebuild 1
-    sha256 "8a48bd794bd720760d8a40210e8e671a572af5b0bd997d5ce56f11c8aca3a6e5" => :high_sierra
-    sha256 "fd426d9cfc51510ffa77e324c1cd932c1e7d1b7ac5c53ad10efb0775ef7c9c7b" => :sierra
-    sha256 "7408ed0271bb69c962dc2fe3c2c94a385ca87791b2d9e538f33dac0eb56f8d79" => :el_capitan
+    sha256 "99c116f624e94939d502f7f34a0423fdc633c61e0cfa517bee13cd36419e94f6" => :high_sierra
+    sha256 "a2ec53c64dcbe870069489ec7d5b32d505a866acf505544cfbe2e22db2a83ae2" => :sierra
+    sha256 "8ea435f3c2e46d16c822c6e6270d4c39248facbdd566e3054cef9398e95354b2" => :el_capitan
   end
 
-  depends_on :python if MacOS.version <= :snow_leopard
+  depends_on "python" if MacOS.version <= :snow_leopard
   depends_on "librsync"
   depends_on "openssl@1.1"
   depends_on "par2" => :optional
-  depends_on :gpg => :run
+  depends_on "gnupg"
 
   # Generated with homebrew-pypi-poet from
   # for i in azure-storage boto dropbox fasteners kerberos mega.py
@@ -324,7 +323,19 @@ class Duplicity < Formula
   end
 
   test do
-    Gpg.test(testpath) do
+    (testpath/"batch.gpg").write <<~EOS
+      Key-Type: RSA
+      Key-Length: 2048
+      Subkey-Type: RSA
+      Subkey-Length: 2048
+      Name-Real: Testing
+      Name-Email: testing@foo.bar
+      Expire-Date: 1d
+      %no-protection
+      %commit
+    EOS
+    system Formula["gnupg"].opt_bin/"gpg", "--batch", "--gen-key", "batch.gpg"
+    begin
       (testpath/"test/hello.txt").write "Hello!"
       (testpath/"command.sh").write <<~EOS
         #!/usr/bin/expect -f
@@ -346,6 +357,10 @@ class Duplicity < Formula
       # Ensure requests[security] is activated
       script = "import requests as r; r.get('https://mozilla-modern.badssl.com')"
       system libexec/"bin/python", "-c", script
+    ensure
+      system Formula["gnupg"].opt_bin/"gpgconf", "--kill", "gpg-agent"
+      system Formula["gnupg"].opt_bin/"gpgconf", "--homedir", "keyrings/live",
+                                                 "--kill", "gpg-agent"
     end
   end
 end

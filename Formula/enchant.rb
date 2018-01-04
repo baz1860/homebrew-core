@@ -1,24 +1,24 @@
 class Enchant < Formula
   desc "Spellchecker wrapping library"
   homepage "https://abiword.github.io/enchant/"
-  url "https://github.com/AbiWord/enchant/releases/download/v2.1.2/enchant-2.1.2.tar.gz"
-  sha256 "039563bbb7340f320bd9237dac92303b3e7768152b08fc0d554d6957ae7183d8"
+  url "https://github.com/AbiWord/enchant/releases/download/v2.2.1/enchant-2.2.1.tar.gz"
+  sha256 "97f2e617b34c66a645b9cfebe33700456c31ca2f4677eb827b364c0d9a7f4e5e"
 
   bottle do
-    sha256 "caf76a7a4dd20898b726a67e341e1d14cb398bb8209c150bb33239ddb3a07208" => :high_sierra
-    sha256 "53ee18eb377da969936e416a08b3f64d85eb4553bbaafccf7dddce9a2965ef2f" => :sierra
-    sha256 "663074bcc44168c80fe3e61ee053a717d50e1578f31e54cb64f252dd1b65cb37" => :el_capitan
+    sha256 "25067da77a9493c1ab90b886f7663f5afbc7c204d0851f688bb02aa994a45d32" => :high_sierra
+    sha256 "98874c4c51f9dbdf6503229d4dbe4222a28a1cc8c198f73f8056649f2ffbbb6c" => :sierra
+    sha256 "ee787b33a70350864b55494d94321c5319c280f994fd3c7ae2cf8e4e2003edf1" => :el_capitan
   end
 
   depends_on "pkg-config" => :build
-  depends_on :python => :optional
+  depends_on "python" => :optional
   depends_on "glib"
   depends_on "aspell"
 
   # https://pythonhosted.org/pyenchant/
   resource "pyenchant" do
-    url "https://files.pythonhosted.org/packages/source/p/pyenchant/pyenchant-1.6.5.tar.gz"
-    sha256 "623f332a9fbb70ae6c9c2d0d4e7f7bae5922d36ba0fe34be8e32df32ebbb4f84"
+    url "https://files.pythonhosted.org/packages/9e/54/04d88a59efa33fefb88133ceb638cdf754319030c28aadc5a379d82140ed/pyenchant-2.0.0.tar.gz"
+    sha256 "fc31cda72ace001da8fe5d42f11c26e514a91fa8c70468739216ddd8de64e2a0"
   end
 
   def install
@@ -28,11 +28,13 @@ class Enchant < Formula
 
     system "make", "install"
 
+    ln_s "enchant-2.pc", lib/"pkgconfig/enchant.pc"
+
     if build.with? "python"
       resource("pyenchant").stage do
         # Don't download and install distribute now
-        inreplace "setup.py", "distribute_setup.use_setuptools()", ""
-        ENV["PYENCHANT_LIBRARY_PATH"] = lib/"libenchant.dylib"
+        inreplace "setup.py", "ez_setup.use_setuptools()", ""
+        ENV["PYENCHANT_LIBRARY_PATH"] = lib/"libenchant-2.dylib"
         system "python", "setup.py", "install", "--prefix=#{prefix}",
                               "--single-version-externally-managed",
                               "--record=installed.txt"
@@ -45,6 +47,6 @@ class Enchant < Formula
     enchant_result = text.sub("fox ", "").split.join("\n")
     file = "test.txt"
     (testpath/file).write text
-    assert_equal enchant_result, shell_output("#{bin}/enchant -l #{file}").chomp
+    assert_equal enchant_result, shell_output("#{bin}/enchant-2 -l #{file}").chomp
   end
 end

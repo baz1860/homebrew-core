@@ -2,6 +2,7 @@ class HasteClient < Formula
   desc "CLI client for haste-server"
   homepage "https://hastebin.com/"
   head "https://github.com/seejohnrun/haste-client.git"
+  revision 2
 
   stable do
     url "https://github.com/seejohnrun/haste-client/archive/v0.2.3.tar.gz"
@@ -17,10 +18,9 @@ class HasteClient < Formula
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "b7b70e6a090bc14e4ec5bb634f7b30778d92a555e421181840139a32a8a7e056" => :high_sierra
-    sha256 "821e18033eebddc3a0ef8ae93ff675aa1407addaff6b228639a17351acd27da8" => :sierra
-    sha256 "3189295fb6df33a604a3f1bb8a556853fcdfc7a66bcf7183f3bc6a95305155bf" => :el_capitan
-    sha256 "6feb00bfc1cf9387929d554acf24c92df081584396a072c9cfb265cbbe8b0e54" => :yosemite
+    sha256 "2bd39925b80e6c0d05ad4160fb7c4959063f1a3ed585e06c12690fb7bb738f9c" => :high_sierra
+    sha256 "f0abc49274875fee34e1cfd61163c1687934d4f89193774c36cbdaec61f8c479" => :sierra
+    sha256 "1186a48c9fa3ca1e284b920141e5c64e7e5d804e2ea43e63a32b1b2477ee8464" => :el_capitan
   end
 
   depends_on :ruby => "2.3"

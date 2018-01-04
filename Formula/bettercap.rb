@@ -3,12 +3,13 @@ class Bettercap < Formula
   homepage "https://www.bettercap.org/"
   url "https://github.com/evilsocket/bettercap/archive/v1.6.2.tar.gz"
   sha256 "1b364d7e31be5fa7b5f93eefe76763ad7bd4ac0b7b6bb4af05483157580a9cb9"
+  revision 2
 
   bottle do
     cellar :any
-    sha256 "434b327d74c8e1e8b4096fcbc8b8d4cb4045ec2e58e9e249fbec3acdffc389b4" => :high_sierra
-    sha256 "2b0b7417edb99220876a1f17bda0612cda33ffb835c955ce9d17153125e250fa" => :sierra
-    sha256 "e846eee96fdad9755d4746d4996b913b625c40e8a8a8969fbaa47db9579ac82a" => :el_capitan
+    sha256 "4fabf37e34f857110eb67a091736edb006bdb87d80e0a72c53272d2d8dc244b0" => :high_sierra
+    sha256 "4fe944ffc04be24c8dd8fb2ce9c514b0c50f169f0e46a0d71f0439930abcd924" => :sierra
+    sha256 "dae1ac47211601759da66f7a83e0ae7017d760acc7cf3bdc67e441d54bdc02bc" => :el_capitan
   end
 
   depends_on "openssl"

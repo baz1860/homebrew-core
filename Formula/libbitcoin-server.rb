@@ -1,14 +1,14 @@
 class LibbitcoinServer < Formula
   desc "Bitcoin Full Node and Query Server"
   homepage "https://github.com/libbitcoin/libbitcoin-server"
-  url "https://github.com/libbitcoin/libbitcoin-server/archive/v3.3.0.tar.gz"
-  sha256 "3066ff98af14574edae3e36b056b847558953e501c9b4f626c0428db9933a0ad"
-  revision 1
+  url "https://github.com/libbitcoin/libbitcoin-server/archive/v3.4.0.tar.gz"
+  sha256 "a2c88f463b85efe8c9b7617332759e9964dbe250273cb473ebbb479be2525ef5"
+  revision 2
 
   bottle do
-    sha256 "91da3aa386c5810c3ad34af991223a579ff7c7f5b77e143ce550b81884347148" => :high_sierra
-    sha256 "4fd5c27fb1a24f27078bf4fdca964367f6ac13a3d5e5304d4aac8261b227114e" => :sierra
-    sha256 "ffed49361044749f0a66aaaaa89b7599bfeef1ea3dab10543365eb70e482c804" => :el_capitan
+    sha256 "52d31d7631dd84c1417f2eb8c7c8d207f565ce9a372889909a4333eb2d3934d1" => :high_sierra
+    sha256 "1ddeef96853973dc736b29ab89751ee6a57df8e2dc91a51eeb5a155f1ed819c4" => :sierra
+    sha256 "4c6d505dc6e4d7ef7af4d61d222fd71de10c5825cb85db5da08f61bfcf9b4144" => :el_capitan
   end
 
   depends_on "autoconf" => :build
@@ -19,8 +19,8 @@ class LibbitcoinServer < Formula
   depends_on "zeromq"
 
   resource "libbitcoin-protocol" do
-    url "https://github.com/libbitcoin/libbitcoin-protocol/archive/v3.3.0.tar.gz"
-    sha256 "7902de78b4c646daf2012e04bb7967784f67a6372a8a8d3c77417dabcc4b617d"
+    url "https://github.com/libbitcoin/libbitcoin-protocol/archive/v3.4.0.tar.gz"
+    sha256 "71b1a5b23b4b20f4727693e1e0509af8a0db4623bb27de46e273496ada43a121"
   end
 
   def install
@@ -42,6 +42,8 @@ class LibbitcoinServer < Formula
                           "--disable-silent-rules",
                           "--prefix=#{prefix}"
     system "make", "install"
+
+    bash_completion.install "data/bs"
   end
 
   test do

@@ -2,14 +2,14 @@ class Kubeless < Formula
   desc "Kubernetes Native Serverless Framework"
   homepage "https://github.com/kubeless/kubeless"
   url "https://github.com/kubeless/kubeless.git",
-      :tag => "v0.3.1",
-      :revision => "cc6e694f38c86ba2ab3b1b488959296f3677e9c1"
+      :tag => "v0.3.3",
+      :revision => "2820d21c008b7d550f34baddbcf118850ca5b487"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "903bf1cd82af7d144b17e749a5760e6a5545cf9784d3f54285ec5356d41472f4" => :high_sierra
-    sha256 "d95dbf5081d8f2777d16415ed3ec5f69499c671327038b9817a28ab30762ff77" => :sierra
-    sha256 "71d9203c8e7056817a4ceb59462665c463522245cf4cfbe453d0f311d8de59f6" => :el_capitan
+    sha256 "60f8184eb50fcf6daa63095c972405ab46ffa336092d2a9daaa13ba9c7c9d25d" => :high_sierra
+    sha256 "1bf3717d554a38b1fb7b699e402bb4536e72b2c977491e3c537246b27812235f" => :sierra
+    sha256 "91756f3699f5c4963e15c017eb1196d3e3c42bd447649379fc986b81d49a5aeb" => :el_capitan
   end
 
   depends_on "go" => :build
@@ -21,8 +21,8 @@ class Kubeless < Formula
     (buildpath/"src/github.com/kubeless/kubeless").install buildpath.children
     cd "src/github.com/kubeless/kubeless" do
       ldflags = %W[
-        -w -X github.com/kubeless/kubeless/version.VERSION=v#{version}
-        -X github.com/kubeless/kubeless/version.GITCOMMIT=#{commit}
+        -w -X github.com/kubeless/kubeless/cmd/kubeless/version.VERSION=v#{version}
+        -X github.com/kubeless/kubeless/cmd/kubeless/version.GITCOMMIT=#{commit}
       ]
       system "go", "build", "-o", bin/"kubeless", "-ldflags", ldflags.join(" "),
              "./cmd/kubeless"

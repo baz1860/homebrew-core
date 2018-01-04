@@ -1,13 +1,14 @@
 class LibbitcoinDatabase < Formula
   desc "Bitcoin High Performance Blockchain Database"
   homepage "https://github.com/libbitcoin/libbitcoin-database"
-  url "https://github.com/libbitcoin/libbitcoin-database/archive/v3.3.0.tar.gz"
-  sha256 "b4d98199ac4629a9857c1eb8819fe8166525bf2dca9ed790a9bbe5dc9c9e9186"
+  url "https://github.com/libbitcoin/libbitcoin-database/archive/v3.4.0.tar.gz"
+  sha256 "34ca5c11800ea8efb1ef986e83f5e4fcdde95e85d2406f0a7ed922725e45f0e0"
+  revision 1
 
   bottle do
-    sha256 "bd6e177feda0ca98e4b2972edfa1048220ffdbfa3f98945af9bab69ab33e7883" => :high_sierra
-    sha256 "0115578ef6f9db710419ccc61f087b4db9a6e94693074f29d15309af97ef7625" => :sierra
-    sha256 "8987f774562b107685acc81bdb77114aeaf0630950ac0c784e85909f6c3e59e8" => :el_capitan
+    sha256 "db682b54f7ebcb891f14fee15216ba1b5ac7305b7dc1be13b45d0eb77dd259c5" => :high_sierra
+    sha256 "25ca156caf8f0184080f59479b1e13ef7fadae026b98b6bf1899b3662857cc98" => :sierra
+    sha256 "e5c72c082c82f8d1256f3291481b3009015d0d7766ed1531e41c54b91e89fb70" => :el_capitan
   end
 
   depends_on "autoconf" => :build

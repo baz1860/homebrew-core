@@ -1,15 +1,17 @@
 class Nnn < Formula
   desc "Free, fast, friendly file browser"
   homepage "https://github.com/jarun/nnn"
-  url "https://github.com/jarun/nnn/archive/v1.5.tar.gz"
-  sha256 "f50f59953c29408963bbb961891155bd0a1fe2072d4441cc0ff927b128725c7f"
+  url "https://github.com/jarun/nnn/archive/v1.6.tar.gz"
+  sha256 "e8b10a3b9847ba7ad3317f608691aaebcdaf2b67219d732f7a5d468221d3e83e"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "686064429ad6c93882d66bbe0ee5e58e49371ab4405f7471b06727a611ce0303" => :high_sierra
-    sha256 "116b742a578044fe4309cee847b72d15b0687c19887b8dd65bc1fac1a5d27eeb" => :sierra
-    sha256 "26901989e2a66d9ec8806ea21b931e66ab8b6f4a1a35544b4da473a8b490e692" => :el_capitan
+    cellar :any
+    sha256 "bb763df644735027c3461bb423b381418266ec70eaac20d457be87445b1d94aa" => :high_sierra
+    sha256 "bfb3e43e95ffe9ba3e601ad02a7aa4f1ecb313a472b22b415288c00e3d740678" => :sierra
+    sha256 "813fbdb127710d374d7121f380ac58e4f49cf044495529981d1b99ef98cba0a6" => :el_capitan
   end
+
+  depends_on "readline"
 
   def install
     system "make", "install", "PREFIX=#{prefix}"
@@ -20,7 +22,7 @@ class Nnn < Formula
     require "pty"
     PTY.spawn(bin/"nnn") do |r, w, _pid|
       w.write "q"
-      assert_match "cwd: #{testpath.realpath}", r.read
+      assert_match testpath.realpath.to_s, r.read
     end
   end
 end
