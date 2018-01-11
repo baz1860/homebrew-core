@@ -25,7 +25,7 @@ class Postgresql < Formula
   depends_on "readline"
 
   depends_on "python" => :optional
-  depends_on :python3 => :optional
+  depends_on "python3" => :optional
 
   conflicts_with "postgres-xc",
     :because => "postgresql and postgres-xc install the same binaries."
@@ -99,13 +99,8 @@ class Postgresql < Formula
   end
 
   def caveats; <<~EOS
-    To migrate existing data from a previous major version of PostgreSQL, see:
-      https://www.postgresql.org/docs/10/static/upgrading.html
-
-      You will need your previous PostgreSQL installation from brew to perform
-      `pg_upgrade` or `pg_dumpall` depending on your upgrade method.
-
-      Do not run `brew cleanup postgresql` until you have performed the migration.
+    To migrate existing data from a previous major version of PostgreSQL run:
+      brew postgresql-upgrade-database
     EOS
   end
 
@@ -130,6 +125,8 @@ class Postgresql < Formula
       <true/>
       <key>WorkingDirectory</key>
       <string>#{HOMEBREW_PREFIX}</string>
+      <key>StandardOutPath</key>
+      <string>#{var}/log/postgres.log</string>
       <key>StandardErrorPath</key>
       <string>#{var}/log/postgres.log</string>
     </dict>

@@ -1,14 +1,14 @@
 class Sccache < Formula
   desc "Used as a compiler wrapper and avoids compilation when possible"
   homepage "https://github.com/mozilla/sccache"
-  url "https://github.com/mozilla/sccache/archive/0.2.2.tar.gz"
-  sha256 "6a741ebf41bc8cee97ded3b823f464038af65c55de474b53efb1e24b5d234c36"
+  url "https://github.com/mozilla/sccache/archive/0.2.4.tar.gz"
+  sha256 "82d8d553a0cf2752e71266523f9aac30c1b5a12fa6b1faea8c7c6e1ec9827371"
   head "https://github.com/mozilla/sccache.git"
 
   bottle do
-    sha256 "294dda365425fc050344d7dce9dbe53ce7b780e754b0cb6b87ad8d1c04860501" => :high_sierra
-    sha256 "6ca47428771877fd3ce58df83ec5dc7b245a3d0c00f50059e2eb0259cfc3fb09" => :sierra
-    sha256 "e995ed15ee3c3b6c9a54c66162e8dcba9dc4a8d401724e0c3ecba6636a9a6c65" => :el_capitan
+    sha256 "a6584e18d4c4434684075c76b30544bf27144721f45f628a792d460de11c8306" => :high_sierra
+    sha256 "b1a56447901d0afa3a8fe8b71a04d6943777a927437ffb35eccf10ab812add6f" => :sierra
+    sha256 "4305601f9ab24c533e77e9d88a1475489b1716827ac4e39504f76ce30c81348a" => :el_capitan
   end
 
   depends_on "rust" => :build
