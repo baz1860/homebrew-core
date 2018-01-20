@@ -1,14 +1,14 @@
 class GetFlashVideos < Formula
   desc "Download or play videos from various Flash-based websites"
   homepage "https://github.com/monsieurvideo/get-flash-videos"
-  url "https://github.com/monsieurvideo/get-flash-videos/archive/1.25.95.tar.gz"
-  sha256 "91387775fbe8fc422a4cf93b9df7f39f2e66f7260688ef2bf44e275a5d374ac8"
+  url "https://github.com/monsieurvideo/get-flash-videos/archive/1.25.97.tar.gz"
+  sha256 "1b25f0863e91a3d4435c255975c7d4f222fb94aabec288310ecc9f71fe4cbd5a"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "6bc6578ecf23b5b242c3a7ef7f198a9ad350f8e6206b251cf3618efac6aa6067" => :high_sierra
-    sha256 "4b8ac3991e15b1c9ffbd7293a5f0ba11c3475ba29f91bff15001d56cf48a4d1e" => :sierra
-    sha256 "a23749a01162ad076f8fd42ceb65b9cd20fce9b3777d4a8719324c97ed5a2517" => :el_capitan
+    sha256 "4102c72a9c56d9d3a3e4a8d2b956076882179e7fd21d8c30009799d3b9d7adce" => :high_sierra
+    sha256 "3723a25f3565722b8fe96e42a33a10323aae5c8a25729556330c3f7ae0ab9507" => :sierra
+    sha256 "f2af279e5bc044c04e841cdfd8d2b8ec05161d5c11948c7194d644140fbd6cdd" => :el_capitan
   end
 
   depends_on "rtmpdump"
@@ -41,6 +41,11 @@ class GetFlashVideos < Formula
   resource "Class::MethodMaker" do
     url "https://cpan.metacpan.org/authors/id/S/SC/SCHWIGON/class-methodmaker/Class-MethodMaker-2.24.tar.gz"
     sha256 "5eef58ccb27ebd01bcde5b14bcc553b5347a0699e5c3e921c7780c3526890328"
+  end
+
+  resource "Crypt::Rijndael" do
+    url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Crypt-Rijndael-1.13.tar.gz"
+    sha256 "cd7209a6dfe0a3dc8caffe1aa2233b0e6effec7572d76a7a93feefffe636214e"
   end
 
   def install

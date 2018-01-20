@@ -70,6 +70,14 @@ class Llvm < Formula
       url "https://releases.llvm.org/5.0.1/polly-5.0.1.src.tar.xz"
       sha256 "9dd52b17c07054aa8998fc6667d41ae921430ef63fa20ae130037136fdacf36e"
     end
+
+    # Fixes "error: no type named 'pid_t' in the global namespace"
+    # https://github.com/Homebrew/homebrew-core/issues/17839
+    # Already fixed in upstream trunk
+    resource "lldb-fix-build" do
+      url "https://github.com/llvm-mirror/lldb/commit/324f93b5e30.patch?full_index=1"
+      sha256 "f23fc92c2d61bf6c8bc6865994a75264fafba6ae435e4d2f4cc8327004523fb1"
+    end
   end
 
   bottle do
@@ -120,7 +128,7 @@ class Llvm < Formula
     end
   end
 
-  keg_only :provided_by_osx
+  keg_only :provided_by_macos
 
   option "without-compiler-rt", "Do not build Clang runtime support libraries for code sanitizers, builtins, and profiling"
   option "without-libcxx", "Do not build libc++ standard library"
@@ -169,6 +177,10 @@ class Llvm < Formula
     # Apple's libstdc++ is too old to build LLVM
     ENV.libcxx if ENV.compiler == :clang
 
+    if build.with? "python"
+      ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
+    end
+
     (buildpath/"tools/clang").install resource("clang")
     (buildpath/"tools/clang/tools/extra").install resource("clang-extra-tools")
     (buildpath/"projects/openmp").install resource("openmp")
@@ -185,6 +197,12 @@ class Llvm < Formula
         pyinclude = "#{pyhome}/include/python2.7"
       end
       (buildpath/"tools/lldb").install resource("lldb")
+
+      if build.stable?
+        resource("lldb-fix-build").stage do
+          system "patch", "-p1", "-i", Pathname.pwd/"324f93b5e30.patch", "-d", buildpath/"tools/lldb"
+        end
+      end
 
       # Building lldb requires a code signing certificate.
       # The instructions provided by llvm creates this certificate in the
