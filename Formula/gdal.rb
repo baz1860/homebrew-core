@@ -1,7 +1,7 @@
 class Gdal < Formula
   desc "Geospatial Data Abstraction Library"
   homepage "http://www.gdal.org/"
-  url "http://download.osgeo.org/gdal/1.11.5/gdal-1.11.5.tar.gz"
+  url "https://download.osgeo.org/gdal/1.11.5/gdal-1.11.5.tar.gz"
   sha256 "49f99971182864abed9ac42de10545a92392d88f7dbcfdb11afe449a7eb754fe"
   revision 3
 
@@ -24,7 +24,7 @@ class Gdal < Formula
   option "with-unsupported", "Allow configure to drag in any library it can find. Invoke this at your own risk."
   option "with-mdb", "Build with Access MDB driver (requires Java 1.6+ JDK/JRE, from Apple or Oracle)."
   option "with-libkml", "Build with Google's libkml driver (requires libkml --HEAD or >= 1.3)"
-  option "with-swig-java", "Build the swig java bindings"
+  option "with-java", "Build the java bindings with swig"
   option "without-python", "Build without python2 support"
 
   deprecated_option "enable-opencl" => "with-opencl"
@@ -32,6 +32,7 @@ class Gdal < Formula
   deprecated_option "enable-unsupported" => "with-unsupported"
   deprecated_option "enable-mdb" => "with-mdb"
   deprecated_option "complete" => "with-complete"
+  deprecated_option "with-swig-java" => "with-java"
 
   depends_on "libpng"
   depends_on "jpeg"
@@ -78,9 +79,11 @@ class Gdal < Formula
     depends_on "json-c"
   end
 
-  depends_on :java => ["1.7+", :optional, :build]
+  # Technically 1.7+ but definitely not Java 9.
+  # "bootstrap class path not set in conjunction with -source 1.4"
+  depends_on :java => ["1.8", :optional]
 
-  if build.with? "swig-java"
+  if build.with? "java"
     depends_on "ant" => :build
     depends_on "swig" => :build
   end
@@ -104,7 +107,7 @@ class Gdal < Formula
   end
 
   resource "numpy" do
-    url "https://pypi.python.org/packages/source/n/numpy/numpy-1.9.3.tar.gz"
+    url "https://files.pythonhosted.org/packages/source/n/numpy/numpy-1.9.3.tar.gz"
     sha256 "c3b74d3b9da4ceb11f66abd21e117da8cf584b63a0efbd01a9b7e91b693fbbd6"
   end
 
@@ -301,16 +304,19 @@ class Gdal < Formula
       end
     end
 
-    if build.with? "swig-java"
+    if build.with? "java"
       cd "swig/java" do
-        inreplace "java.opt", "linux", "darwin"
-        inreplace "java.opt", "#JAVA_HOME = /usr/lib/jvm/java-6-openjdk/", "JAVA_HOME=$(shell echo $$JAVA_HOME)"
+        inreplace "java.opt" do |s|
+          s.gsub! "linux", "darwin"
+          s.gsub! "#JAVA_HOME = /usr/lib/jvm/java-6-openjdk/",
+                  "JAVA_HOME = $(shell #{Language::Java.java_home_cmd("1.8")})"
+        end
         system "make"
         system "make", "install"
 
         # Install the jar that complements the native JNI bindings
         system "ant"
-        lib.install "gdal.jar"
+        (pkgshare/"java").install "gdal.jar"
       end
     end
 
@@ -326,7 +332,7 @@ class Gdal < Formula
         To have a functional MDB driver, install supporting .jar files in:
           `/Library/Java/Extensions/`
 
-        See: `http://www.gdal.org/ogr/drv_mdb.html`
+        See: `http://www.gdal.org/drv_mdb.html`
       EOS
     end
   end

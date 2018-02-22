@@ -1,20 +1,19 @@
 class Gcc < Formula
   desc "GNU compiler collection"
   homepage "https://gcc.gnu.org/"
-  revision 1
-
   head "svn://gcc.gnu.org/svn/gcc/trunk"
 
   stable do
-    url "https://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz"
-    mirror "https://ftpmirror.gnu.org/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz"
-    sha256 "1cf7adf8ff4b5aa49041c8734bbcf1ad18cc4c94d0029aae0f4e48841088479a"
+    url "https://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz"
+    mirror "https://ftpmirror.gnu.org/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz"
+    sha256 "832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c"
   end
 
   bottle do
-    sha256 "7961743f198120b68dac549268a380485e28e23347f72bddfc5dafab405a532c" => :high_sierra
-    sha256 "946d376af4da1e6db59cae92f85ad44fac19f5c259a0b9121a3ad3ac2578db1b" => :sierra
-    sha256 "0a25dd61dc7b1521262b3769b723cc66d6cf61105113545eea673a55041b2447" => :el_capitan
+    rebuild 1
+    sha256 "d09669e3679bb54448f00cda4bf520e631f7487f132ebfe6e0d2f6ecdcd5f6e0" => :high_sierra
+    sha256 "25cc9378b872c87e94d40b12eae550a5fcd0c4e8dfc86bd8e3e90a25bfbdf875" => :sierra
+    sha256 "69f32570d96ecc1a5365cbfe864f9cea68ae650854f1db1b11d8a6bcde1fd7bb" => :el_capitan
   end
 
   option "with-jit", "Build just-in-time compiler"
@@ -52,16 +51,8 @@ class Gcc < Formula
     sha256 "863957f90a934ee8f89707980473769cff47ca0663c3906992da6afb242fb220"
   end
 
-  # Use -headerpad_max_install_names in the build,
-  # otherwise lto1 load commands cannot be edited on El Capitan
-  if MacOS.version == :el_capitan
-    patch do
-      url "https://raw.githubusercontent.com/Homebrew/formula-patches/32cf103/gcc/7.1.0-headerpad.patch"
-      sha256 "dd884134e49ae552b51085116e437eafa63460b57ce84252bfe7a69df8401640"
-    end
-  end
-
   # Fix parallel build on APFS filesystem
+  # Remove for 7.4.0 and later
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81797
   if MacOS.version >= :high_sierra
     patch do
@@ -118,7 +109,15 @@ class Gcc < Formula
       end
 
       system "../configure", *args
-      system "make"
+
+      make_args = []
+      # Use -headerpad_max_install_names in the build,
+      # otherwise lto1 load commands cannot be edited on El Capitan
+      if MacOS.version == :el_capitan
+        make_args << "BOOT_LDFLAGS=-Wl,-headerpad_max_install_names"
+      end
+
+      system "make", *make_args
       system "make", "install"
 
       bin.install_symlink bin/"gfortran-#{version_suffix}" => "gfortran"

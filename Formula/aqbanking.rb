@@ -1,13 +1,13 @@
 class Aqbanking < Formula
   desc "Generic online banking interface"
   homepage "https://www.aquamaniac.de/sites/aqbanking/"
-  url "https://www.aquamaniac.de/sites/download/download.php?package=03&release=208&file=01&dummy=aqbanking-5.6.12.tar.gz"
-  sha256 "0652706a487d594640a7d544271976261165bf269d90dc70447b38b363e54b22"
+  url "https://www.aquamaniac.de/sites/download/download.php?package=03&release=217&file=02&dummy=aqbanking-5.7.8.tar.gz"
+  sha256 "16f86e4cc49a9eaaa8dfe3206607e627873208bce45a70030c3caea9b5afc768"
 
   bottle do
-    sha256 "55d0359a888464040bedd5a893d2894435ad388d5374bab9728abe49a4dc00e1" => :sierra
-    sha256 "ff953f175c8f6ddf772da822e133201c48085c2e7ccc08b7c53135daeafa5200" => :el_capitan
-    sha256 "3cdbfa38e1459b83e70dae91fd68640207ca838098e1de21966583dea8122a63" => :yosemite
+    sha256 "866075937aef08470752e57b1edeb825a979ff3ee4e64b00684efdb13023f4ad" => :high_sierra
+    sha256 "20be1437e600089a4a030b45695923a0f6447874e074e6e899a36c5d4137203a" => :sierra
+    sha256 "13849e82bb69537024e914d379fb3778f8faa1f3da9cf9677e6326ef95ddbd15" => :el_capitan
   end
 
   head do

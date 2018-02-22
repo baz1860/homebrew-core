@@ -1,23 +1,18 @@
 class Openrtsp < Formula
   desc "Command-line RTSP client"
   homepage "http://www.live555.com/openRTSP"
-  url "http://www.live555.com/liveMedia/public/live.2017.10.28.tar.gz"
-  sha256 "d8eaec9ded34321aa655d3c9007217dd447218c54cb48c97827e58ecd5edb338"
+  url "http://www.live555.com/liveMedia/public/live.2018.02.18.tar.gz"
+  sha256 "354f3ba51c5fb9a77df1baa86f49aa85a7b07be181aeb0c526f33bddcdf43575"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "33d46ff647a933772afe3ffd13870f9b7226a995299b3d717918a4101975697e" => :high_sierra
-    sha256 "df76c6f6c2ebe06848a6206694aaf5f36c847ddd5a2cf7e12d52fb25c7033273" => :sierra
-    sha256 "82d4b641872c3eb160a4107c593f9f36700433ce686111b91cf28e9bc9dde54c" => :el_capitan
+    sha256 "e2425b94722f5de20bf1a87d1750828966913587c25bb72041cab08b905b4ba3" => :high_sierra
+    sha256 "fed8851ec91da788a015e1bd09ff247a099f5270a7500e437dd01d324c6fa05e" => :sierra
+    sha256 "7fc61d2635245ce6cfdbe4edccba70235a0b680938410ef928e53dfa6b73d653" => :el_capitan
   end
 
   def install
-    if MacOS.prefer_64_bit?
-      system "./genMakefiles", "macosx"
-    else
-      system "./genMakefiles", "macosx-32bit"
-    end
-
+    system "./genMakefiles", "macosx"
     system "make", "PREFIX=#{prefix}", "install"
 
     # Move the testing executables out of the main PATH

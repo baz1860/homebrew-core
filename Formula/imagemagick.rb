@@ -4,21 +4,21 @@ class Imagemagick < Formula
   # Please always keep the Homebrew mirror as the primary URL as the
   # ImageMagick site removes tarballs regularly which means we get issues
   # unnecessarily and older versions of the formula are broken.
-  url "https://dl.bintray.com/homebrew/mirror/imagemagick-7.0.7-21.tar.xz"
-  mirror "https://www.imagemagick.org/download/ImageMagick-7.0.7-21.tar.xz"
-  sha256 "3b2783a845279f76a4250f2c3caf04af22766e2d5f084bde589ebd73de6a0019"
+  url "https://dl.bintray.com/homebrew/mirror/imagemagick-7.0.7-23.tar.xz"
+  mirror "https://www.imagemagick.org/download/ImageMagick-7.0.7-23.tar.xz"
+  sha256 "8dee83fe4978a2d07a90c947508d734ddb175eeb299491f8560cea5ac0c26896"
   head "https://github.com/ImageMagick/ImageMagick.git"
 
   bottle do
-    sha256 "012b972d142b4a85c9a65ac971ebd0d0ff2929dd3e1a740efd4a3b3ecd8e4693" => :high_sierra
-    sha256 "f8e47a769b0122dc65e4eb9fa9b392772e777d9e5af049b4581dc036f926b83b" => :sierra
-    sha256 "ac217f6b899a70afa453625dad89c2caeb450d048560196a9ffead3a4e5e79a5" => :el_capitan
+    sha256 "0d0bdc27fb30b0128a966b7f2343c822824d6c15172f746a171d9994acafa8db" => :high_sierra
+    sha256 "d9173bdbbf72726d9a983c37b2f7b0cfed521974638a0bc1cc77573abb5f3d5d" => :sierra
+    sha256 "3a194021d1b35d2d4818178ad4a2072cd1f8c81a802e0af7d5e95e9dffe2df90" => :el_capitan
   end
 
   option "with-fftw", "Compile with FFTW support"
-  option "with-gcc", "Compile with OpenMP support"
   option "with-hdri", "Compile with HDRI support"
   option "with-opencl", "Compile with OpenCL support"
+  option "with-openmp", "Compile with OpenMP support"
   option "with-perl", "Compile with PerlMagick"
   option "without-magick-plus-plus", "disable build/install of Magick++"
   option "without-modules", "Disable support for dynamically loadable modules"
@@ -26,8 +26,8 @@ class Imagemagick < Formula
   option "with-zero-configuration", "Disables depending on XML configuration files"
 
   deprecated_option "enable-hdri" => "with-hdri"
+  deprecated_option "with-gcc" => "with-openmp"
   deprecated_option "with-jp2" => "with-openjpeg"
-  deprecated_option "with-openmp" => "with-gcc"
 
   depends_on "pkg-config" => :build
   depends_on "libtool" => :run
@@ -40,7 +40,6 @@ class Imagemagick < Formula
 
   depends_on :x11 => :optional
   depends_on "fontconfig" => :optional
-  depends_on "gcc" => :optional
   depends_on "little-cms" => :optional
   depends_on "little-cms2" => :optional
   depends_on "libwmf" => :optional
@@ -53,6 +52,11 @@ class Imagemagick < Formula
   depends_on "fftw" => :optional
   depends_on "pango" => :optional
   depends_on "perl" => :optional
+
+  if build.with? "openmp"
+    depends_on "gcc"
+    fails_with :clang
+  end
 
   skip_clean :la
 
