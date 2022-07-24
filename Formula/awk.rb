@@ -1,29 +1,27 @@
 class Awk < Formula
   desc "Text processing scripting language"
   homepage "https://www.cs.princeton.edu/~bwk/btl.mirror/"
-  url "https://www.cs.princeton.edu/~bwk/btl.mirror/awk.tar.gz"
-  version "20121220"
-  sha256 "8dc092165c5a4e1449f964286483d06d0dbfba4b0bd003cb5dab30de8f6d9b83"
+  url "https://github.com/onetrueawk/awk/archive/20220122.tar.gz"
+  sha256 "720a06ff8dcc12686a5176e8a4c74b1295753df816e38468a6cf077562d54042"
+  # https://fedoraproject.org/wiki/Licensing:MIT?rd=Licensing/MIT#Standard_ML_of_New_Jersey_Variant
+  license "MIT"
+  head "https://github.com/onetrueawk/awk.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "da4358a83f3e939323eea96b4dc4db74a71157bd7d702b9599811a54a393e26c" => :high_sierra
-    sha256 "40dbcdf8549b662e7775074fe8c172f364862705b0c0ba00495c2da6e1440a70" => :sierra
-    sha256 "593cdb489ae25ec556af3a02e26b957efc3a67731f8edf48335a994fa58d533e" => :el_capitan
-    sha256 "d74b6dc04cd9dac3791216744a56813b8396c419f325244526c79c433ca95b3d" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "65041e32f93bb2c9fb34499a142599d1197812e746a97538dd6ea0d0b952c26d"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "b2d1a70b2bbb181d8d3a4372600c89f066085bd622af35ba5286d066d79d78fa"
+    sha256 cellar: :any_skip_relocation, monterey:       "36440051d67edfd36eda51c6e37faac85b8d4cfbdd650160f66445b043686e43"
+    sha256 cellar: :any_skip_relocation, big_sur:        "50e132ca2ee5ccd0e5eb143ae3184f9d787bee4a1906b5465bcc2fdcee18626d"
+    sha256 cellar: :any_skip_relocation, catalina:       "b8169a72b8a1c318c426837f59044fc9c67f1b31d4029bb0e9f4f67d8d4c8602"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b875a21cdac385ac38de2474281d539e3e668b8eb2bb94043aa41c468d637df5"
   end
 
-  conflicts_with "gawk",
-    :because => "both install awk executables."
+  uses_from_macos "bison"
+
+  conflicts_with "gawk", because: "both install an `awk` executable"
 
   def install
-    ENV.O3 # Docs recommend higher optimization
-    ENV.deparallelize
-    # the yacc command the makefile uses results in build failures:
-    # /usr/bin/bison: missing operand after `awkgram.y'
-    # makefile believes -S to use sprintf instead of sprint, but the
-    # -S flag is not supported by `bison -y`
-    system "make", "CC=#{ENV.cc}", "CFLAGS=#{ENV.cflags}", "YACC=yacc -d"
+    system "make", "CC=#{ENV.cc}", "CFLAGS=#{ENV.cflags}"
     bin.install "a.out" => "awk"
     man1.install "awk.1"
   end

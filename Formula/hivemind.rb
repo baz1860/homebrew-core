@@ -1,24 +1,24 @@
 class Hivemind < Formula
-  desc "The mind to rule processes of your development environment"
+  desc "Process manager for Procfile-based applications"
   homepage "https://github.com/DarthSim/hivemind"
-  url "https://github.com/DarthSim/hivemind/archive/v1.0.4.tar.gz"
-  sha256 "0c8b6bc8e3aef70bc8f5dd1b29db04a48f8f874ee269d3155670e70263d73cbd"
-
-  head "https://github.com/DarthSim/hivemind.git"
+  url "https://github.com/DarthSim/hivemind/archive/refs/tags/v1.1.0.tar.gz"
+  sha256 "b4f7259663ef5b99906af0d98fe4b964d8f9a4d86a8f5aff30ab8df305d3a996"
+  license "MIT"
+  head "https://github.com/DarthSim/hivemind.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "45d2ce2f8a66a697ed67f7e080e47dcd56d3692632e1d07e316455b2a16329c4" => :high_sierra
-    sha256 "114b5cd253f904f2222899887a016058922b566ba366ad2d7d66521066e02180" => :sierra
-    sha256 "3cf03e49f0b3d8bb2b96966485ad1182c11996bab09d487a1ffcab8967494992" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "f8ca06b6d2dde91c66cd6af2396a58b40e6be52e51fa738f24ff2e23376dc60a"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "f8ca06b6d2dde91c66cd6af2396a58b40e6be52e51fa738f24ff2e23376dc60a"
+    sha256 cellar: :any_skip_relocation, monterey:       "eaedb2b4739dc4e668ae9bf563750e1bb54fea1f16e800f6bf496226dc1daff0"
+    sha256 cellar: :any_skip_relocation, big_sur:        "eaedb2b4739dc4e668ae9bf563750e1bb54fea1f16e800f6bf496226dc1daff0"
+    sha256 cellar: :any_skip_relocation, catalina:       "eaedb2b4739dc4e668ae9bf563750e1bb54fea1f16e800f6bf496226dc1daff0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c702f980c6b3a024c20bd50af65de981ab55b360e10013b22aa6797d834f7c85"
   end
 
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/DarthSim/hivemind/").install Dir["*"]
-    system "go", "build", "-o", "#{bin}/hivemind", "-v", "github.com/DarthSim/hivemind/"
+    system "go", "build", *std_go_args(ldflags: "-s -w")
   end
 
   test do

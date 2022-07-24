@@ -1,19 +1,29 @@
 class EasyrpgPlayer < Formula
   desc "RPG Maker 2000/2003 games interpreter"
   homepage "https://easyrpg.org/"
-  url "https://easyrpg.org/downloads/player/easyrpg-player-0.5.3.tar.gz"
-  sha256 "abd26ed487618780a3675869517fc52d63ad8019c3a87c5aaeefce64c464f83d"
+  url "https://easyrpg.org/downloads/player/0.7.0/easyrpg-player-0.7.0.tar.xz"
+  sha256 "12149f89cc84f3a7f1b412023296cf42041f314d73f683bc6775e7274a1c9fbc"
+  license "GPL-3.0-or-later"
+  revision 1
 
-  bottle do
-    cellar :any
-    sha256 "421d0a53990b0f35034a0ad6ab4b8f5fcc5ebebe54f96d2cfcb85aa910955c16" => :high_sierra
-    sha256 "2d63d22e5653c2512738b7548421767f4f196fad161b7cf75c16c810c541c1cd" => :sierra
-    sha256 "a3bdeadf11643d89283a7721ea1cb0d0534fd27aa2be036d0a04df87768d9ea1" => :el_capitan
+  livecheck do
+    url "https://github.com/EasyRPG/Player.git"
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "a0c9f7c5abdaea35f7db694564b63690deee082a0210a183818a2142a559f166"
+    sha256 cellar: :any,                 arm64_big_sur:  "d5ab6215a21eafaa63f33970fdb38d6680e95d6dcf9e34ff9f8cf0bcc276d4d8"
+    sha256 cellar: :any,                 monterey:       "02089936499be2c1e5f9b0a537875c966488070e2a698eed1675203476fd6dfb"
+    sha256 cellar: :any,                 big_sur:        "2ae20b066a7b4b499f2e8142eb4d80c4bf9bd8dbd6ef5169c9922971712de472"
+    sha256 cellar: :any,                 catalina:       "bd5b78feb53c6d1b2e7224a1262a5a9fd4d350deec64bc05603a97d38c0314f7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "da2efd4954e7d3373dc403e69153c1f35adff2b675b65b851e77c173e045abf7"
+  end
+
+  depends_on "cmake" => :build
+  depends_on "fmt"
   depends_on "freetype"
   depends_on "harfbuzz"
+  depends_on "icu4c"
   depends_on "liblcf"
   depends_on "libpng"
   depends_on "libsndfile"
@@ -22,17 +32,29 @@ class EasyrpgPlayer < Formula
   depends_on "mpg123"
   depends_on "pixman"
   depends_on "sdl2"
-  depends_on "sdl2_mixer"
   depends_on "speexdsp"
 
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "alsa-lib"
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
+
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+
+    if OS.mac?
+      prefix.install "build/EasyRPG Player.app"
+      bin.write_exec_script "#{prefix}/EasyRPG Player.app/Contents/MacOS/EasyRPG Player"
+      mv "#{bin}/EasyRPG Player", "#{bin}/easyrpg-player"
+    end
   end
 
   test do
-    assert_match /EasyRPG Player #{version}$/, shell_output("#{bin}/easyrpg-player -v")
+    assert_match(/EasyRPG Player #{version}$/, shell_output("#{bin}/easyrpg-player -v"))
   end
 end

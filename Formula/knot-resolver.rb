@@ -1,90 +1,66 @@
 class KnotResolver < Formula
   desc "Minimalistic, caching, DNSSEC-validating DNS resolver"
   homepage "https://www.knot-resolver.cz"
-  url "https://secure.nic.cz/files/knot-resolver/knot-resolver-2.1.1.tar.xz"
-  sha256 "0b9caee03d7cd30e1dc8fa0ce5fafade31fc1785314986bbf77cad446522a1b3"
-  head "https://gitlab.labs.nic.cz/knot/knot-resolver.git"
+  url "https://secure.nic.cz/files/knot-resolver/knot-resolver-5.5.1.tar.xz"
+  sha256 "9bad1edfd6631446da2d2331bd869887d7fe502f6eeaf62b2e43e2c113f02b6d"
+  license all_of: ["CC0-1.0", "GPL-3.0-or-later", "LGPL-2.1-or-later", "MIT"]
+  head "https://gitlab.labs.nic.cz/knot/knot-resolver.git", branch: "master"
 
-  bottle do
-    sha256 "3d2b707a891ad52c030b66838a3a225f71fe40009ff875699348cab7ed277b81" => :high_sierra
-    sha256 "22636fca91f0b746463096787eeb4d1e7fe7e65d9e50b5ddaadd4398793e5ed9" => :sierra
-    sha256 "c4e78f850f2261f256c0b723cf7f8c1000229593d61e6cac57e52644f1dd548b" => :el_capitan
+  livecheck do
+    url "https://secure.nic.cz/files/knot-resolver/"
+    regex(/href=.*?knot-resolver[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "without-nettle", "Compile without DNS cookies support"
-  option "with-hiredis", "Compile with Redis cache storage support"
-  option "with-libmemcached", "Compile with memcached cache storage support"
+  bottle do
+    sha256 arm64_monterey: "6a517aa4fd0cf71cf8bba405930f7e03097ac1f99bf26e00bb6fb65405977688"
+    sha256 arm64_big_sur:  "da4fa2b01f63f579f0d9b9ac01c84d77105496bd192b3548b9f72db87023bedc"
+    sha256 monterey:       "8f76c7d1ad811ec13701a833704b59d8fd3c21a6fe148c4609b45ae81be0f794"
+    sha256 big_sur:        "a606f9f8eeff2ff56218e1dace5346be4283fb86dc094c14cb91ebaab79098c4"
+    sha256 catalina:       "e8c4d94dd7ac9427b6ea8438075f1648e32684ffae6b588a31d544e0a767a4cc"
+    sha256 x86_64_linux:   "3837801e26b104c70cd25248740c2f9a7f59e0d63eaa026eebfc11bea09024d4"
+  end
 
-  depends_on "cmocka" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "gnutls"
   depends_on "knot"
-  depends_on "luajit"
+  depends_on "libnghttp2"
   depends_on "libuv"
   depends_on "lmdb"
-  depends_on "nettle" => :recommended
-  depends_on "hiredis" => :optional
-  depends_on "libmemcached" => :optional
+  depends_on "luajit-openresty"
+
+  on_linux do
+    depends_on "libcap-ng"
+    depends_on "systemd"
+  end
 
   def install
-    # Since we don't run `make install` or `make etc-install`, we need to
-    # install root.hints manually before running `make check`.
-    cp "etc/root.hints", buildpath
-    (etc/"kresd").install "root.hints"
+    args = std_meson_args + ["--default-library=static"]
+    args << "-Dsystemd_files=enabled" if OS.linux?
 
-    %w[all lib-install daemon-install client-install modules-install
-       check].each do |target|
-      system "make", target, "PREFIX=#{prefix}", "ETCDIR=#{etc}/kresd"
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
-
-    cp "etc/config.personal", "config"
-    inreplace "config", /^\s*user\(/, "-- user("
-    (etc/"kresd").install "config"
-
-    (etc/"kresd").install "etc/root.hints"
-
-    (buildpath/"root.keys").write(root_keys)
-    (var/"kresd").install "root.keys"
   end
 
-  # DNSSEC root anchor published by IANA (https://www.iana.org/dnssec/files)
-  def root_keys; <<~EOS
-    . IN DS 19036 8 2 49aac11d7b6f6446702e54a1607371607a1a41855200fd2ce1cdde32f24e8fb5
-    . IN DS 20326 8 2 e06d44b80b8f1d39a95c0b0d7c65d08458e880409bbc683457104237c7f8ec8d
-    EOS
+  def post_install
+    (var/"knot-resolver").mkpath
   end
 
-  plist_options :startup => true
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>WorkingDirectory</key>
-      <string>#{var}/kresd</string>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{sbin}/kresd</string>
-        <string>-c</string>
-        <string>#{etc}/kresd/config</string>
-      </array>
-      <key>StandardInPath</key>
-      <string>/dev/null</string>
-      <key>StandardOutPath</key>
-      <string>/dev/null</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/log/kresd.log</string>
-    </dict>
-    </plist>
-    EOS
+  plist_options startup: true
+  service do
+    run [opt_sbin/"kresd", "-c", etc/"knot-resolver/kresd.conf", "-n"]
+    working_dir var/"knot-resolver"
+    input_path "/dev/null"
+    log_path "/dev/null"
+    error_log_path var/"log/knot-resolver.log"
   end
 
   test do
+    assert_path_exists var/"knot-resolver"
     system sbin/"kresd", "--version"
   end
 end

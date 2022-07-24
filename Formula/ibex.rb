@@ -1,51 +1,42 @@
 class Ibex < Formula
   desc "C++ library for constraint processing over real numbers"
-  homepage "http://www.ibex-lib.org/"
-  url "https://github.com/ibex-team/ibex-lib/archive/ibex-2.6.5.tar.gz"
-  sha256 "667b1f57a4c83fbef915ad13e8d0a5847b4cc4df42810330da758bd9ca637ad7"
-  head "https://github.com/ibex-team/ibex-lib.git"
+  homepage "https://web.archive.org/web/20190826220512/www.ibex-lib.org/"
+  url "https://github.com/ibex-team/ibex-lib/archive/ibex-2.8.9.tar.gz"
+  sha256 "fee448b3fa3929a50d36231ff2f14e5480a0b82506594861536e3905801a6571"
+  license "LGPL-3.0-only"
+  head "https://github.com/ibex-team/ibex-lib.git", branch: "master"
 
-  bottle do
-    cellar :any
-    sha256 "9df6236bb522c74caf3cbde0eaf19465e2a3674588282982348b628322ca097a" => :high_sierra
-    sha256 "4b835a404ec50199fccc22c9248bccbf235d63a8f0736dad5b95df8babdea2cc" => :sierra
-    sha256 "8f4d1957bbe546215cf3d328ce06ae6aae6657c764ca2658895654358596f256" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/^ibex[._-]v?(\d+(?:\.\d+)+)$/i)
   end
 
-  option "with-java", "Enable Java bindings for CHOCO solver."
-  option "with-ampl", "Use AMPL file loader plugin"
+  bottle do
+    sha256 cellar: :any_skip_relocation, monterey:     "5c659f26d051f9c2e25308976051cff13d3c99a5ff579116ece615f0172d1705"
+    sha256 cellar: :any_skip_relocation, big_sur:      "2fe73bcec8be89daf46ad449cced7ea3d5584d1eb8138343359fc0898e3ec826"
+    sha256 cellar: :any_skip_relocation, catalina:     "838265b9b44453641e3cbc39dbbb8903666ba3413ef8c7dc68af69f9759f4351"
+    sha256 cellar: :any_skip_relocation, mojave:       "91e091b03e482a8bae5248a435a8e827c79923aaee9f98f99d33254e176560d2"
+    sha256 cellar: :any_skip_relocation, high_sierra:  "bb10a673525d7145196f523190401c2aa42345b5035ed2bcf261081e3653638f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "396eb36d7b67037bd599525a5d591576dd25785076d6f117550c1885d2c81258"
+  end
 
-  depends_on :java => ["1.8+", :optional]
   depends_on "bison" => :build
+  depends_on "cmake" => :build
   depends_on "flex" => :build
-  depends_on "pkg-config" => :build
+  depends_on "pkg-config" => [:build, :test]
 
-  needs :cxx11
+  uses_from_macos "zlib"
 
   def install
     ENV.cxx11
 
-    # Reported 9 Oct 2017 https://github.com/ibex-team/ibex-lib/issues/286
-    ENV.deparallelize
-
-    if build.with?("java") && build.with?("ampl")
-      odie "Cannot set options --with-java and --with-ampl simultaneously for now."
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args.reject { |s| s["CMAKE_INSTALL_LIBDIR"] }
+      system "make", "SHARED=true"
+      system "make", "install"
     end
 
-    args = %W[
-      --prefix=#{prefix}
-      --enable-shared
-      --with-optim
-      --lp-lib=soplex
-    ]
-
-    args << "--with-jni" if build.with? "java"
-    args << "--with-ampl" if build.with? "ampl"
-
-    system "./waf", "configure", *args
-    system "./waf", "install"
-
-    pkgshare.install %w[examples plugins/solver/benchs]
+    pkgshare.install %w[examples benchs/solver]
     (pkgshare/"examples/symb01.txt").write <<~EOS
       function f(x)
         return ((2*x,-x);(-x,3*x));
@@ -54,15 +45,9 @@ class Ibex < Formula
   end
 
   test do
-    cp_r (pkgshare/"examples").children, testpath
+    ENV.cxx11
 
-    # so that pkg-config can remain a build-time only dependency
-    inreplace %w[makefile slam/makefile] do |s|
-      s.gsub! /CXXFLAGS.*pkg-config --cflags ibex./,
-              "CXXFLAGS := -I#{include} -I#{include}/ibex "\
-                          "-I#{include}/ibex/3rd"
-      s.gsub! /LIBS.*pkg-config --libs  ibex./, "LIBS := -L#{lib} -libex"
-    end
+    cp_r (pkgshare/"examples").children, testpath
 
     (1..8).each do |n|
       system "make", "lab#{n}"

@@ -3,29 +3,39 @@ class Huexpress < Formula
   homepage "https://github.com/kallisti5/huexpress"
   url "https://github.com/kallisti5/huexpress/archive/3.0.4.tar.gz"
   sha256 "76589f02d1640fc5063d48a47f017077c6b7557431221defe9e38679d86d4db8"
-  revision 1
-  head "https://github.com/kallisti5/huexpress.git"
+  license "GPL-2.0"
+  revision 2
+  head "https://github.com/kallisti5/huexpress.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "82e99480094c372b83088649696ee110b20b1f71c11d08f45125c03a7de28a17" => :high_sierra
-    sha256 "0f2ad080284a6cf9076293a4f1f7afa7ca6461f9cb215d618a56a8f9101c2a2e" => :sierra
-    sha256 "61d7da52fc3ad3e4a83b57e81dc66233a211bd7a850008ac2c7c3226d75b7071" => :el_capitan
+    sha256 cellar: :any, arm64_monterey: "a0919bd5024f7f197c262f0ba1dd5c57871506308bd7a4bfd98b5f18f04dbb50"
+    sha256 cellar: :any, arm64_big_sur:  "2709e20246d6ab1a14329ccc842e49eefd9276c6b1e3ef90bcadc85c2213a394"
+    sha256 cellar: :any, monterey:       "5c02e7de59a65392f1347c65df445e2d447daaac2eb508c920f8ce452628dbd5"
+    sha256 cellar: :any, big_sur:        "37272d08ed74984450ae2f08e17e9b41fdf32cc487aee1c0ab0832c10177474a"
+    sha256 cellar: :any, catalina:       "9e714566437e60a45c978daeade8dbb3515ee37c5d2b6de1a203443f243917d8"
+    sha256               x86_64_linux:   "8f5ca6b63b8fc347e8221765dc09ac1000f4b6a62e53424fb578bb14103c8952"
   end
 
-  depends_on "scons" => :build
   depends_on "pkg-config" => :build
-  depends_on "sdl2"
-  depends_on "sdl2_mixer"
+  depends_on "scons" => :build
   depends_on "libvorbis"
   depends_on "libzip"
+  depends_on "sdl2"
+  depends_on "sdl2_mixer"
+
+  on_linux do
+    depends_on "mesa"
+    depends_on "mesa-glu"
+  end
 
   def install
-    scons
+    # Don't statically link to libzip.
+    inreplace "src/SConscript", "pkg-config --cflags --libs --static libzip", "pkg-config --cflags --libs libzip"
+    system "scons"
     bin.install ["src/huexpress", "src/hucrc"]
   end
 
   test do
-    assert_match /Version #{version}$/, shell_output("#{bin}/huexpress -h", 1)
+    assert_match(/Version #{version}$/, shell_output("#{bin}/huexpress -h", 1))
   end
 end

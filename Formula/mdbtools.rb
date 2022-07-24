@@ -1,41 +1,43 @@
 class Mdbtools < Formula
   desc "Tools to facilitate the use of Microsoft Access databases"
-  homepage "https://github.com/brianb/mdbtools/"
-  url "https://github.com/brianb/mdbtools/archive/0.7.1.tar.gz"
-  sha256 "dcf310dc7b07e7ad2f9f6be16047dc81312cfe1ab1bd94d0fa739c8059af0b16"
-  revision 1
+  homepage "https://github.com/mdbtools/mdbtools/"
+  url "https://github.com/mdbtools/mdbtools/releases/download/v1.0.0/mdbtools-1.0.0.tar.gz"
+  sha256 "3446e1d71abdeb98d41e252777e67e1909b186496fda59f98f67032f7fbcd955"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any
-    sha256 "240f62a34e523be1f0348b399660592c411437bec0de2655168bbc97713d3799" => :high_sierra
-    sha256 "e161be6807c2bda9ad9fd70549e3f94b5f953d5c8ef70a1261f6b09ec6ac9e45" => :sierra
-    sha256 "2cb35611ad74402c45bb691d5c37943552b7494ebcdfdc31fd3a68a16c2a2b0c" => :el_capitan
-    sha256 "7e43a2716347e3f89782134b53ca5bf240fd1ebd91025393737fc17b9e09aa21" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "c4502a9b481c4e40f0bc5c1767af43938cea64ea125a564dd1371e0cdad5729c"
+    sha256 cellar: :any,                 arm64_big_sur:  "1f808f4f3574633bb4d3176046a4b98dd0f673291db20ef5f34357f8e04aa3f1"
+    sha256 cellar: :any,                 monterey:       "b11d8015632397cfcc11ce21225d3f5d5001bcf64f55996c20713ac9ddc48c46"
+    sha256 cellar: :any,                 big_sur:        "705cecb093ad9dc51806e241b75389a4843b2ea57170a5653aa15face44323ba"
+    sha256 cellar: :any,                 catalina:       "472f8d9eb6f9608ef300715e1e7774625643c5433dfef4844eb8337c00a1cdfd"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "941c3eae4065118abd7bf72a1a42da8c33d7d1c706f655622254a8989e4e0468"
   end
 
-  option "with-man-pages", "Build manual pages"
-
-  depends_on "pkg-config" => :build
   depends_on "autoconf" => :build
   depends_on "automake" => :build
+  depends_on "bison" => :build
+  depends_on "gawk" => :build
   depends_on "libtool" => :build
-  depends_on "txt2man" => :build if build.with? "man-pages"
+  depends_on "pkg-config" => :build
+
   depends_on "glib"
   depends_on "readline"
 
   def install
-    ENV.deparallelize
-
-    args = ["--prefix=#{prefix}"]
-    args << "--disable-man" if build.without? "man-pages"
-
-    if MacOS.version == :snow_leopard
-      mkdir "build-aux"
-      touch "build-aux/config.rpath"
-    end
-
-    system "autoreconf", "-i", "-f"
-    system "./configure", *args
+    system "autoreconf", "-fvi"
+    system "./configure", "--prefix=#{prefix}",
+                          "--enable-man"
     system "make", "install"
+  end
+
+  test do
+    output = shell_output("#{bin}/mdb-schema --drop-table test 2>&1", 1)
+
+    expected_output = <<~EOS
+      File not found
+      Could not open file
+    EOS
+    assert_match expected_output, output
   end
 end

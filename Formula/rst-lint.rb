@@ -3,21 +3,24 @@ class RstLint < Formula
 
   desc "ReStructuredText linter"
   homepage "https://github.com/twolfson/restructuredtext-lint"
-  url "https://github.com/twolfson/restructuredtext-lint/archive/1.1.3.tar.gz"
-  sha256 "eb75dda827c656a33be6e60f18b3943c4dd4252205e557ec95d1cf44df8e3a35"
+  url "https://files.pythonhosted.org/packages/48/9c/6d8035cafa2d2d314f34e6cd9313a299de095b26e96f1c7312878f988eec/restructuredtext_lint-1.4.0.tar.gz"
+  sha256 "1b235c0c922341ab6c530390892eb9e92f90b9b75046063e047cacfb0f050c45"
+  license "Unlicense"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "098a3b74c65c030729fad809210f1e31d96a2295610376989134be981f4fcc30" => :high_sierra
-    sha256 "d6edae2002e2df530bd14e8cb27eb6dce1a29fe15b5ec614d9c3b7610fe00d96" => :sierra
-    sha256 "aebb1a098a77f6e9477c5f426b363895d2f0cc77c46a3d84c871a9fab2f08d54" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "beb5f0802720f3e66b214d3e5fb1e241c88cf49b854536dba364010560f371fc"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "beb5f0802720f3e66b214d3e5fb1e241c88cf49b854536dba364010560f371fc"
+    sha256 cellar: :any_skip_relocation, monterey:       "47eabdd2dd739cc65455fda75be0a11e563758e1f2c557b3b6e959a6fef84ac2"
+    sha256 cellar: :any_skip_relocation, big_sur:        "47eabdd2dd739cc65455fda75be0a11e563758e1f2c557b3b6e959a6fef84ac2"
+    sha256 cellar: :any_skip_relocation, catalina:       "47eabdd2dd739cc65455fda75be0a11e563758e1f2c557b3b6e959a6fef84ac2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7467b4f1729ea1b4c16306bcfe6dcb8e7668ef15537e5aaf4a85b87d6e20dc97"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
 
   resource "docutils" do
-    url "https://files.pythonhosted.org/packages/84/f4/5771e41fdf52aabebbadecc9381d11dea0fa34e4759b4071244fa094804c/docutils-0.14.tar.gz"
-    sha256 "51e64ef2ebfb29cae1faa133b3710143496eca21c530f3f71424d77687764274"
+    url "https://files.pythonhosted.org/packages/57/b1/b880503681ea1b64df05106fc7e3c4e3801736cf63deffc6fa7fc5404cf5/docutils-0.18.1.tar.gz"
+    sha256 "679987caf361a7539d76e584cbeddc311e3aee937877c87346f31debc63e9d06"
   end
 
   def install

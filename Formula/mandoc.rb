@@ -1,19 +1,27 @@
 class Mandoc < Formula
-  desc "The mandoc UNIX manpage compiler toolset"
+  desc "UNIX manpage compiler toolset"
   homepage "https://mandoc.bsd.lv/"
-  url "https://mandoc.bsd.lv/snapshots/mandoc-1.14.3.tar.gz"
-  sha256 "0b0c8f67958c1569ead4b690680c337984b879dfd2ad4648d96924332fd99528"
+  url "https://mandoc.bsd.lv/snapshots/mandoc-1.14.6.tar.gz"
+  sha256 "8bf0d570f01e70a6e124884088870cbed7537f36328d512909eb10cd53179d9c"
+  license "ISC"
+  revision 1
+  head "anoncvs@mandoc.bsd.lv:/cvs", using: :cvs
 
-  head "anoncvs@mandoc.bsd.lv:/cvs", :using => :cvs
-
-  bottle do
-    sha256 "c16d34b3c6c0e22ede164139f6fdb0268a440e39ca94ce791d5f580b4c2c01f1" => :high_sierra
-    sha256 "59709d56bff5dedfe3f544b4da3d6791f32dbf4e4299a242719b39a21dc0c050" => :sierra
-    sha256 "2e23fd7255dc440233289f138edc9dada06eab91ff3570329fa5ebce425f5714" => :el_capitan
-    sha256 "dd4131a36901d8650f896c90bd6e9cc08bfe6d146db5c7461e63e0e6e2b3d49a" => :yosemite
+  livecheck do
+    url "https://mandoc.bsd.lv/snapshots/"
+    regex(/href=.*?mandoc[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "without-cgi", "Don't build man.cgi (and extra CSS files)."
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "86fc7de6ddf02952dd6615916d2a787d0e87954337d7b214c760f3871575a771"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "1a009788bd3b10af69f0563904143dda9a41f0872514ac7e64e8a08a46fcf5fb"
+    sha256 cellar: :any_skip_relocation, monterey:       "6e8f22f43770525c78280535cf293a4500eba441baab688dbe04e4c872a505a7"
+    sha256 cellar: :any_skip_relocation, big_sur:        "a4f63ae6f10fe8912986b92fecc22f7421ed0bad4495811f6159b895d5b42f6d"
+    sha256 cellar: :any_skip_relocation, catalina:       "0190c6cc439cedfb1eb83d60b5be68974e12b993bafc87387ced2b948b526a2c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "048e9149279a52292a203c6e6b4fd688b7b32501b8e05d806a5708587526a83c"
+  end
+
+  uses_from_macos "zlib"
 
   def install
     localconfig = [
@@ -33,7 +41,8 @@ class Mandoc < Formula
       "BINM_MAN=bsdman",
       "BINM_APROPOS=bsdapropos",
       "BINM_WHATIS=bsdwhatis",
-      "BINM_MAKEWHATIS=bsdmakewhatis",	# default is "makewhatis".
+      "BINM_MAKEWHATIS=bsdmakewhatis", # default is "makewhatis".
+      "BINM_SOELIM=bsdsoelim", # conflicts with groff's soelim
 
       # These are names for *section 7* pages only. Several other pages are
       # prefixed "mandoc_", similar to the "groff_" pages.
@@ -52,11 +61,11 @@ class Mandoc < Formula
       "HAVE_MANPATH=0",   # Our `manpath` is a symlink to system `man`.
       "STATIC=",          # No static linking on Darwin.
 
-      "HOMEBREWDIR=#{HOMEBREW_CELLAR}" # ? See configure.local.example, NEWS.
+      "HOMEBREWDIR=#{HOMEBREW_CELLAR}", # ? See configure.local.example, NEWS.
+      "BUILD_CGI=1",
     ]
 
-    localconfig << "BUILD_CGI=1" if build.with? "cgi"
-    File.rename("cgi.h.example", "cgi.h") # For man.cgi, harmless in any case.
+    File.rename("cgi.h.example", "cgi.h") # For man.cgi
 
     (buildpath/"configure.local").write localconfig.join("\n")
     system "./configure"

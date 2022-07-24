@@ -1,19 +1,21 @@
 class Basex < Formula
   desc "Light-weight XML database and XPath/XQuery processor"
-  homepage "http://basex.org"
-  url "http://files.basex.org/releases/8.6.7/BaseX867.zip"
-  version "8.6.7"
-  sha256 "60faecf417f1607780a70a237138a2f839f2218d2d7bee20fa30b7738245a244"
+  homepage "https://basex.org"
+  url "https://files.basex.org/releases/9.7.3/BaseX973.zip"
+  version "9.7.3"
+  sha256 "ca6ba2b534283dd9b9646bba87c51662229b5101d4cf6afa07c5a62641df60e3"
+  license "BSD-3-Clause"
 
-  devel do
-    url "http://files.basex.org/releases/latest/BaseX90-20180220.145902.zip"
-    version "9.0-rc20180220.145902"
-    sha256 "c7bb2737997cc4afa8e95d87702a51e65c562a410c264125b1b5aaa9bca6e5b0"
+  livecheck do
+    url "https://files.basex.org/releases/"
+    regex(%r{href=.*?v?(\d+(?:\.\d+)+)/?["' >]}i)
   end
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "c55e83d512b10988e269a8b6d6fd8bfe97e9aea4ba3f269a7ab47ec4c9075393"
+  end
 
-  depends_on :java => "1.7+"
+  depends_on "openjdk"
 
   def install
     rm Dir["bin/*.bat"]
@@ -22,7 +24,8 @@ class Basex < Formula
     rm_rf "etc"
     prefix.install_metafiles
     libexec.install Dir["*"]
-    bin.install_symlink Dir["#{libexec}/bin/*"]
+    bin.install Dir["#{libexec}/bin/*"]
+    bin.env_script_all_files libexec/"bin", JAVA_HOME: Formula["openjdk"].opt_prefix
   end
 
   test do

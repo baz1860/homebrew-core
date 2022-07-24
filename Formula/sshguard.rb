@@ -1,15 +1,20 @@
 class Sshguard < Formula
   desc "Protect from brute force attacks against SSH"
   homepage "https://www.sshguard.net/"
-  url "https://downloads.sourceforge.net/project/sshguard/sshguard/2.1.0/sshguard-2.1.0.tar.gz"
-  sha256 "21252a4834ad8408df384ee4ddf468624aa9de9cead5afde1c77380a48cf028a"
+  url "https://downloads.sourceforge.net/project/sshguard/sshguard/2.4.2/sshguard-2.4.2.tar.gz"
+  sha256 "2770b776e5ea70a9bedfec4fd84d57400afa927f0f7522870d2dcbbe1ace37e8"
+  license "ISC"
   version_scheme 1
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "eb13c51b65f9007163ade54a5f01699da82b4ba3c225af30a57ed05593bfe60e" => :high_sierra
-    sha256 "63b4d94b319432258792e9d00a0474c11c1bc37fe19deee1c7ee62f2980c982d" => :sierra
-    sha256 "4231ea2fbff92a76b72e8f3707e4600451e9315740cd5864c54641dc8bd75857" => :el_capitan
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "432b5c348a85223ac41b4ff38a1416847227c74e3372ddb1aeb1575612421dbb"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "9d878d2defd31509f5248eb407a15b358e1b5e78e317cb4ecb58ea971eb0e21f"
+    sha256 cellar: :any_skip_relocation, monterey:       "223206d74a0c9637ef21524dd7031262fad932ec9edd60996cf88272eff27e19"
+    sha256 cellar: :any_skip_relocation, big_sur:        "fbd36be947e48cf8617b3889334ac8c0941b51e03b4c5193027791a727588999"
+    sha256 cellar: :any_skip_relocation, catalina:       "02f3958ed46f151af475f82d9056fd4ba2d7cc6992f95d5ee35351ec0091256e"
+    sha256 cellar: :any_skip_relocation, mojave:         "ceeba24a2d30a5832d77dcdac07234d693294053198efefc220125b14082c0ff"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "97303dd520d97f9dc3f9e66462093c982663df097e0665c9cba4bbdb9e3eefc6"
   end
 
   head do
@@ -30,27 +35,18 @@ class Sshguard < Formula
     inreplace man8/"sshguard.8", "%PREFIX%/etc/", "#{etc}/"
     cp "examples/sshguard.conf.sample", "examples/sshguard.conf"
     inreplace "examples/sshguard.conf" do |s|
-      s.gsub! /^#BACKEND=.*$/, "BACKEND=\"#{opt_libexec}/sshg-fw-#{firewall}\""
+      s.gsub!(/^#BACKEND=.*$/, "BACKEND=\"#{opt_libexec}/sshg-fw-pf\"")
       if MacOS.version >= :sierra
         s.gsub! %r{^#LOGREADER="/usr/bin/log}, "LOGREADER=\"/usr/bin/log"
-        s.gsub! %q{\"sshd\")'"}, %q{"sshd")'"}
       else
-        s.gsub! /^#FILES.*$/, "FILES=#{log_path}"
+        s.gsub!(/^#FILES.*$/, "FILES=/var/log/system.log")
       end
     end
     etc.install "examples/sshguard.conf"
   end
 
-  def firewall
-    (MacOS.version >= :lion) ? "pf" : "ipfw"
-  end
-
-  def log_path
-    (MacOS.version >= :lion) ? "/var/log/system.log" : "/var/log/secure.log"
-  end
-
   def caveats
-    if MacOS.version >= :lion then <<~EOS
+    <<~EOS
       Add the following lines to /etc/pf.conf to block entries in the sshguard
       table (replace $ext_if with your WAN interface):
 
@@ -58,40 +54,23 @@ class Sshguard < Formula
         block in quick on $ext_if proto tcp from <sshguard> to any port 22 label "ssh bruteforce"
 
       Then run sudo pfctl -f /etc/pf.conf to reload the rules.
-      EOS
-    end
+    EOS
   end
 
-  plist_options :startup => true
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>KeepAlive</key>
-      <true/>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_sbin}/sshguard</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-    </dict>
-    </plist>
-    EOS
+  plist_options startup: true
+  service do
+    run [opt_sbin/"sshguard"]
+    keep_alive true
   end
 
   test do
     require "pty"
     PTY.spawn(sbin/"sshguard", "-v") do |r, _w, pid|
-      begin
-        assert_equal "SSHGuard #{version}", r.read.strip
-      ensure
-        Process.wait pid
-      end
+      assert_equal "SSHGuard #{version}", r.read.strip
+    rescue Errno::EIO
+      nil
+    ensure
+      Process.wait pid
     end
   end
 end

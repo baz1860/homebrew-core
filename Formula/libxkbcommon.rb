@@ -1,33 +1,46 @@
 class Libxkbcommon < Formula
   desc "Keyboard handling library"
   homepage "https://xkbcommon.org/"
-  url "https://xkbcommon.org/download/libxkbcommon-0.8.0.tar.xz"
-  sha256 "e829265db04e0aebfb0591b6dc3377b64599558167846c3f5ee5c5e53641fe6d"
+  url "https://xkbcommon.org/download/libxkbcommon-1.4.1.tar.xz"
+  sha256 "943c07a1e2198026d8102b17270a1f406e4d3d6bbc4ae105b9e1b82d7d136b39"
+  license "MIT"
+  head "https://github.com/xkbcommon/libxkbcommon.git", branch: "master"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?libxkbcommon[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "7428e9599baa3dfca4a9c181c4d3a2ab934f37987aaad270c8a6fc3921da2c41" => :high_sierra
-    sha256 "62e85d6d91d4f603d0ab2796904f07a754a782f6a0f23f424810a08b5deff347" => :sierra
-    sha256 "32ee1c478aa17d7120d86370fd619de9b9ac39671d45d77a7a31ac550b0453d4" => :el_capitan
+    sha256 arm64_monterey: "8f11c9d436064406b0c4cc5e8bc273561993433ebb64761bd9dea036b0ffd159"
+    sha256 arm64_big_sur:  "e6a0c1aee452be0f17cd42f440daa9a5fa81cca5e1f07136de35480202755770"
+    sha256 monterey:       "d3f1e8583b9a4519c4e0a166f7da02f768362059e1baa6ea4921028d40b1a2b0"
+    sha256 big_sur:        "d085ec9717e7916089651d269602858839f15a7a284d59f880a3b116db2aa491"
+    sha256 catalina:       "bfb9c00bd0398afa355e9c5b22799e9bf19f08f51b4f739b008067c660c9212c"
+    sha256 x86_64_linux:   "11a40e4268f7366aaf314e3a1aead9860331a4ebd50667f40b442ea159071849"
   end
 
-  head do
-    url "https://github.com/xkbcommon/libxkbcommon.git"
-
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-  end
-
-  depends_on :x11
   depends_on "bison" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "libx11"
+  depends_on "libxcb"
+  depends_on "xkeyboardconfig"
+
+  uses_from_macos "libxml2"
 
   def install
-    system "./autogen.sh" if build.head?
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    args = %W[
+      -Denable-wayland=false
+      -Denable-docs=false
+      -Dxkb-config-root=#{HOMEBREW_PREFIX}/share/X11/xkb
+      -Dx-locale-root=#{HOMEBREW_PREFIX}/share/X11/locale
+    ]
+    mkdir "build" do
+      system "meson", *std_meson_args, *args, ".."
+      system "ninja", "install", "-v"
+    end
   end
 
   test do

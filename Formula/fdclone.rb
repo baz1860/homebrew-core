@@ -1,16 +1,28 @@
 class Fdclone < Formula
   desc "Console-based file manager"
   homepage "https://hp.vector.co.jp/authors/VA012337/soft/fd/"
-  url "http://www.unixusers.net/src/fdclone/FD-3.01d.tar.gz"
-  sha256 "aa33c09d2e51c486fb428e3a17c31a1db0acc3b04083b84c4f9e6259c7ffb6da"
+  url "http://www.unixusers.net/src/fdclone/FD-3.01j.tar.gz"
+  sha256 "fe5bb67eb670dcdb1f7368698641c928523e2269b9bee3d13b3b77565d22a121"
+
+  livecheck do
+    url :homepage
+    regex(%r{href=.*?\./FD[._-]v?(\d+(?:\.\d+)+[a-z]?)\.t}i)
+  end
 
   bottle do
-    sha256 "fed1c932c964bab60d0179312e39daa56b0b6c3b80f957045c81cf9179e42412" => :high_sierra
-    sha256 "1ce21a7ddf48c3ca2aef2e717c464c3c8f3741c5d6c8e75a1cb0107e48a7ceac" => :sierra
-    sha256 "ed10a0556157aa545c7e01957bd6bd3c4c73370db4ca12ad99a053dce19055b8" => :el_capitan
+    sha256 arm64_monterey: "770b2d767ccfa06c3fe7a4066b59a9e067b27a2f719bac604a1588c7ec57c134"
+    sha256 arm64_big_sur:  "e4346ef1c465a9753d44998015f004ef76d49f35b57e224c4c74da48fa00a226"
+    sha256 monterey:       "6468c945d2556066eab41175891ea46918c319398a2f10767a0af4d4dc698c9f"
+    sha256 big_sur:        "c1c2dcd4d0e97e717dd9444c9ac8b37d77810c8162a481106d68be3c54f999a9"
+    sha256 catalina:       "6272d033132a7a2c355ab19629241021087c606de3114e2ebe4aa301e6bee840"
+    sha256 mojave:         "b3a56f6b62622696f4da6554a487557a57c0875c2aba28705e300b7207f6a8ce"
+    sha256 high_sierra:    "f894bed33d254c5c48341485e835f945b60e632a0ecbf484c818f12c61350122"
+    sha256 x86_64_linux:   "b7a4047ede40d7981d2496e42cf32f2886a9bb182a2275f4697b70f20ec5f7f3"
   end
 
   depends_on "nkf" => :build
+
+  uses_from_macos "ncurses"
 
   patch do
     url "https://raw.githubusercontent.com/Homebrew/formula-patches/86107cf/fdclone/3.01b.patch"
@@ -28,14 +40,15 @@ class Fdclone < Formula
       prefix.install file => "#{file}.ja"
     end
 
-    share.install "_fdrc" => "fd2rc.dist"
+    pkgshare.install "_fdrc" => "fd2rc.dist"
   end
 
-  def caveats; <<~EOS
-    To install the initial config file:
-        install -c -m 0644 #{share}/fd2rc.dist ~/.fd2rc
-    To set application messages to Japanese, edit your .fd2rc:
-        MESSAGELANG="ja"
+  def caveats
+    <<~EOS
+      To install the initial config file:
+          install -c -m 0644 #{opt_pkgshare}/fd2rc.dist ~/.fd2rc
+      To set application messages to Japanese, edit your .fd2rc:
+          MESSAGELANG="ja"
     EOS
   end
 end

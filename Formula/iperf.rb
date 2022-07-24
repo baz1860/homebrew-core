@@ -1,40 +1,35 @@
 class Iperf < Formula
   desc "Tool to measure maximum TCP and UDP bandwidth"
-  homepage "https://iperf.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/iperf/iperf-2.0.5.tar.gz"
-  sha256 "636b4eff0431cea80667ea85a67ce4c68698760a9837e1e9d13096d20362265b"
+  homepage "https://sourceforge.net/projects/iperf2/"
+  url "https://downloads.sourceforge.net/project/iperf2/iperf-2.1.7.tar.gz"
+  sha256 "1aba2e1d7aa43641ef841951ed88e16cffba898460e0c51e6b2806f3ff20e9d4"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/iperf[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "9514790acbb2b5821b9773e5a719178eb4d11db158deb1857a68d72e0b9eb6ae" => :high_sierra
-    sha256 "441219fd5a227aa8df41c61067d9ae20bb268c48bbdcdad5bce8deb5f32a45fe" => :sierra
-    sha256 "4fabcfbc462ea67189847e6faba598a5952bd155e292696cfd39f4d709f926a2" => :el_capitan
-    sha256 "37e46ed0ee35a3f0957d847ce4afc871c352108279f8c001c7879282a8706495" => :yosemite
-    sha256 "67d2c2cef38fc34704f379a0dcf7d32d0b1bd5d30cd44f0533a6bd55f275bb8a" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "1515e76ee5871013496697add5d40ee8b080083cbf021f77be6f205738b095a2"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "40befdbb1c830f1968b956c57ea6fa1ad2583cf2ba3b9504663da6ad1a5e43e6"
+    sha256 cellar: :any_skip_relocation, monterey:       "770cfb03124e6b4f9e12c30e593ffed8fa3b0b80e76893455256d863d255e417"
+    sha256 cellar: :any_skip_relocation, big_sur:        "963cd5836ada12db6f996d21a74662de33a978855fa02a017b129740dd222942"
+    sha256 cellar: :any_skip_relocation, catalina:       "3dcfebdc27fd6572518154f7ce55243f7f6b40cb1b4d89785e0606496eb6ad0d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b943de1f9fef01d95fe3ca2458898d0277777f8683f1e5d3ac43f70bf8ce113d"
   end
 
   def install
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
-
-    # Otherwise this definition confuses system headers on 10.13
-    # https://github.com/Homebrew/homebrew-core/issues/14418#issuecomment-324082915
-    if MacOS.version >= :high_sierra
-      inreplace "config.h", "#define bool int", ""
-    end
-
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
     system "make", "install"
   end
 
   test do
-    begin
-      server = IO.popen("#{bin}/iperf --server")
-      sleep 1
-      assert_match "Bandwidth", pipe_output("#{bin}/iperf --client 127.0.0.1 --time 1")
-    ensure
-      Process.kill("SIGINT", server.pid)
-      Process.wait(server.pid)
-    end
+    server = IO.popen("#{bin}/iperf --server")
+    sleep 1
+    assert_match "Bandwidth", pipe_output("#{bin}/iperf --client 127.0.0.1 --time 1")
+  ensure
+    Process.kill("SIGINT", server.pid)
+    Process.wait(server.pid)
   end
 end

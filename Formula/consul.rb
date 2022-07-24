@@ -1,131 +1,63 @@
-require "language/go"
-
 class Consul < Formula
   desc "Tool for service discovery, monitoring and configuration"
   homepage "https://www.consul.io"
-  url "https://github.com/hashicorp/consul.git",
-      :tag => "v1.0.6",
-      :revision => "9a494b5fb9c86180a5702e29c485df1507a47198"
+  url "https://github.com/hashicorp/consul/archive/refs/tags/v1.12.3.tar.gz"
+  sha256 "163d0d072704ba47f1448fb6be5739db9a684b04ad95ca977bf9adfdf89e91cf"
+  license "MPL-2.0"
+  head "https://github.com/hashicorp/consul.git", branch: "main"
 
-  head "https://github.com/hashicorp/consul.git",
-       :shallow => false
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "af238993eee220ad707c6b1ceb0a907961394ff6a16d479f2db5a4f9bb2f4f6e" => :high_sierra
-    sha256 "5cb23f5729072d31d727e6659b5bd622fb1dd978c729c74fe902312866d33638" => :sierra
-    sha256 "30aa2a7dd3a0d57d174e6d2e45b73d0bd7d1528b1a9b41868f18bc75567e02b1" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a82670a1547e88e086841403e9f930856578f708f9975160d19043b44be429e3"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "aef6ccd8ce980d040af1caf7fa6cc68a3060403f5131431416b7390b25ca4735"
+    sha256 cellar: :any_skip_relocation, monterey:       "d508825362eb59a5c8a10f5eced631af81391e30668c2d5e9da1d8353c8cd2a7"
+    sha256 cellar: :any_skip_relocation, big_sur:        "711d2ab076800b46c604070f206edd5c0f2386132da4134d0b8a6a4d837d3709"
+    sha256 cellar: :any_skip_relocation, catalina:       "101f471299bfa5d7bfd0ed6718aec2ecb0a330b06d93a93d35c0c6b6ef3ab51d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a9e74b2679d21e20b61e1b864c31d6cc966da0ebe2325e9efcac80e32295d611"
   end
 
   depends_on "go" => :build
-  depends_on "gox" => :build
-
-  go_resource "github.com/axw/gocov" do
-    url "https://github.com/axw/gocov.git",
-        :revision => "3a69a0d2a4ef1f263e2d92b041a69593d6964fe8"
-  end
-
-  go_resource "github.com/elazarl/go-bindata-assetfs" do
-    url "https://github.com/elazarl/go-bindata-assetfs.git",
-        :revision => "30f82fa23fd844bd5bb1e5f216db87fd77b5eb43"
-  end
-
-  go_resource "github.com/hashicorp/go-bindata" do
-    url "https://github.com/hashicorp/go-bindata.git",
-        :revision => "bf7910af899725e4938903fb32048c7c0b15f12e"
-  end
-
-  go_resource "github.com/magiconair/vendorfmt" do
-    url "https://github.com/magiconair/vendorfmt.git",
-        :revision => "0fde667441ebc14dbd64a1de758ab656b78c607b"
-  end
-
-  go_resource "github.com/matm/gocov-html" do
-    url "https://github.com/matm/gocov-html.git",
-        :revision => "f6dd0fd0ebc7c8cff8b24c0a585caeef250627a3"
-  end
-
-  go_resource "golang.org/x/tools" do
-    url "https://go.googlesource.com/tools.git",
-        :branch => "release-branch.go1.9"
-  end
 
   def install
-    # Avoid running `go get`
-    inreplace "GNUmakefile", "go get -u -v $(GOTOOLS)", ""
-
-    ENV["XC_OS"] = "darwin"
-    ENV["XC_ARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
-    ENV["GOPATH"] = buildpath
-    contents = Dir["{*,.git,.gitignore}"]
-    (buildpath/"src/github.com/hashicorp/consul").install contents
-
-    ENV.prepend_create_path "PATH", buildpath/"bin"
-    Language::Go.stage_deps resources, buildpath/"src"
-
-    build_tools = [
-      "github.com/axw/gocov/gocov",
-      "github.com/elazarl/go-bindata-assetfs/go-bindata-assetfs",
-      "github.com/hashicorp/go-bindata/go-bindata",
-      "github.com/magiconair/vendorfmt/cmd/vendorfmt",
-      "github.com/matm/gocov-html",
-      "golang.org/x/tools/cmd/cover",
-      "golang.org/x/tools/cmd/stringer",
-    ]
-
-    build_tools.each do |tool|
-      cd "src/#{tool}" do
-        system "go", "install"
-      end
-    end
-
-    cd "src/github.com/hashicorp/consul" do
-      system "make"
-      bin.install "bin/consul"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args(ldflags: "-s -w")
   end
 
-  plist_options :manual => "consul agent -dev -advertise 127.0.0.1"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>KeepAlive</key>
-        <dict>
-          <key>SuccessfulExit</key>
-          <false/>
-        </dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/consul</string>
-          <string>agent</string>
-          <string>-dev</string>
-          <string>-advertise</string>
-          <string>127.0.0.1</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>#{var}</string>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/consul.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/consul.log</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"consul", "agent", "-dev", "-bind", "127.0.0.1"]
+    keep_alive true
+    error_log_path var/"log/consul.log"
+    log_path var/"log/consul.log"
+    working_dir var
   end
 
   test do
+    http_port = free_port
     fork do
-      exec "#{bin}/consul", "agent", "-data-dir", "."
+      # most ports must be free, but are irrelevant to this test
+      system(
+        bin/"consul",
+        "agent",
+        "-dev",
+        "-bind", "127.0.0.1",
+        "-dns-port", "-1",
+        "-grpc-port", "-1",
+        "-http-port", http_port,
+        "-serf-lan-port", free_port,
+        "-serf-wan-port", free_port,
+        "-server-port", free_port
+      )
     end
+
+    # wait for startup
     sleep 3
-    system "#{bin}/consul", "leave"
+
+    k = "brew-formula-test"
+    v = "value"
+    system bin/"consul", "kv", "put", "-http-addr", "127.0.0.1:#{http_port}", k, v
+    assert_equal v, shell_output(bin/"consul kv get -http-addr 127.0.0.1:#{http_port} #{k}").chomp
   end
 end

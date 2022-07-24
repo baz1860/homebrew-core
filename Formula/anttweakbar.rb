@@ -5,14 +5,24 @@ class Anttweakbar < Formula
   version "1.16"
   sha256 "fbceb719c13ceb13b9fd973840c2c950527b6e026f9a7a80968c14f76fcf6e7c"
 
+  livecheck do
+    skip "Not maintained"
+  end
+
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "393b87de789337afebed9196404af46fa660fea3b476d874d77b48bb35c8079b" => :high_sierra
-    sha256 "af510970b310b01ee52528e816cdd53e2d4a4e2cfc76e426b1710f758bc99d20" => :sierra
-    sha256 "417278abe012967efcf22b0276527187f6472dd5fd4d271b1ea32604816d46c9" => :el_capitan
-    sha256 "a2e29104a5ef51621faaebd72ccc39bd5fe7bd6e977af74a358c5cc83c65c2c2" => :yosemite
-    sha256 "d1298b92cf6a7498c3b357adf6e696d0b24374e758853783fa228a8af5eecddc" => :mavericks
+    rebuild 2
+    sha256 cellar: :any,                 arm64_monterey: "9178f704ca8362c50459ca7e1462af63992b98c3b60cada7dc7e319e69a4ba70"
+    sha256 cellar: :any,                 arm64_big_sur:  "75d39f323508a11e1ff67dac8692f37ebf3d64cba4e56b85ca75fa0f791064fb"
+    sha256 cellar: :any,                 monterey:       "3582f931cc81be3964818954bd10333d642445d4ac141bb862d1d41073192d9f"
+    sha256 cellar: :any,                 big_sur:        "eb3e1568d7e20aefcc105b35667a415f449246e8eb5cc1bc997110c7adf1aa0d"
+    sha256 cellar: :any,                 catalina:       "4987c69c018c37bb0165f080d36f785c5454818cc529583a53a03088615759fe"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ae09470f66b8f8d6d6aae8125cc871565ab2fe349d5fc293c8e5534f90b8d1fc"
+  end
+
+  on_linux do
+    depends_on "libxcursor"
+    depends_on "mesa"
+    depends_on "mesa-glu"
   end
 
   # See:
@@ -24,17 +34,21 @@ class Anttweakbar < Formula
   end
 
   def install
-    # Work around Xcode 9 error "no member named 'signbit' in the global
-    # namespace" and Xcode 8 issue on El Capitan "error: missing ',' between
-    # enumerators"
-    if DevelopmentTools.clang_build_version >= 900 ||
-       (MacOS.version == :el_capitan && MacOS::Xcode.installed? &&
-       MacOS::Xcode.version >= "8.0")
-      ENV.delete("SDKROOT")
-    end
-
-    system "make", "-C", "src", "-f", "Makefile.osx"
-    lib.install "lib/libAntTweakBar.dylib", "lib/libAntTweakBar.a"
+    makefile = OS.mac? ? "Makefile.osx" : "Makefile"
+    system "make", "-C", "src", "-f", makefile
+    lib.install shared_library("lib/libAntTweakBar"), "lib/libAntTweakBar.a"
     include.install "include/AntTweakBar.h"
+  end
+
+  test do
+    (testpath/"test.cpp").write <<~EOS
+      #include <AntTweakBar.h>
+      int main() {
+        TwBar *bar; // TwBar is an internal structure of AntTweakBar
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.cpp", "-L#{lib}", "-lAntTweakBar", "-o", "test"
+    system "./test"
   end
 end

@@ -3,70 +3,87 @@ class SvtplayDl < Formula
 
   desc "Download videos from https://www.svtplay.se/"
   homepage "https://svtplay-dl.se/"
-  url "https://files.pythonhosted.org/packages/47/d5/8153a3183b1e44df71696e851a13abfb40005088af13c1b3485a91bdd8a1/svtplay-dl-1.9.9.tar.gz"
-  sha256 "4a4ac9a8589a49dedaec125c67a045a27ccf89b88944bd73cd388c613d8ba83e"
-  revision 1
+  url "https://files.pythonhosted.org/packages/40/c0/7363733395c0a88af79ac1097ee2e5fc3d8f984eec2f04e6e539ffb68dff/svtplay-dl-4.13.tar.gz"
+  sha256 "4c0279aefed6d95048e7d01d23bea1c3e97986672ebd5330c061c52c94d1a95d"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "da37a86e0001d343ed3b91037f149843b32d5c0aa50e7225f6f8e1b239971a04" => :high_sierra
-    sha256 "cafa6a290edc23b77f1ad29869e9ab717db0a5bd9d2aa160c581deb23e74b9b4" => :sierra
-    sha256 "da2c64dec4771bd197e8887be39312a474457018b4d2ac05ea97dd05caf001e5" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "95256ef752c1a33ac6e0c6f6e21aaf8196f7e579ec5ea2ed707e4f9415671083"
+    sha256 cellar: :any,                 arm64_big_sur:  "a3335792655315cfc429e998da664e4c7ca6a8585f58f9edaf511704ee768bcc"
+    sha256 cellar: :any,                 monterey:       "74828fa81d98e0c48892041b6d790847a457d9e956716de7265655a0f3ff45cc"
+    sha256 cellar: :any,                 big_sur:        "9ea1c324d9a662f0569be90900ea6a0b709d5460a3a1b67da0fc50a0457c4b71"
+    sha256 cellar: :any,                 catalina:       "9b6551ae99affebdfe9edf7548989b193b1d31057785781be37ecd5babd316fd"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ca61af5e859ed520885094ca0257694b0bc5c545f6397efc4ca5d2b1b9c2c693"
   end
 
-  # The dependencies differ for Python <= 2.7.9.
-  # Mavericks ships Python 2.7.5; Yosemite, 2.7.10.
-  depends_on "python" if MacOS.version <= :mavericks
-
-  depends_on "rtmpdump"
-  depends_on "openssl"
+  depends_on "rust" => :build
+  depends_on "openssl@1.1"
+  depends_on "python@3.10"
 
   resource "certifi" do
-    url "https://files.pythonhosted.org/packages/15/d4/2f888fc463d516ff7bf2379a4e9a552fef7f22a94147655d9b1097108248/certifi-2018.1.18.tar.gz"
-    sha256 "edbc3f203427eef571f79a7692bb160a2b0f7ccaa31953e99bd17e307cf63f7d"
+    url "https://files.pythonhosted.org/packages/07/10/75277f313d13a2b74fc56e29239d5c840c2bf09f17bf25c02b35558812c6/certifi-2022.5.18.1.tar.gz"
+    sha256 "9c5705e395cd70084351dd8ad5c41e65655e08ce46f2ec9cf6c2c08390f71eb7"
   end
 
-  resource "chardet" do
-    url "https://files.pythonhosted.org/packages/fc/bb/a5768c230f9ddb03acc9ef3f0d4a3cf93462473795d18e9535498c8f929d/chardet-3.0.4.tar.gz"
-    sha256 "84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"
+  resource "cffi" do
+    url "https://files.pythonhosted.org/packages/00/9e/92de7e1217ccc3d5f352ba21e52398372525765b2e0c4530e6eb2ba9282a/cffi-1.15.0.tar.gz"
+    sha256 "920f0d66a896c2d99f0adbb391f990a84091179542c205fa53ce5787aff87954"
+  end
+
+  resource "charset-normalizer" do
+    url "https://files.pythonhosted.org/packages/56/31/7bcaf657fafb3c6db8c787a865434290b726653c912085fbd371e9b92e1c/charset-normalizer-2.0.12.tar.gz"
+    sha256 "2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597"
+  end
+
+  resource "cryptography" do
+    url "https://files.pythonhosted.org/packages/51/05/bb2b681f6a77276fc423d04187c39dafdb65b799c8d87b62ca82659f9ead/cryptography-37.0.2.tar.gz"
+    sha256 "f224ad253cc9cea7568f49077007d2263efa57396a2f2f78114066fd54b5c68e"
   end
 
   resource "idna" do
-    url "https://files.pythonhosted.org/packages/f4/bd/0467d62790828c23c47fc1dfa1b1f052b24efdf5290f071c7a91d0d82fd3/idna-2.6.tar.gz"
-    sha256 "2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
+    url "https://files.pythonhosted.org/packages/62/08/e3fc7c8161090f742f504f40b1bccbfc544d4a4e09eb774bf40aafce5436/idna-3.3.tar.gz"
+    sha256 "9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"
+  end
+
+  resource "pycparser" do
+    url "https://files.pythonhosted.org/packages/5e/0b/95d387f5f4433cb0f53ff7ad859bd2c6051051cebbb564f139a999ab46de/pycparser-2.21.tar.gz"
+    sha256 "e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"
   end
 
   resource "PySocks" do
-    url "https://files.pythonhosted.org/packages/53/12/6bf1d764f128636cef7408e8156b7235b150ea31650d0260969215bb8e7d/PySocks-1.6.8.tar.gz"
-    sha256 "3fe52c55890a248676fd69dc9e3c4e811718b777834bcaab7a8125cf9deac672"
+    url "https://files.pythonhosted.org/packages/bd/11/293dd436aea955d45fc4e8a35b6ae7270f5b8e00b53cf6c024c83b657a11/PySocks-1.7.1.tar.gz"
+    sha256 "3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0"
+  end
+
+  resource "PyYAML" do
+    url "https://files.pythonhosted.org/packages/36/2b/61d51a2c4f25ef062ae3f74576b01638bebad5e045f747ff12643df63844/PyYAML-6.0.tar.gz"
+    sha256 "68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2"
   end
 
   resource "requests" do
-    url "https://files.pythonhosted.org/packages/b0/e1/eab4fc3752e3d240468a8c0b284607899d2fbfb236a56b7377a329aa8d09/requests-2.18.4.tar.gz"
-    sha256 "9c443e7324ba5b85070c4a818ade28bfabedf16ea10206da1132edaa6dda237e"
+    url "https://files.pythonhosted.org/packages/60/f3/26ff3767f099b73e0efa138a9998da67890793bfa475d8278f84a30fec77/requests-2.27.1.tar.gz"
+    sha256 "68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"
   end
 
   resource "urllib3" do
-    url "https://files.pythonhosted.org/packages/ee/11/7c59620aceedcc1ef65e156cc5ce5a24ef87be4107c2b74458464e437a5d/urllib3-1.22.tar.gz"
-    sha256 "cc44da8e1145637334317feebd728bd869a35285b93cbb4cca2577da7e62db4f"
+    url "https://files.pythonhosted.org/packages/1b/a5/4eab74853625505725cefdf168f48661b2cd04e7843ab836f3f63abf81da/urllib3-1.26.9.tar.gz"
+    sha256 "aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"
   end
 
   def install
-    if MacOS.version <= :mavericks
-      ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
-    end
-
     virtualenv_install_with_resources
   end
 
-  def caveats; <<~EOS
-    To use post-processing options:
-      `brew install ffmpeg` or `brew install libav`.
-  EOS
+  def caveats
+    <<~EOS
+      To use post-processing options:
+        `brew install ffmpeg` or `brew install libav`.
+    EOS
   end
 
   test do
     url = "https://tv.aftonbladet.se/abtv/articles/244248"
-    assert_match "m3u8", shell_output("#{bin}/svtplay-dl -g #{url}")
+    match = "https://amd-ab.akamaized.net/ab/vod/2018/02/cdaefe0533c2561f00a41c52a2d790bd/1280_720_pkg.m3u8"
+    assert_match match, shell_output("#{bin}/svtplay-dl -g #{url}")
   end
 end

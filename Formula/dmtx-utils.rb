@@ -1,15 +1,19 @@
 class DmtxUtils < Formula
   desc "Read and write data matrix barcodes"
   homepage "https://github.com/dmtx/dmtx-utils"
-  url "https://github.com/dmtx/dmtx-utils/archive/v0.7.5.tar.gz"
-  sha256 "6fa365cd321609db40800f6b34a2387c0ac56ef4643f6101ac83cb762f5ce9ef"
-  revision 3
+  url "https://github.com/dmtx/dmtx-utils/archive/v0.7.6.tar.gz"
+  sha256 "0d396ec14f32a8cf9e08369a4122a16aa2e5fa1675e02218f16f1ab777ea2a28"
+  license "LGPL-2.1"
+  revision 4
 
   bottle do
-    cellar :any
-    sha256 "f751ecca7b7d06df57358c20c0f8b19f2ccdf8dea295c14b9792273b401f1c27" => :high_sierra
-    sha256 "a874c6964782f19e0958b8b8fd0044a8468c6f6f5a9d0fd04834a3074fd389bc" => :sierra
-    sha256 "2fc25e98e8a67f2edc6ce3cbb928fadb06ad3e7765d9aa4f00b2d2a17f1293e3" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "c2fb338b5c1accf8ae28a76b962098dfb6fcbccb7835028de99f92de60530537"
+    sha256 cellar: :any,                 arm64_big_sur:  "9db11b5cb18a18e7e02d369353730e2c6e574e2154db95e60fd9a82983d8be83"
+    sha256 cellar: :any,                 monterey:       "2cfbd07ad1760cbe66991740574f92a045c59b030699fddb8312fab09d52c7f6"
+    sha256 cellar: :any,                 big_sur:        "0f5cbe20fda6fcc8db3bf57039ced929283a31b666f38da8a64ba5c6c19d76cd"
+    sha256 cellar: :any,                 catalina:       "20b46ae2ba790f10191d8f53c8ce3095222d1b814db72990e7fc48a501fabba9"
+    sha256 cellar: :any,                 mojave:         "810dec06d01994da047123c4169d7398efacd4060adc639fdbcb845f3c6e2606"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "189265385499967b8f5e1c6eb8659f54b388ac013947a211f08607a0aaf95925"
   end
 
   depends_on "autoconf" => :build
@@ -17,7 +21,7 @@ class DmtxUtils < Formula
   depends_on "pkg-config" => :build
   depends_on "imagemagick"
   depends_on "libdmtx"
-  depends_on "libtool" => :run
+  depends_on "libtool"
 
   resource "test_image12" do
     url "https://raw.githubusercontent.com/dmtx/libdmtx/ca9313f/test/rotate_test/images/test_image12.png"

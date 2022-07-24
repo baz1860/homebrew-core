@@ -2,50 +2,70 @@ class Subliminal < Formula
   include Language::Python::Virtualenv
 
   desc "Library to search and download subtitles"
-  homepage "https://subliminal.readthedocs.org"
-  url "https://files.pythonhosted.org/packages/f0/84/8cddb13aa4142e85546cd7c0d0546d2c1a25f0876000a3ec37151dfd8eb9/subliminal-2.0.5.tar.gz"
-  sha256 "147aa54f54de62d6fcafa213bb9ea89319600c133dab1a5532ff7126352bfbb7"
-  head "https://github.com/Diaoul/subliminal.git"
+  homepage "https://subliminal.readthedocs.io"
+  url "https://files.pythonhosted.org/packages/dd/3a/ac02011988ad013f24a11cb6123a7ff9e17a75369964c7edd9f64bfea80f/subliminal-2.1.0.tar.gz"
+  sha256 "c6439cc733a4f37f01f8c14c096d44fd28d75d1f6f6e2d1d1003b1b82c65628b"
+  license "MIT"
+  revision 2
+  head "https://github.com/Diaoul/subliminal.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "299a246633f54bea9959260d5e210086072525df57661f39188c55193ba064ef" => :high_sierra
-    sha256 "4922e6a2534b5d0e532e7bac72e542631fce649b4adf1eafc6b54f3be8eb7d22" => :sierra
-    sha256 "a5fbb77e9512eeb8e062e66bb58400f2e0a85e10a067e9715a0894aa401e21a8" => :el_capitan
-    sha256 "93cb7e138aa5755bdd190e5d00b60de83187ad0b1876da9ebc22b9f4839d77d2" => :yosemite
-    sha256 "3160c050cb0c9aca25632b20afa9344a9f8dfc645aea44b4f8288a3c00e20d31" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "896b416ad54ab5640db53f83dc021165a4c1b15f30cd97d778f1e795c0bf3a34"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "408ab52e46c264b167ee376d1a65085a9105acdf6e37d4d9860d32e880588b5c"
+    sha256 cellar: :any_skip_relocation, monterey:       "fea6f947320910b06754e0bf23968aaa3352947121469a8e51ba47635502ef3d"
+    sha256 cellar: :any_skip_relocation, big_sur:        "5fd715aca420c248489a132b5b6557ca8abccdcfa142d26ffdcbf49f38406284"
+    sha256 cellar: :any_skip_relocation, catalina:       "4ba247d8897d00e269f1da168be4521f5e9a3710f5674f265676fe136963f831"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "833521658241fa71e6ee3b16c80d511fe8d0dacd079c74d39978426f4e56501a"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  # https://github.com/Diaoul/subliminal/issues/1046
+  deprecate! date: "2022-04-07", because: :unmaintained
+
+  depends_on "python@3.9"
 
   resource "appdirs" do
-    url "https://files.pythonhosted.org/packages/bd/66/0a7f48a0f3fb1d3a4072bceb5bbd78b1a6de4d801fb7135578e7c7b1f563/appdirs-1.4.0.tar.gz"
-    sha256 "8fc245efb4387a4e3e0ac8ebcc704582df7d72ff6a42a53f5600bbb18fdaadc5"
+    url "https://files.pythonhosted.org/packages/d7/d8/05696357e0311f5b5c316d7b95f46c669dd9c15aaeecbb48c7d0aeb88c40/appdirs-1.4.4.tar.gz"
+    sha256 "7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"
   end
 
   resource "babelfish" do
-    url "https://files.pythonhosted.org/packages/34/b7/b36c651a9136990060ab4d6c9a32de81752123105b940b2f3b958e5c6cd0/babelfish-0.5.5.tar.gz"
-    sha256 "8380879fa51164ac54a3e393f83c4551a275f03617f54a99d70151358e444104"
+    url "https://files.pythonhosted.org/packages/02/0d/e72bf59672ebceae99cd339106df2b0d59964e00a04f7286ae9279d9da6c/babelfish-0.6.0.tar.gz"
+    sha256 "2dadfadd1b205ca5fa5dc9fa637f5b7933160a0418684c7c46a7a664033208a2"
   end
 
   resource "beautifulsoup4" do
-    url "https://files.pythonhosted.org/packages/86/ea/8e9fbce5c8405b9614f1fd304f7109d9169a3516a493ce4f7f77c39435b7/beautifulsoup4-4.5.1.tar.gz"
-    sha256 "3c9474036afda9136aac6463def733f81017bf9ef3510d25634f335b0c87f5e1"
+    url "https://files.pythonhosted.org/packages/e8/b0/cd2b968000577ec5ce6c741a54d846dfa402372369b8b6861720aa9ecea7/beautifulsoup4-4.11.1.tar.gz"
+    sha256 "ad9aa55b65ef2808eb405f46cf74df7fcb7044d5cbc26487f96eb2ef2e436693"
+  end
+
+  resource "certifi" do
+    url "https://files.pythonhosted.org/packages/6c/ae/d26450834f0acc9e3d1f74508da6df1551ceab6c2ce0766a593362d6d57f/certifi-2021.10.8.tar.gz"
+    sha256 "78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872"
   end
 
   resource "chardet" do
-    url "https://files.pythonhosted.org/packages/7d/87/4e3a3f38b2f5c578ce44f8dc2aa053217de9f0b6d737739b0ddac38ed237/chardet-2.3.0.tar.gz"
-    sha256 "e53e38b3a4afe6d1132de62b7400a4ac363452dc5dfcf8d88e8e0cce663c68aa"
+    url "https://files.pythonhosted.org/packages/ee/2d/9cdc2b527e127b4c9db64b86647d567985940ac3698eeabc7ffaccb4ea61/chardet-4.0.0.tar.gz"
+    sha256 "0d6f53a15db4120f2b08c94f11e7d93d2c911ee118b6b30a04ec3ee8310179fa"
+  end
+
+  resource "charset-normalizer" do
+    url "https://files.pythonhosted.org/packages/56/31/7bcaf657fafb3c6db8c787a865434290b726653c912085fbd371e9b92e1c/charset-normalizer-2.0.12.tar.gz"
+    sha256 "2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597"
   end
 
   resource "click" do
-    url "https://files.pythonhosted.org/packages/7a/00/c14926d8232b36b08218067bcd5853caefb4737cda3f0a47437151344792/click-6.6.tar.gz"
-    sha256 "cc6a19da8ebff6e7074f731447ef7e112bd23adf3de5c597cf9989f2fd8defe9"
+    url "https://files.pythonhosted.org/packages/59/87/84326af34517fca8c58418d148f2403df25303e02736832403587318e9e8/click-8.1.3.tar.gz"
+    sha256 "7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"
+  end
+
+  resource "decorator" do
+    url "https://files.pythonhosted.org/packages/66/0c/8d907af351aa16b42caae42f9d6aa37b900c67308052d10fdce809f8d952/decorator-5.1.1.tar.gz"
+    sha256 "637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"
   end
 
   resource "dogpile.cache" do
-    url "https://files.pythonhosted.org/packages/9d/a9/ba70aadc6170841a1c6145e9039d4b1c2a4ef8c44cd0ca9b09ab79be9120/dogpile.cache-0.6.2.tar.gz"
-    sha256 "73793471af07af6dc5b3ee015abfaca4220caaa34c615537f5ab007ed150726d"
+    url "https://files.pythonhosted.org/packages/0e/94/73c2d93c9e3293115e5b831da50d6dcb20959a424309e2ddcc485238e0ce/dogpile.cache-1.1.5.tar.gz"
+    sha256 "0f01bdc329329a8289af9705ff40fadb1f82a28c336f3174e12142b70d31c756"
   end
 
   resource "enzyme" do
@@ -53,59 +73,69 @@ class Subliminal < Formula
     sha256 "f2167fa97c24d1103a94d4bf4eb20f00ca76c38a37499821049253b2059c62bb"
   end
 
-  resource "futures" do
-    url "https://files.pythonhosted.org/packages/55/db/97c1ca37edab586a1ae03d6892b6633d8eaa23b23ac40c7e5bbc55423c78/futures-3.0.5.tar.gz"
-    sha256 "0542525145d5afc984c88f914a0c85c77527f65946617edb5274f72406f981df"
+  resource "guessit" do
+    url "https://files.pythonhosted.org/packages/61/7e/278f26162ac337a97d01d7c7c8bbacead4a057f8b615a06c6a5ebe2f0d95/guessit-3.4.3.tar.gz"
+    sha256 "731e96e6a1f3b065d05accc8c19f35d4485d880b77ab8dc4b262cc353df294f7"
   end
 
-  resource "guessit" do
-    url "https://files.pythonhosted.org/packages/76/12/036c7fba23ff1dcf6ae8b4f5d0bc8d3617c1f7dfe5696e6ed3e6f38f7d75/guessit-2.0.5.tar.gz"
-    sha256 "626e0024c5cca9b84883b65246e4f238e3f39064664486f69f086c853a63ff61"
+  resource "idna" do
+    url "https://files.pythonhosted.org/packages/62/08/e3fc7c8161090f742f504f40b1bccbfc544d4a4e09eb774bf40aafce5436/idna-3.3.tar.gz"
+    sha256 "9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"
   end
 
   resource "pbr" do
-    url "https://files.pythonhosted.org/packages/c3/2c/63275fab26a0fd8cadafca71a3623e4d0f0ee8ed7124a5bb128853d178a7/pbr-1.10.0.tar.gz"
-    sha256 "186428c270309e6fdfe2d5ab0949ab21ae5f7dea831eab96701b86bd666af39c"
+    url "https://files.pythonhosted.org/packages/96/9f/f4bc832eeb4ae723b86372277da56a5643b0ad472a95314e8f516a571bb0/pbr-5.9.0.tar.gz"
+    sha256 "e8dca2f4b43560edef58813969f52a56cef023146cbb8931626db80e6c1c4308"
   end
 
   resource "pysrt" do
-    url "https://files.pythonhosted.org/packages/f6/33/16ad65a8973cb8bcb494af09ee1b9ab5ffdd6ff300bce5d3ac7d3cb1f2cc/pysrt-1.1.1.tar.gz"
-    sha256 "fb4c10424549fc5a32d19cd5091f00316b875461fcd79a7809bb55056974d0aa"
+    url "https://files.pythonhosted.org/packages/31/1a/0d858da1c6622dcf16011235a2639b0a01a49cecf812f8ab03308ab4de37/pysrt-1.1.2.tar.gz"
+    sha256 "b4f844ba33e4e7743e9db746492f3a193dc0bc112b153914698e7c1cdeb9b0b9"
   end
 
   resource "python-dateutil" do
-    url "https://files.pythonhosted.org/packages/61/6b/f3a920258ea1237d091b4a06aa0e527fa3ab76ede5875745425851e3d4c7/python-dateutil-2.5.1.tar.gz"
-    sha256 "40d1bc468c7df50aff9e7a12c14687f9180efcff86900ee2963f9f2c13b5d7a9"
+    url "https://files.pythonhosted.org/packages/4c/c4/13b4776ea2d76c115c1d1b84579f3764ee6d57204f6be27119f13a61d0a9/python-dateutil-2.8.2.tar.gz"
+    sha256 "0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"
   end
 
   resource "pytz" do
-    url "https://files.pythonhosted.org/packages/f7/c7/08e54702c74baf9d8f92d0bc331ecabf6d66a56f6d36370f0a672fc6a535/pytz-2016.6.1.tar.bz2"
-    sha256 "b5aff44126cf828537581e534cc94299b223b945a2bb3b5434d37bf8c7f3a10c"
+    url "https://files.pythonhosted.org/packages/2f/5f/a0f653311adff905bbcaa6d3dfaf97edcf4d26138393c6ccd37a484851fb/pytz-2022.1.tar.gz"
+    sha256 "1e760e2fe6a8163bc0b3d9a19c4f84342afa0a2affebfaa84b01b978a02ecaa7"
   end
 
   resource "rarfile" do
-    url "https://files.pythonhosted.org/packages/21/20/f07592dcf45f8f88a23c094019008ad220307401214a5c5a4e44d3e93acf/rarfile-2.8.tar.gz"
-    sha256 "2a27e401daa6d8ff0df1112a274a3661ca3e4afaac626217506fb1391069ca61"
+    url "https://files.pythonhosted.org/packages/0c/2f/894bc187ce40367f2e878ced196e1b5a9bc66cb553a062ed955d4f7dcbab/rarfile-4.0.tar.gz"
+    sha256 "67548769229c5bda0827c1663dce3f54644f9dbfba4ae86d4da2b2afd3e602a1"
   end
 
   resource "rebulk" do
-    url "https://files.pythonhosted.org/packages/4d/71/44e0ca08d29265185963bf39a5566746ef1a7e663b5e155bd67a9e4fbd5c/rebulk-0.7.3.tar.gz"
-    sha256 "1ee0f672be5cfeed793d294c1cfc078c254fb0966af59191e4f6a0785b3b1697"
+    url "https://files.pythonhosted.org/packages/66/23/53c95f819f0a91c30254a594e2357550db6d3ed125ed2b5ff0eae19a58d7/rebulk-3.1.0.tar.gz"
+    sha256 "809de3a97c68afa831f7101b10d316fe62e061dc9f7f67a44b7738128721173a"
   end
 
   resource "requests" do
-    url "https://files.pythonhosted.org/packages/2e/ad/e627446492cc374c284e82381215dcd9a0a87c4f6e90e9789afefe6da0ad/requests-2.11.1.tar.gz"
-    sha256 "5acf980358283faba0b897c73959cecf8b841205bb4b2ad3ef545f46eae1a133"
+    url "https://files.pythonhosted.org/packages/60/f3/26ff3767f099b73e0efa138a9998da67890793bfa475d8278f84a30fec77/requests-2.27.1.tar.gz"
+    sha256 "68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"
   end
 
   resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+    url "https://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz"
+    sha256 "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"
+  end
+
+  resource "soupsieve" do
+    url "https://files.pythonhosted.org/packages/f3/03/bac179d539362319b4779a00764e95f7542f4920084163db6b0fd4742d38/soupsieve-2.3.2.post1.tar.gz"
+    sha256 "fc53893b3da2c33de295667a0e19f078c14bf86544af307354de5fcf12a3f30d"
   end
 
   resource "stevedore" do
-    url "https://files.pythonhosted.org/packages/98/33/2c8003cb4294d1729bfb6cdf4bbfe74b968403b2df0a80ee876bebf20488/stevedore-1.17.1.tar.gz"
-    sha256 "79414e27ece996b2e81161c1ec91536f2b15645d5f6bd28128724486e1c4b8e3"
+    url "https://files.pythonhosted.org/packages/67/73/cd693fde78c3b2397d49ad2c6cdb082eb0b6a606188876d61f53bae16293/stevedore-3.5.0.tar.gz"
+    sha256 "f40253887d8712eaa2bb0ea3830374416736dc8ec0e22f5a65092c1174c44335"
+  end
+
+  resource "urllib3" do
+    url "https://files.pythonhosted.org/packages/1b/a5/4eab74853625505725cefdf168f48661b2cd04e7843ab836f3f63abf81da/urllib3-1.26.9.tar.gz"
+    sha256 "aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"
   end
 
   def install

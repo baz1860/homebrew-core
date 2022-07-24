@@ -1,26 +1,47 @@
 class Mysqlxx < Formula
   desc "C++ wrapper for MySQL's C API"
   homepage "https://tangentsoft.com/mysqlpp/home"
-  url "https://tangentsoft.com/mysqlpp/releases/mysql++-3.2.3.tar.gz"
-  sha256 "c804c38fe229caab62a48a6d0a5cb279460da319562f41a16ad2f0a0f55b6941"
+  url "https://tangentsoft.com/mysqlpp/releases/mysql++-3.3.0.tar.gz"
+  sha256 "449cbc46556cc2cc9f9d6736904169a8df6415f6960528ee658998f96ca0e7cf"
+  license "LGPL-2.1-or-later"
   revision 1
 
-  bottle do
-    cellar :any
-    sha256 "62551ee383b5c68a1b74f3652e44fafc3ab210b63af765cb2a6318f09695c0b1" => :high_sierra
-    sha256 "00b0c1e860ed384bb27fbbe53c62ea4cbbec592357a2744e8203ccf000c84c31" => :sierra
-    sha256 "1668ebf91ee98d2d898f2b2eb75adba49f7bb3c8e353f2ac95f722da2858110b" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(/href=.*?mysql\+\+[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "mysql"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "45b6b0bdbbc6b5cf62ab69ddb7d12d8a22c11f29d7ef9fb7441ae61287c89f67"
+    sha256 cellar: :any,                 arm64_big_sur:  "e2cc8829c4bab8218a31e738487ac902a6452e44b107790af1ae538c4e6986bc"
+    sha256 cellar: :any,                 monterey:       "913e44a23bc2154cc489cc4a1a00872c8748cb89a9a7d3fa31c8636a156f30ab"
+    sha256 cellar: :any,                 big_sur:        "3af8c69e77ca13685b96f10784c09ceed81ada15c6f53d0c2758b10fc0a7d6b1"
+    sha256 cellar: :any,                 catalina:       "f38e5b1a57994f3be9479fd58e03fea72f0ddfe8c142df987cfdeddeb2714c56"
+    sha256 cellar: :any,                 mojave:         "ba00ec69ab593917365180b6161676e71b4f96c3f655dd26ae65dccd02ac0aad"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7e72e034fad87e1bebdd19df274bac75c0ae9e6f93e5bf0abb076f9b055e46a7"
+  end
+
+  depends_on "mysql-client"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
-    mysql_include_dir = Utils.popen_read("mysql_config --variable=pkgincludedir")
+    mysql = Formula["mysql-client"]
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--with-field-limit=40",
-                          "--with-mysql-lib=#{HOMEBREW_PREFIX}/lib",
-                          "--with-mysql-include=#{mysql_include_dir}"
+                          "--with-mysql-lib=#{mysql.opt_lib}",
+                          "--with-mysql-include=#{mysql.opt_include}/mysql"
+
+    # Delete "version" file incorrectly included as C++20 <version> header
+    # Issue ref: https://tangentsoft.com/mysqlpp/tktview/4ea874fe67e39eb13ed4b41df0c591d26ef0a26c
+    # Remove when fixed upstream
+    rm "version"
+
     system "make", "install"
   end
 
@@ -35,7 +56,7 @@ class Mysqlxx < Formula
         return 0;
       }
     EOS
-    system ENV.cxx, "test.cpp", Utils.popen_read("mysql_config --include").chomp,
+    system ENV.cxx, "test.cpp", "-I#{Formula["mysql-client"].opt_include}/mysql",
                     "-L#{lib}", "-lmysqlpp", "-o", "test"
     system "./test", "-u", "foo", "-p", "bar"
   end

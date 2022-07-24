@@ -1,31 +1,43 @@
 class Gor < Formula
   desc "Real-time HTTP traffic replay tool written in Go"
-  homepage "https://gortool.com"
+  homepage "https://goreplay.org"
   url "https://github.com/buger/goreplay.git",
-      :tag => "v0.16.1",
-      :revision => "652e589e2b71d5dfa4d2a70431d21b108a5e471e"
-  head "https://github.com/buger/goreplay.git"
+      tag:      "1.3.3",
+      revision: "f8ef77e8cf4aae59029daf6cbd2fc784af811cee"
+  license "LGPL-3.0-only"
+  head "https://github.com/buger/goreplay.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "204f649341531e36b220221f6dd76b3b637ea4880720111cddda6bb5224be5ed" => :high_sierra
-    sha256 "78689bec0668532515a42e5274733ad296998e0e623bdbd3bbd66d2d0fb8f1e7" => :sierra
-    sha256 "dd3721a8686fb9e08074a6787d2bbefc5d3f3a585b99e52f40734a4516564754" => :el_capitan
-    sha256 "5263cd24fee9bae85eb69aafe887865642e039236e810339f84aa546e6d444d7" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "fe66f6fc334df036e4fe3f6cd579bc73ac6eacef6848e2c46a6e475a4874c9c2"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "227fba89a0ef4516c6b25e9c865c60de19731213a96f6b471ea7780f7bb72485"
+    sha256 cellar: :any_skip_relocation, monterey:       "be4aae24b0d4f5c8e55631a5314eb0f1f08a77c404b432b7db71b7e2d5186d82"
+    sha256 cellar: :any_skip_relocation, big_sur:        "6ff4869f7dcd7a5b830eb005940900360f31450d82538ff4208e6093e09840ce"
+    sha256 cellar: :any_skip_relocation, catalina:       "822445285cbf26edb06857be8bdeb0c5a7f6df0c9a801316e1537fc1794becb2"
+    sha256 cellar: :any_skip_relocation, mojave:         "25f3c17675fa60d8ce06a2a94c95ac5210f00e23d4dfcad6e6a98449080e2b33"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1239ddcc67670144a35dbdf90712514bc56f52ccbc755285eef6e54ed909afb1"
   end
 
   depends_on "go" => :build
 
+  uses_from_macos "netcat" => :test
+  uses_from_macos "libpcap"
+
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/buger/goreplay").install buildpath.children
-    cd "src/github.com/buger/goreplay" do
-      system "go", "build", "-o", bin/"gor", "-ldflags", "-X main.VERSION=#{version}"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args(ldflags: "-X main.VERSION=#{version}")
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/gor", 1)
+    test_port = free_port
+    fork do
+      exec bin/"gor", "file-server", ":#{test_port}"
+    end
+
+    sleep 2
+    system "nc", "-z", "localhost", test_port
   end
 end

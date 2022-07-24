@@ -1,27 +1,38 @@
 class Libgosu < Formula
   desc "2D game development library"
   homepage "https://libgosu.org"
-  url "https://github.com/gosu/gosu/archive/v0.13.2.tar.gz"
-  sha256 "b14b6d2875b3bb1d6f2d89a8eac9d353bb5d7367f4b492c5d98a39db278088de"
-
-  head "https://github.com/gosu/gosu.git"
+  url "https://github.com/gosu/gosu/archive/v1.4.3.tar.gz"
+  sha256 "0dadad26ff3ecbc585ce052c3d89cacc980de62690ee62e30ae8a42b1b78d2d7"
+  license "MIT"
+  head "https://github.com/gosu/gosu.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "01797e21a5f011c39d433aee18554d6f6d32c05a1364e741cf0d9922d5506fe4" => :high_sierra
-    sha256 "4353780840f016c78450906656ababa049838cf321b64b281a0690ad4cc0f177" => :sierra
-    sha256 "5a0bd96df55379751fbd50c288e5d54dd3eddc84dca1ad73fce33f16413eb684" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b1f1d5e187ea354ced29d4c4a1e6560c42ef5aaf6c1caebd12031b744c2173a5"
+    sha256 cellar: :any,                 arm64_big_sur:  "55cf01853c42161fba9d39c45d74777e74e2d9407b37b27322ecc5d415d4d37b"
+    sha256 cellar: :any,                 monterey:       "a2b97ae580dc8e4ec18b0150a7c7ae6a44613904925ca32b3f16191a553cd400"
+    sha256 cellar: :any,                 big_sur:        "c4ae08fc6393c475499ba2a54b1ad5a4af11df9e82b57711313d6b050f6fe039"
+    sha256 cellar: :any,                 catalina:       "85fa79fe1257aa9a1af7d6e4bb0356ebef41c5f7dd89a25dad2dd111a6a8f188"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "441b3f0c9c64f2ec64cad83d7db00ace5d9fce01ea4e08a042f69bf879f6bea7"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
   depends_on "sdl2"
 
+  on_linux do
+    depends_on "fontconfig"
+    depends_on "gcc"
+    depends_on "mesa"
+    depends_on "mesa-glu"
+    depends_on "openal-soft"
+  end
+
+  fails_with gcc: "5"
+
   def install
-    mkdir "build" do
-      system "cmake", "../cmake", *std_cmake_args
-      system "make", "install"
-    end
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, "-DCMAKE_INSTALL_RPATH=#{rpath}"
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
@@ -51,7 +62,11 @@ class Libgosu < Formula
       }
     EOS
 
-    system ENV.cxx, "test.cpp", "-o", "test", "-L#{lib}", "-lgosu", "-I#{include}", "-std=c++11"
+    system ENV.cxx, "test.cpp", "-o", "test", "-L#{lib}", "-lgosu", "-I#{include}", "-std=c++17"
+
+    # Fails in Linux CI with "Could not initialize SDL Video: No available video device"
+    return if OS.linux? && ENV["HOMEBREW_GITHUB_ACTIONS"]
+
     system "./test"
   end
 end

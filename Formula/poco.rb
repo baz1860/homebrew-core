@@ -1,34 +1,41 @@
 class Poco < Formula
   desc "C++ class libraries for building network and internet-based applications"
   homepage "https://pocoproject.org/"
-  url "https://pocoproject.org/releases/poco-1.8.1/poco-1.8.1-all.tar.gz"
-  sha256 "881e8dddb62c2b38daf46f56b946d6ac173a129ad972210dd39b9401e644e4dd"
+  url "https://pocoproject.org/releases/poco-1.12.1/poco-1.12.1-all.tar.gz"
+  sha256 "1a32814b7ac2d7ea68f8519d3bad173e8be0c8306a755130388dc62d70330844"
+  license "BSL-1.0"
+  head "https://github.com/pocoproject/poco.git", branch: "master"
 
-  head "https://github.com/pocoproject/poco.git", :branch => "develop"
-
-  bottle do
-    cellar :any
-    sha256 "5d9a1599bd02750d1249ffd799c84c83e32905e7bcd40b9b5cda41e08170156a" => :high_sierra
-    sha256 "b1669c4b90ab15d760b48b9cbe8b66dc2a8c225caa43b7a5332aeeb121b0c510" => :sierra
-    sha256 "3e15e7f5ac81655aa145c9423f079cedf36352a063c033233533ea86104db1bb" => :el_capitan
+  livecheck do
+    url "https://pocoproject.org/releases/"
+    regex(%r{href=.*?poco[._-]v?(\d+(?:\.\d+)+)/?["' >]}i)
   end
 
-  option "with-static", "Build static libraries (instead of shared)"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "88b995a64de97693d537804161d50998b437d1a58951ebbfe0904b94f2a0f52f"
+    sha256 cellar: :any,                 arm64_big_sur:  "b5dce1561be3c015b874bd2e74d8957d19ffea3a831b7a374cf72159b8e3dd19"
+    sha256 cellar: :any,                 monterey:       "d76fd3c8ef048d331763b8ba3799a2c36c19bdeb128100db880471fc53db2d90"
+    sha256 cellar: :any,                 big_sur:        "7f9a2cf3c0893e040853c3c976b36c24f4d951c2e26ce0545ca7379e776ecdd2"
+    sha256 cellar: :any,                 catalina:       "5f1ae6eedacb81fc1caa8d4af3242a365c6f1fad108cc0e2c51cb62ffda12786"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ced86c276a3c9380f72c3379553e9bf99065dfc542b2c2528957f8397f705167"
+  end
 
-  depends_on "openssl"
   depends_on "cmake" => :build
+  depends_on "openssl@1.1"
+  depends_on "pcre2"
+
+  uses_from_macos "expat"
+  uses_from_macos "sqlite"
+  uses_from_macos "zlib"
 
   def install
-    ENV.cxx11
-
-    args = std_cmake_args
-    args << "-DENABLE_DATA_MYSQL=OFF" << "-DENABLE_DATA_ODBC=OFF"
-    args << "-DPOCO_STATIC=ON" if build.with? "static"
-
-    mkdir "build" do
-      system "cmake", "..", *args
-      system "make", "install"
-    end
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args,
+                    "-DENABLE_DATA_MYSQL=OFF",
+                    "-DENABLE_DATA_ODBC=OFF",
+                    "-DCMAKE_INSTALL_RPATH=#{rpath}",
+                    "-DPOCO_UNBUNDLED=ON"
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do

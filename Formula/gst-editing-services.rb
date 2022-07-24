@@ -1,24 +1,52 @@
 class GstEditingServices < Formula
   desc "GStreamer Editing Services"
   homepage "https://gstreamer.freedesktop.org/modules/gst-editing-services.html"
-  url "https://gstreamer.freedesktop.org/src/gst-editing-services/gstreamer-editing-services-1.12.4.tar.xz"
-  sha256 "bd7eaa2c9572db9e7e535064024b6f69250de864fe8a5d5be86fa8c7edacca0c"
+  url "https://gstreamer.freedesktop.org/src/gst-editing-services/gst-editing-services-1.20.3.tar.xz"
+  sha256 "5fd896de69fbe24421eb6b0ff8d2f8b4c3cba3f3025ceacd302172f39a8abaa2"
+  license "LGPL-2.0-or-later"
 
-  bottle do
-    sha256 "37e28bb8f36efa80c581272186f365201088cbb52f45b186e1e2775dbc2eb973" => :high_sierra
-    sha256 "8ca9dbc7b05c1baf13f550f297636016be20119d93343b985d9781e6353b490c" => :sierra
-    sha256 "c99951c37bd5b03778d57141b7fe6755ad7c54d524f995c23b48f99f219cb808" => :el_capitan
+  livecheck do
+    url "https://gstreamer.freedesktop.org/src/gst-editing-services/"
+    regex(/href=.*?gst(?:reamer)?-editing-services[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
-  depends_on "gstreamer"
+  bottle do
+    sha256 cellar: :any, arm64_monterey: "0e0782fb99977a997dc512e68c6753bd5b348462679d6beb0185975a9ad2d822"
+    sha256 cellar: :any, arm64_big_sur:  "6a0a76f1c9601665bda8ffbac2fc37eef71acfebf8884a58454ede33cf3020a0"
+    sha256 cellar: :any, monterey:       "f6d89657b9c533f08d9ab00273b54957c266e592d857e3eecbf408123b33bd88"
+    sha256 cellar: :any, big_sur:        "be1b326db4a4a5da6845c2c32917fd151c26a1dfe61ef2d929233b745aa86e5f"
+    sha256 cellar: :any, catalina:       "e9804be1d11e5b1c271a063ef339ce1fb4945bbed123202e4d972c1021437bf8"
+    sha256               x86_64_linux:   "d187865c5bcff799a19728bf926924604501e664f486f72705d2daf17398428f"
+  end
+
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
   depends_on "gst-plugins-base"
+  depends_on "gstreamer"
+
+  uses_from_macos "flex" => :build
+
+  on_linux do
+    depends_on "json-glib"
+  end
 
   def install
-    system "./configure", "--prefix=#{prefix}",
-                          "--disable-gtk-doc",
-                          "--disable-docbook"
-    system "make"
-    system "make", "install"
+    args = std_meson_args + %w[
+      -Dintrospection=enabled
+      -Dtests=disabled
+      -Dvalidate=disabled
+    ]
+    # https://gitlab.freedesktop.org/gstreamer/gst-editing-services/-/issues/114
+    # https://github.com/Homebrew/homebrew-core/pull/84906
+    args << "-Dpython=disabled"
+
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do

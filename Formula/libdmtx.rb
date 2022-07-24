@@ -1,23 +1,25 @@
 class Libdmtx < Formula
   desc "Data Matrix library"
-  homepage "https://www.libdmtx.org/"
-  url "https://downloads.sourceforge.net/project/libdmtx/libdmtx/0.7.4/libdmtx-0.7.4.tar.bz2"
-  sha256 "b62c586ac4fad393024dadcc48da8081b4f7d317aa392f9245c5335f0ee8dd76"
+  homepage "https://libdmtx.sourceforge.io"
+  url "https://github.com/dmtx/libdmtx/archive/v0.7.7.tar.gz"
+  sha256 "7aa62adcefdd6e24bdabeb82b3ce41a8d35f4a0c95ab0c4438206aecafd6e1a1"
+  license "BSD-2-Clause"
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "4385284c846997c65dfcce5911ac0fe5b3229c9b877497fcaab6d738ae5f3132" => :high_sierra
-    sha256 "ff67a8026fd8853489878fd980ec7d01a60b5b1bfa74ac45408fcf2ef8580bd8" => :sierra
-    sha256 "5517994e8a97229ac3ba665b5a13cb622f6bf09097c84d86cf85c72b1e1f4a37" => :el_capitan
-    sha256 "ecb61e93fa9c7698011856693ac7b5335008cbda9807cc5852f0b47dcf1188d8" => :yosemite
-    sha256 "c6c2c336211aca2d6fc9c1a71ed4028d99ce2e0f3f50b34e6b916068557c7c18" => :mavericks
-    sha256 "86300de879b8d17dbf3f075a5fa1f1d3762c1eebb77e0fdd05ed38f76b75769e" => :mountain_lion
+    sha256 cellar: :any,                 arm64_monterey: "561f25578f3a60d6d122900a35d3a8e55745f74caeead32bbaa91f9cd0681a65"
+    sha256 cellar: :any,                 arm64_big_sur:  "af07cb3d3398112398d1a0a50bb05569490506f7e679a5e31a31949f7b3e694e"
+    sha256 cellar: :any,                 monterey:       "3728775d7a7d51ca7d837e9dc031e3e0fea98c46afac79955a49e631c82661f8"
+    sha256 cellar: :any,                 big_sur:        "139365f0bea5191d4cd5d7d66ad82dccb5298f7d96601e7c67ba26b6d12fe42b"
+    sha256 cellar: :any,                 catalina:       "eabd4735b2e09deeb7746eec9205c47c6600d95fb196118f497d55461342c1f1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "09b0cd47edf7d77d1ab0ba619ee03e0b41c6896ef37ec6d0841e0bedf286f988"
   end
 
-  depends_on "pkg-config" => :build
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
 
   def install
+    system "autoreconf", "-fiv"
     system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
     system "make"
     system "make", "install"

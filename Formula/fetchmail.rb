@@ -1,22 +1,36 @@
 class Fetchmail < Formula
-  desc "Fetch mail from a POP, IMAP, ETRN, or ODMR-capable server"
-  homepage "http://www.fetchmail.info/"
-  url "https://downloads.sourceforge.net/project/fetchmail/branch_6.3/fetchmail-6.3.26.tar.xz"
-  sha256 "79b4c54cdbaf02c1a9a691d9948fcb1a77a1591a813e904283a8b614b757e850"
+  desc "Client for fetching mail from POP, IMAP, ETRN or ODMR-capable servers"
+  homepage "https://www.fetchmail.info/"
+  url "https://downloads.sourceforge.net/project/fetchmail/branch_6.4/fetchmail-6.4.31.tar.xz"
+  sha256 "904bf9247054df8e91b47b1a9fe15a31dda8478c25b5291da0424653744a28f7"
+  license all_of: [
+    "LGPL-2.1-or-later",
+    "ISC",
+    "BSD-3-Clause",
+    :public_domain,
+    "GPL-2.0-or-later" => { with: "openvpn-openssl-exception" },
+  ]
 
-  bottle do
-    cellar :any
-    rebuild 1
-    sha256 "8e037ee9a367c9c4a26d5491e4db84285390d0ef1949c30d56c0726706dab6de" => :high_sierra
-    sha256 "63692fabb3746b739ce3b81f2d1ce964ca4e74613ea63f307e734f90dbcea513" => :sierra
-    sha256 "663d68d69a865daa6311f70ed2412abe79affa23b8fd76b44eaca5d9735fba36" => :el_capitan
-    sha256 "44c0f861ca7a8bf1af2bd5c1007a48e397bba3c8dfeb7c3a3cc5299dd1cb7c66" => :yosemite
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/branch_\d+(?:\.\d+)*?/fetchmail[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
-  depends_on "openssl"
+  bottle do
+    sha256 cellar: :any, arm64_monterey: "95a454ff4c733edcff83be104fd94cef1886ffb4930d4e4a17c8dbd300069a95"
+    sha256 cellar: :any, arm64_big_sur:  "2f789ee52867688896da0998c3cb3bd60a75c99450a8b8dc881e4b1cd7026216"
+    sha256 cellar: :any, monterey:       "a635627e32189a1ba0dc9f2d2b8b7cc251559007d987dc07e6f950274f0612b9"
+    sha256 cellar: :any, big_sur:        "a7a827beadb201e4b0ce83d9336ab5ef178b2e7ec93871ad72308f4ac90d6ce9"
+    sha256 cellar: :any, catalina:       "e4389d3ec951029222b15652f35fc1091a8753607b66f1ad7ec93a050e52dcdf"
+    sha256               x86_64_linux:   "8739bf253f025d01d9218710167e5280185bd201232aeef05077ab80d387481f"
+  end
+
+  depends_on "openssl@3"
 
   def install
-    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}", "--with-ssl=#{Formula["openssl"].opt_prefix}"
+    system "./configure", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}",
+                          "--with-ssl=#{Formula["openssl@3"].opt_prefix}"
     system "make", "install"
   end
 

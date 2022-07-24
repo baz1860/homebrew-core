@@ -1,27 +1,24 @@
 class Fades < Formula
   desc "Automatically handle virtualenvs for python scripts"
-  homepage "https://fades.readthedocs.org/"
-  url "https://files.pythonhosted.org/packages/59/18/cc80eb5c0a2e15c4b95df6a3c6158e06acb2e075ef2b811753936a6bdf57/fades-6.0.1.tar.gz"
-  sha256 "747ee3a159be1cb7512fd7ea4163d22e2734209e474aa2dbbccc29a0f0c92d09"
-  revision 1
-  head "https://github.com/PyAr/fades.git"
+  homepage "https://fades.readthedocs.io/"
+  url "https://files.pythonhosted.org/packages/8b/e8/87a44f1c33c41d1ad6ee6c0b87e957bf47150eb12e9f62cc90fdb6bf8669/fades-9.0.2.tar.gz"
+  sha256 "4a2212f48c4c377bbe4da376c4459fe2d79aea2e813f0cb60d9b9fdf43d205cc"
+  license "GPL-3.0-only"
+  head "https://github.com/PyAr/fades.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "13eceff41cb2181ead4f0993f3726b3f2f5887dede5b7013167360af923dc3dc" => :high_sierra
-    sha256 "13eceff41cb2181ead4f0993f3726b3f2f5887dede5b7013167360af923dc3dc" => :sierra
-    sha256 "13eceff41cb2181ead4f0993f3726b3f2f5887dede5b7013167360af923dc3dc" => :el_capitan
+    sha256 cellar: :any_skip_relocation, all: "51586193401133346c21af2e39a4560e7d7e2e375eaeb0aa0d036a79f824ebec"
   end
 
-  depends_on "python3"
+  depends_on "python@3.10"
 
   def install
-    pyver = Language::Python.major_minor_version "python3"
-    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python#{pyver}/site-packages"
-    system "python3", *Language::Python.setup_install_args(libexec)
+    site_packages = libexec/Language::Python.site_packages("python3")
+    ENV.prepend_create_path "PYTHONPATH", site_packages
+    system "python3", *Language::Python.setup_install_args(libexec), "--install-lib=#{site_packages}"
 
     bin.install Dir[libexec/"bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    bin.env_script_all_files(libexec/"bin", PYTHONPATH: ENV["PYTHONPATH"])
   end
 
   test do

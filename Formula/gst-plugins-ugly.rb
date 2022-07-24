@@ -1,84 +1,58 @@
 class GstPluginsUgly < Formula
   desc "Library for constructing graphs of media-handling components"
   homepage "https://gstreamer.freedesktop.org/"
-  url "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.12.4.tar.xz"
-  sha256 "1c165b8d888ed350acd8e6ac9f6fe06508e6fcc0a3afc6ccc9fbeb30df9be522"
+  url "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.20.3.tar.xz"
+  sha256 "8caa20789a09c304b49cf563d33cca9421b1875b84fcc187e4a385fa01d6aefd"
+  license "LGPL-2.0-or-later"
+  head "https://gitlab.freedesktop.org/gstreamer/gst-plugins-ugly.git", branch: "master"
+
+  livecheck do
+    url "https://gstreamer.freedesktop.org/src/gst-plugins-ugly/"
+    regex(/href=.*?gst-plugins-ugly[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
+  end
 
   bottle do
-    sha256 "ef36a6cb7c9826b42b2d791665dc3e1a09b61b6ae682dfecbcd6b1d066e0789d" => :high_sierra
-    sha256 "e3c756d7d3b6d3a114f2d8b65309547bd0f9c9e7d517f9103c4dd7ef206d51a9" => :sierra
-    sha256 "f2f95f9f63c09730dbb4686332dc23d86e8f500a85260d6fe65473924e47b261" => :el_capitan
+    sha256 arm64_monterey: "9906516c4eef3960519bb4aee31944725bf3adce316181f8dfbcb37f29f1e6e8"
+    sha256 arm64_big_sur:  "30e89fa1798b9c66b3c0c7459c5167972080c676340505659ec54a9a5f5919ff"
+    sha256 monterey:       "6327d03fbd94b4ba738ce3029c1b06331a2c5feb9139f759b9a9a20080880c8e"
+    sha256 big_sur:        "0ca8223e200bc0aa150176ef28b0f8578fa6f7c89645cd07d7c2dd04c8c73de0"
+    sha256 catalina:       "f71cde01b0fe4cc796e9f826fed1227ffd4c26890fbea481b077236842c3f0b6"
+    sha256 x86_64_linux:   "cc112f30cff8222c9655a843dc0da475ddd06fe83bf8d32ffb9c2fe8c26181a8"
   end
 
-  head do
-    url "https://anongit.freedesktop.org/git/gstreamer/gst-plugins-ugly.git"
-
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-  end
-
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "flac"
   depends_on "gettext"
   depends_on "gst-plugins-base"
-
-  # The set of optional dependencies is based on the intersection of
-  # gst-plugins-ugly-0.10.17/REQUIREMENTS and Homebrew formulae
-  depends_on "jpeg" => :recommended
-  depends_on "dirac" => :optional
-  depends_on "mad" => :optional
-  depends_on "libvorbis" => :optional
-  depends_on "cdparanoia" => :optional
-  depends_on "lame" => :optional
-  depends_on "two-lame" => :optional
-  depends_on "libshout" => :optional
-  depends_on "aalib" => :optional
-  depends_on "libcaca" => :optional
-  depends_on "libdvdread" => :optional
-  depends_on "libmpeg2" => :optional
-  depends_on "a52dec" => :optional
-  depends_on "liboil" => :optional
-  depends_on "flac" => :optional
-  depends_on "gtk+" => :optional
-  depends_on "pango" => :optional
-  depends_on "theora" => :optional
-  depends_on "libmms" => :optional
-  depends_on "x264" => :optional
-  depends_on "opencore-amr" => :optional
-  # Does not work with libcdio 0.9
+  depends_on "jpeg"
+  depends_on "libshout"
+  depends_on "libvorbis"
+  depends_on "pango"
+  depends_on "theora"
+  depends_on "x264"
 
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --mandir=#{man}
-      --disable-debug
-      --disable-dependency-tracking
+    # Plugins with GPL-licensed dependencies: x264
+    args = std_meson_args + %w[
+      -Dgpl=enabled
+      -Damrnb=disabled
+      -Damrwbdec=disabled
     ]
 
-    if build.head?
-      ENV["NOCONFIGURE"] = "yes"
-      system "./autogen.sh"
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
-
-    if build.with? "opencore-amr"
-      # Fixes build error, missing includes.
-      # https://github.com/Homebrew/homebrew/issues/14078
-      nbcflags = `pkg-config --cflags opencore-amrnb`.chomp
-      wbcflags = `pkg-config --cflags opencore-amrwb`.chomp
-      ENV["AMRNB_CFLAGS"] = nbcflags + "-I#{HOMEBREW_PREFIX}/include/opencore-amrnb"
-      ENV["AMRWB_CFLAGS"] = wbcflags + "-I#{HOMEBREW_PREFIX}/include/opencore-amrwb"
-    else
-      args << "--disable-amrnb" << "--disable-amrwb"
-    end
-
-    system "./configure", *args
-    system "make"
-    system "make", "install"
   end
 
   test do
     gst = Formula["gstreamer"].opt_bin/"gst-inspect-1.0"
     output = shell_output("#{gst} --plugin dvdsub")
+    assert_match version.to_s, output
+    output = shell_output("#{gst} --plugin x264")
     assert_match version.to_s, output
   end
 end

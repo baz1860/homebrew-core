@@ -1,81 +1,71 @@
 class Sdl2 < Formula
   desc "Low-level access to audio, keyboard, mouse, joystick, and graphics"
   homepage "https://www.libsdl.org/"
-  url "https://libsdl.org/release/SDL2-2.0.7.tar.gz"
-  sha256 "ee35c74c4313e2eda104b14b1b86f7db84a04eeab9430d56e001cea268bf4d5e"
+  url "https://libsdl.org/release/SDL2-2.0.22.tar.gz"
+  sha256 "fe7cbf3127882e3fc7259a75a0cb585620272c51745d3852ab9dd87960697f2e"
+  license "Zlib"
+
+  livecheck do
+    url "https://www.libsdl.org/download-2.0.php"
+    regex(/href=.*?SDL2[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "d3436a34a1795c14dd71616ea222b06f47b82d46818fb845b630431f3f036de6" => :high_sierra
-    sha256 "8e0ed1c42064a78da85f0375fa32e36e2f6e94d33fa1acbf67b7b2777691aeed" => :sierra
-    sha256 "44aa4e28bac52c21e3d1751394d1927768817a6af3cedd8c54e23ae09e52cff3" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "d299f67194020898fa457130d11ecc89beab6020d2d8ed6cb6c546ca91858f03"
+    sha256 cellar: :any,                 arm64_big_sur:  "77512d6fc260326313d7c02d8442a967740d4b7e616a6995e87844dcf7a2f523"
+    sha256 cellar: :any,                 monterey:       "eac3c4de97e453a8e26e142fae4f960b81685a6278193af27d9ab231a975c41c"
+    sha256 cellar: :any,                 big_sur:        "cb7bd018480f11182cf123add9d2f409b2de0013eb40fc08ac94f79e5b8c4848"
+    sha256 cellar: :any,                 catalina:       "fd1311f75f9b584bd8621ec419deb05a63f29de0e5ae8fd88b737186d5bd2e97"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d3522d4ffdbae2fd6e413dd10027d7c645a87ea19ecd4443423fba7cf316c4d2"
   end
 
   head do
-    url "https://hg.libsdl.org/SDL", :using => :hg
+    url "https://github.com/libsdl-org/SDL.git", branch: "main"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  option "with-test", "Compile and install the tests"
-
-  # https://github.com/mistydemeo/tigerbrew/issues/361
-  if MacOS.version <= :snow_leopard
-    patch do
-      url "https://gist.githubusercontent.com/miniupnp/26d6e967570e5729a757/raw/1a86f3cdfadbd9b74172716abd26114d9cb115d5/SDL2-2.0.3_OSX_104.patch"
-      sha256 "4d01f05f02568e565978308e42e98b4da2b62b1451f71c29d24e11202498837e"
-    end
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "libice"
+    depends_on "libxcursor"
+    depends_on "libxscrnsaver"
+    depends_on "libxxf86vm"
+    depends_on "xinput"
+    depends_on "pulseaudio"
   end
 
   def install
-    # we have to do this because most build scripts assume that all sdl modules
+    # We have to do this because most build scripts assume that all SDL modules
     # are installed to the same prefix. Consequently SDL stuff cannot be
     # keg-only but I doubt that will be needed.
     inreplace %w[sdl2.pc.in sdl2-config.in], "@prefix@", HOMEBREW_PREFIX
 
-    system "./autogen.sh" if build.head? || build.devel?
+    system "./autogen.sh" if build.head?
 
-    args = %W[--prefix=#{prefix}]
-
-    # LLVM-based compilers choke on the assembly code packaged with SDL.
-    if ENV.compiler == :clang && DevelopmentTools.clang_build_version < 421
-      args << "--disable-assembly"
+    args = %W[--prefix=#{prefix} --enable-hidapi]
+    args << if OS.mac?
+      "--without-x"
+    else
+      args << "--with-x"
+      args << "--enable-pulseaudio"
+      args << "--enable-pulseaudio-shared"
+      args << "--enable-video-dummy"
+      args << "--enable-video-opengl"
+      args << "--enable-video-opengles"
+      args << "--enable-video-x11"
+      args << "--enable-video-x11-scrnsaver"
+      args << "--enable-video-x11-xcursor"
+      args << "--enable-video-x11-xinerama"
+      args << "--enable-video-x11-xinput"
+      args << "--enable-video-x11-xrandr"
+      args << "--enable-video-x11-xshape"
+      "--enable-x11-shared"
     end
-    args << "--without-x"
-    args << "--disable-haptic" << "--disable-joystick" if MacOS.version <= :snow_leopard
-
     system "./configure", *args
     system "make", "install"
-
-    if build.with? "test"
-      ENV.prepend_path "PATH", bin
-      # We need the build to point at the newly-built (not yet linked) copy of SDL.
-      inreplace bin/"sdl2-config", "prefix=#{HOMEBREW_PREFIX}", "prefix=#{prefix}"
-      cd "test" do
-        # These test source files produce binaries which by default will reference
-        # some sample resources in the working directory.
-        # Let's point them to the test_extras directory we're about to set up instead!
-        inreplace %w[controllermap.c loopwave.c loopwavequeue.c testmultiaudio.c
-                     testoverlay2.c testsprite2.c],
-                  /"(\w+\.(?:bmp|dat|wav))"/,
-                  "\"#{pkgshare}/test_extras/\\1\""
-        system "./configure", "--without-x"
-        system "make"
-        # Tests don't have a "make install" target
-        (pkgshare/"tests").install %w[checkkeys controllermap loopwave loopwavequeue testaudioinfo
-                                      testerror testfile testgl2 testiconv testjoystick testkeys
-                                      testloadso testlock testmultiaudio testoverlay2 testplatform
-                                      testsem testshape testsprite2 testthread testtimer testver
-                                      testwm2 torturethread]
-        (pkgshare/"test_extras").install %w[axis.bmp button.bmp controllermap.bmp icon.bmp moose.dat
-                                            picture.xbm sample.bmp sample.wav shapes]
-        bin.write_exec_script Dir["#{pkgshare}/tests/*"]
-      end
-      # Point sdl-config back at the normal prefix once we've built everything.
-      inreplace bin/"sdl2-config", "prefix=#{prefix}", "prefix=#{HOMEBREW_PREFIX}"
-    end
   end
 
   test do

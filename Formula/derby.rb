@@ -1,53 +1,38 @@
 class Derby < Formula
   desc "Apache Derby is an embedded relational database running on JVM"
   homepage "https://db.apache.org/derby/"
-  url "https://www.apache.org/dyn/closer.cgi?path=db/derby/db-derby-10.14.1.0/db-derby-10.14.1.0-bin.tar.gz"
-  mirror "https://www-us.apache.org/dist/db/derby/db-derby-10.14.1.0/db-derby-10.14.1.0-bin.tar.gz"
-  sha256 "3eee3d029fa97873119af019eac7253f4b95c86f5c5a1d5c09efcb798216e1c1"
+  url "https://www.apache.org/dyn/closer.lua?path=db/derby/db-derby-10.16.1.1/db-derby-10.16.1.1-bin.tar.gz"
+  mirror "https://archive.apache.org/dist/db/derby/db-derby-10.16.1.1/db-derby-10.16.1.1-bin.tar.gz"
+  sha256 "37aef8dca42061d5867afb2009c8d7a80e68c16e56aecaf088f3e30e470d9ef6"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "de4f510a364389097c3be710ab140928daff7078ac8d7d2757c42d20be07cf2e"
+  end
 
-  depends_on :java => "1.8+"
+  depends_on "openjdk@17"
 
   def install
     rm_rf Dir["bin/*.bat"]
     libexec.install %w[lib test index.html LICENSE NOTICE RELEASE-NOTES.html
                        KEYS docs javadoc demo]
     bin.install Dir["bin/*"]
-    bin.env_script_all_files(libexec/"bin",
-      Language::Java.overridable_java_home_env.merge(:DERBY_INSTALL => libexec.to_s,
-                                                     :DERBY_HOME => libexec.to_s))
+    bin.env_script_all_files libexec/"bin",
+                             JAVA_HOME:     Language::Java.overridable_java_home_env("17")[:JAVA_HOME],
+                             DERBY_INSTALL: libexec,
+                             DERBY_HOME:    libexec
   end
 
   def post_install
     (var/"derby").mkpath
   end
 
-  plist_options :manual => "DERBY_OPTS=-Dsystem.derby.home=#{HOMEBREW_PREFIX}/var/derby #{HOMEBREW_PREFIX}/bin/startNetworkServer"
+  plist_options manual: "DERBY_OPTS=-Dsystem.derby.home=#{HOMEBREW_PREFIX}/var/derby #{HOMEBREW_PREFIX}/bin/startNetworkServer"
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/NetworkServerControl</string>
-        <string>-h</string>
-        <string>127.0.0.1</string>
-        <string>start</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{var}/derby</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"NetworkServerControl", "-h", "127.0.0.1", "start"]
+    keep_alive true
+    working_dir var/"derby"
   end
 
   test do

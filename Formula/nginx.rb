@@ -1,31 +1,46 @@
 class Nginx < Formula
   desc "HTTP(S) server and reverse proxy, and IMAP/POP3 proxy server"
   homepage "https://nginx.org/"
-  url "https://nginx.org/download/nginx-1.13.9.tar.gz"
-  sha256 "5faea18857516fe68d30be39c3032bd22ed9cf85e1a6fdf32e3721d96ff7fa42"
-  head "https://hg.nginx.org/nginx/", :using => :hg
+  # Use "mainline" releases only (odd minor version number), not "stable"
+  # See https://www.nginx.com/blog/nginx-1-12-1-13-released/ for why
+  url "https://nginx.org/download/nginx-1.23.1.tar.gz"
+  sha256 "5eee1bd1c23e3b9477a45532f1f36ae6178b43d571a9607e6953cef26d5df1e2"
+  license "BSD-2-Clause"
+  head "https://hg.nginx.org/nginx/", using: :hg
 
-  bottle do
-    sha256 "2faed79550c951c455350b71e871a9efb9075b5cf1227df0740ba4f00b4e7e87" => :high_sierra
-    sha256 "3bf0dce7c5214c5ae755082784bc88df45ac54613908d6f85e651d18fcc188cb" => :sierra
-    sha256 "8d12fdc39330f57214e9894c298854ed2b2dc7b22b86b5df291423c57413f3d0" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(%r{nginx[._-]v?(\d+(?:\.\d+)+)</a>\nmainline version}i)
   end
 
-  option "with-passenger", "Compile with support for Phusion Passenger module"
+  bottle do
+    sha256 arm64_monterey: "46b6d5a0650660c0cd25039b5e46c3a986cde55f2009e233eee7f9b094aa53ea"
+    sha256 arm64_big_sur:  "b24ed87fcbf526ca6e93481f9d5452bf797ee31f94161316b939b30ae47a3ada"
+    sha256 monterey:       "7e05d8658f1e2c264028530fc70ba4c87e6c152b85b3f014f2c8b5c6952d12f4"
+    sha256 big_sur:        "a39b34b5ed417398c35c75f0bd60bdad29b2a5c35767a43294577a27ea2a787c"
+    sha256 catalina:       "56721058defb37569f1c6283335b9c6ea783eb9a9a5b38822d0450b1297319c9"
+    sha256 x86_64_linux:   "18b31f88893945ea9696f271bf38070e69141350b1e34ecf213d0caaf02b55af"
+  end
 
-  depends_on "openssl" # don't switch to 1.1 until passenger is switched, too
-  depends_on "pcre"
-  depends_on "passenger" => :optional
+  depends_on "openssl@1.1"
+  depends_on "pcre2"
+
+  uses_from_macos "xz" => :build
+  uses_from_macos "libxcrypt"
 
   def install
+    # keep clean copy of source for compiling dynamic modules e.g. passenger
+    (pkgshare/"src").mkpath
+    system "tar", "-cJf", (pkgshare/"src/src.tar.xz"), "."
+
     # Changes default port to 8080
     inreplace "conf/nginx.conf" do |s|
       s.gsub! "listen       80;", "listen       8080;"
       s.gsub! "    #}\n\n}", "    #}\n    include servers/*;\n}"
     end
 
-    openssl = Formula["openssl"]
-    pcre = Formula["pcre"]
+    openssl = Formula["openssl@1.1"]
+    pcre = Formula["pcre2"]
 
     cc_opt = "-I#{pcre.opt_include} -I#{openssl.opt_include}"
     ld_opt = "-L#{pcre.opt_lib} -L#{openssl.opt_lib}"
@@ -45,6 +60,7 @@ class Nginx < Formula
       --http-scgi-temp-path=#{var}/run/nginx/scgi_temp
       --http-log-path=#{var}/log/nginx/access.log
       --error-log-path=#{var}/log/nginx/error.log
+      --with-compat
       --with-debug
       --with-http_addition_module
       --with-http_auth_request_module
@@ -73,10 +89,7 @@ class Nginx < Formula
       --with-stream_ssl_preread_module
     ]
 
-    if build.with? "passenger"
-      nginx_ext = `#{Formula["passenger"].opt_bin}/passenger-config --nginx-addon-dir`.chomp
-      args << "--add-module=#{nginx_ext}"
-    end
+    (pkgshare/"src/configure_args.txt").write args.join("\n")
 
     if build.head?
       system "./auto/configure", *args
@@ -116,20 +129,11 @@ class Nginx < Formula
     # and Homebrew used to suggest the user copy the plist for nginx to their
     # ~/Library/LaunchAgents directory. So we need to have a symlink there
     # for such cases
-    if rack.subdirs.any? { |d| d.join("sbin").directory? }
-      sbin.install_symlink bin/"nginx"
-    end
-  end
-
-  def passenger_caveats; <<~EOS
-    To activate Phusion Passenger, add this to #{etc}/nginx/nginx.conf, inside the 'http' context:
-      passenger_root #{Formula["passenger"].opt_libexec}/src/ruby_supportlib/phusion_passenger/locations.ini;
-      passenger_ruby /usr/bin/ruby;
-    EOS
+    sbin.install_symlink bin/"nginx" if rack.subdirs.any? { |d| d.join("sbin").directory? }
   end
 
   def caveats
-    s = <<~EOS
+    <<~EOS
       Docroot is: #{var}/www
 
       The default port has been set in #{etc}/nginx/nginx.conf to 8080 so that
@@ -137,34 +141,16 @@ class Nginx < Formula
 
       nginx will load all files in #{etc}/nginx/servers/.
     EOS
-    s << "\n" << passenger_caveats if build.with? "passenger"
-    s
   end
 
-  plist_options :manual => "nginx"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <false/>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/nginx</string>
-            <string>-g</string>
-            <string>daemon off;</string>
-        </array>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    if OS.linux?
+      run [opt_bin/"nginx", "-g", "'daemon off;'"]
+    else
+      run [opt_bin/"nginx", "-g", "daemon off;"]
+    end
+    keep_alive false
+    working_dir HOMEBREW_PREFIX
   end
 
   test do

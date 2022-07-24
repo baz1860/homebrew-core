@@ -1,22 +1,91 @@
 class AtSpi2Atk < Formula
   desc "Accessibility Toolkit GTK+ module"
-  homepage "http://a11y.org"
-  url "https://download.gnome.org/sources/at-spi2-atk/2.26/at-spi2-atk-2.26.1.tar.xz"
-  sha256 "b4f0c27b61dbffba7a5b5ba2ff88c8cee10ff8dac774fa5b79ce906853623b75"
+  homepage "https://www.freedesktop.org/wiki/Accessibility/AT-SPI2"
+  url "https://download.gnome.org/sources/at-spi2-atk/2.38/at-spi2-atk-2.38.0.tar.xz"
+  sha256 "cfa008a5af822b36ae6287f18182c40c91dd699c55faa38605881ed175ca464f"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any
-    sha256 "48c602408de01b77eda096193eee53a1454997d08fe3c85b3877f578e31703d1" => :high_sierra
-    sha256 "6de46c9205787cfd5edb73940c1d3a8c4ebac9e5c17169d542c4899e04865e77" => :sierra
-    sha256 "1183cac8649c61abf5729837ed2809a4420fa97195fc221ef380aab9df1984e9" => :el_capitan
+    sha256 x86_64_linux: "f68be9dbb59804bc1f6de1615def3c73bf3b7d994e94844e521806cd5331686d"
   end
 
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "python@3.10" => :build
   depends_on "at-spi2-core"
   depends_on "atk"
+  depends_on "libxml2"
+  depends_on :linux
 
   def install
-    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
-    system "make", "install"
+    ENV.refurbish_args
+
+    mkdir "build" do
+      system "meson", "--prefix=#{prefix}", "--libdir=#{lib}", ".."
+      system "ninja"
+      system "ninja", "install"
+    end
+  end
+
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <stdio.h>
+      #include <string.h>
+      #include <stdlib.h>
+      #include <glib.h>
+      #include <atk/atk.h>
+      #include <atk-bridge.h>
+
+      static AtkObject *root_accessible;
+      static GMainLoop *mainloop;
+      static gchar *tdata_path = NULL;
+
+      AtkObject * test_get_root (void) {
+        return root_accessible;
+      }
+
+      static AtkObject * get_root (void) {
+        return test_get_root ();
+      }
+
+      const gchar * get_toolkit_name (void) {
+        return strdup ("atspitesting-toolkit");
+      }
+
+      static void setup_atk_util (void) {
+        AtkUtilClass *klass;
+
+        klass = g_type_class_ref (ATK_TYPE_UTIL);
+        klass->get_root = get_root;
+        klass->get_toolkit_name = get_toolkit_name;
+        g_type_class_unref (klass);
+      }
+
+      static GOptionEntry optentries[] = {
+        {"test-data-file", 0, 0, G_OPTION_ARG_STRING, &tdata_path, "Path to file of test data", NULL},
+        {NULL}
+      };
+
+      int main (int argc, char *argv[]) {
+        GOptionContext *opt;
+        GError *err = NULL;
+        opt = g_option_context_new (NULL);
+        g_option_context_add_main_entries (opt, optentries, NULL);
+        g_option_context_set_ignore_unknown_options (opt, TRUE);
+
+        if (!g_option_context_parse (opt, &argc, &argv, &err))
+          g_error("Option parsing failed: %s", err->message);
+
+        setup_atk_util ();
+        atk_bridge_adaptor_init (NULL, NULL);
+
+        return 0;
+      }
+    EOS
+
+    pkg_config_cflags = shell_output("pkg-config --cflags --libs atk-bridge-2.0 glib-2.0 atk").chomp.split
+    system ENV.cc, "test.c", *pkg_config_cflags, "-o", "test"
+    assert_match "atk_bridge_adaptor_init", shell_output("#{testpath}/test 2>&1")
   end
 end

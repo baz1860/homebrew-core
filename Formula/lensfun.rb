@@ -1,28 +1,48 @@
 class Lensfun < Formula
-  desc "Remove defects from digital images"
-  homepage "https://lensfun.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/lensfun/0.3.2/lensfun-0.3.2.tar.gz"
-  sha256 "ae8bcad46614ca47f5bda65b00af4a257a9564a61725df9c74cb260da544d331"
-  revision 2
-  head "https://git.code.sf.net/p/lensfun/code.git"
+  include Language::Python::Shebang
 
-  bottle do
-    sha256 "bf1ac72d74be58ba4d9b82cfca93cd5710e971a6c9dda783548583304b942efc" => :high_sierra
-    sha256 "a67b367f01011cb03419b59577688290ab213c4cf35dcd4bafe353c62188edac" => :sierra
-    sha256 "9056fb41bfed7c149fc65d795aa65eb0e67fb8e6ff3d542bcd6a7770c276c911" => :el_capitan
+  desc "Remove defects from digital images"
+  homepage "https://lensfun.github.io/"
+  url "https://github.com/lensfun/lensfun/archive/refs/tags/v0.3.3.tar.gz"
+  sha256 "57ba5a0377f24948972339e18be946af12eda22b7c707eb0ddd26586370f6765"
+  license all_of: [
+    "LGPL-3.0-only",
+    "GPL-3.0-only",
+    "CC-BY-3.0",
+    :public_domain,
+  ]
+  version_scheme 1
+  head "https://github.com/lensfun/lensfun.git", branch: "master"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
   end
 
-  depends_on "python3"
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 arm64_monterey: "b7c1472fdec4cfa0c78c7be1d84cf62f1c1b5b9f243ea19d47a7d65d591029ee"
+    sha256 arm64_big_sur:  "b4f90befa38fc5f0a2d7b981c63712cd53b98704f989f7d373ac072e38effab5"
+    sha256 monterey:       "5dca57fa7d6429e104ab925f41e16f08d66adf767def8c523034c797721b50ce"
+    sha256 big_sur:        "2c8cf34ada4b76d9d5a48cd05f0fb81dbdfc161fc0613dde4f393171021d3a22"
+    sha256 catalina:       "f4e3e086ea86dc1475152084544beddfb8f6f2ec53b43c96b1be58b4cfdd65e0"
+    sha256 x86_64_linux:   "58a7d7e275aa8eea9088f385d3801c4b0264fed650831f619823cd80d3b78173"
+  end
+
   depends_on "cmake" => :build
-  depends_on "glib"
+  depends_on "pkg-config" => :build
   depends_on "gettext"
+  depends_on "glib"
   depends_on "libpng"
-  depends_on "doxygen" => :optional
+  depends_on "python@3.9"
 
   def install
+    # setuptools>=60 prefers its own bundled distutils, which breaks the installation
+    ENV["SETUPTOOLS_USE_DISTUTILS"] = "stdlib"
     system "cmake", ".", *std_cmake_args
     system "make", "install"
+
+    rewrite_shebang detected_python_shebang,
+      bin/"lensfun-add-adapter", bin/"lensfun-convert-lcp", bin/"lensfun-update-data"
   end
 
   test do

@@ -1,24 +1,31 @@
 class OsmiumTool < Formula
   desc "Libosmium-based command-line tool for processing OpenStreetMap data"
-  homepage "http://osmcode.org/osmium-tool/"
-  url "https://github.com/osmcode/osmium-tool/archive/v1.7.1.tar.gz"
-  sha256 "5cdb01ca22bfc0cfd2b1a59088601f61547d60ffa47296087480718ff0156c42"
+  homepage "https://osmcode.org/osmium-tool/"
+  url "https://github.com/osmcode/osmium-tool/archive/v1.14.0.tar.gz"
+  sha256 "67765fe6b612e791aab276af601dd12410b70486946e983753f6b0442f915233"
+  license "GPL-3.0-or-later"
   revision 1
 
   bottle do
-    cellar :any
-    sha256 "398b88bc8316244cefe4d9dcec282493d6b37f56b19297e149367443e58062ed" => :high_sierra
-    sha256 "05dce7612f933019fe5a2a55e7fa3746c1ecc83282d1dde5ff3f63d3e349a677" => :sierra
-    sha256 "11203e8a401505daaa5173adeac65d5a6132859855d50798b669f748764fa0dd" => :el_capitan
-    sha256 "bd7b60b6c69a008721904db31b5362bb687d147dc713af3d5749d9fe5226d95a" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "a822b931250081419f53ad441a89076a64411e5971e091387a92476860204806"
+    sha256 cellar: :any,                 arm64_big_sur:  "9dd563705ceb2f2837d4f5df511e5b3d13cf1409968b1fdcae991ef0a381e6e2"
+    sha256 cellar: :any,                 monterey:       "c10c02bea8013843e94222ae833e64b2ea61a4287d60e386b8c1a560baf978b2"
+    sha256 cellar: :any,                 big_sur:        "bd7ed40d240f593ddeab17dbaceb9f06b8d14f870a3e3f07872228a56d7622fc"
+    sha256 cellar: :any,                 catalina:       "5b67d83929194c424ff1929a3e4a019607409ac650a04bd97d9a7e58f169d0d4"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "28c587bd9003d6b08adbf08ae8cb15548184f1b1995032542166fce7d213c2d5"
   end
 
   depends_on "cmake" => :build
   depends_on "libosmium" => :build
+  depends_on "pandoc" => :build
   depends_on "boost"
+  depends_on "lz4"
+
+  uses_from_macos "expat"
 
   def install
-    system "cmake", ".", *std_cmake_args
+    protozero = Formula["libosmium"].opt_libexec/"include"
+    system "cmake", ".", "-DPROTOZERO_INCLUDE_DIR=#{protozero}", *std_cmake_args
     system "make", "install"
   end
 
@@ -40,7 +47,7 @@ class OsmiumTool < Formula
       </osm>
     EOS
     output = shell_output("#{bin}/osmium fileinfo test.osm")
-    assert_match /Compression.+generator=handwritten/m, output
+    assert_match(/Compression.+generator=handwritten/m, output)
     system bin/"osmium", "tags-filter", "test.osm", "w/name=line", "-f", "osm"
   end
 end

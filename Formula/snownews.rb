@@ -1,51 +1,45 @@
 class Snownews < Formula
   desc "Text mode RSS newsreader"
-  homepage "https://kiza.eu/software/snownews"
-  url "https://kiza.eu/media/software/snownews/snownews-1.5.12.tar.gz"
-  sha256 "26dd96e9345d9cbc1c0c9470417080dd0c3eb31e7ea944f78f3302d7060ecb90"
-  revision 1
+  homepage "https://github.com/msharov/snownews"
+  url "https://github.com/msharov/snownews/archive/v1.9.tar.gz"
+  sha256 "d8ef0c7ef779771e2c8322231bdfa7246d495ba8f24c3c210c96f3b6bd3776a7"
+  license "GPL-3.0-only"
 
   bottle do
-    sha256 "22fb8c0d85ab994352f15a8a54418d8e50dbf30b418c0e16daf34a0522a5a99b" => :high_sierra
-    sha256 "111d01a8162376cf510ca58d4db0dc87c3edd171f782738d36ce8326b25741f6" => :sierra
-    sha256 "03ac9fea075ea76b934c2ff5365b5e48295c6fbcb03f9c402332bbdf5f84690b" => :el_capitan
-    sha256 "9d950bf2641410e4ddc6646eeaead2e49a5925b186a7d72fb207f11ceaaa0572" => :yosemite
-    sha256 "50505095e31d0c0a0960cae1abd00e8900c64967c5ad81068de161c510e59afe" => :mavericks
+    sha256 arm64_monterey: "f3f130a39bd4c89ba0c1315cc94bd631dcbcfb6de37670b5beefb12262d18c39"
+    sha256 arm64_big_sur:  "e33470f154aa0ac91be4e22fc07fbe038109fe6e528f024b1886a21c09cb118d"
+    sha256 monterey:       "0df289333512883cc93e2c314575f73f7a0d4099b67299f8942daf22611ba9f4"
+    sha256 big_sur:        "ae91430f56cf66c0c9926bef6b0bd2134e68730cfacac0db1dd8456a976a53f7"
+    sha256 catalina:       "bd3a4094a8b1e6a5ea21d0d1f3215d9b97480600b41b72278ca492f1b36ffd9c"
+    sha256 mojave:         "47d68cd32e932522a59536319a6dc56717925d15a137924c0a5ff374b12b2223"
+    sha256 x86_64_linux:   "d9e3e43ead0b9f28bf3967c7c7c4da67264429171125a04fa44dad43c7aa5369"
   end
 
-  option "without-nls", "Build without translations"
+  depends_on "coreutils" => :build
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "ncurses"
+  depends_on "openssl@1.1"
 
-  depends_on "gettext" if build.with? "nls"
-  depends_on "openssl"
+  uses_from_macos "curl"
+  uses_from_macos "libxml2"
 
-  # Fix system openssl linking error on macOS.
-  # Allow EXTRA_LDFLAGS to take precedence so we can link brewed openssl
-  # instead of deprecated system openssl.
-  # Upstream has been notified but has no public bug tracker
-  patch :DATA
+  # remove in next release
+  patch do
+    url "https://github.com/msharov/snownews/commit/a43c1811c2bd2921b7e44fd4b28b852915b45072.patch?full_index=1"
+    sha256 "cd64cd6d9493019496b100a71a8e6c10f33b63fb3d29b7863434bc2eee7cdd00"
+  end
 
   def install
-    args = ["--prefix=#{prefix}"]
-    args << "--disable-nls" if build.without? "nls"
+    system "./configure", "--prefix=#{prefix}"
 
-    system "./configure", *args
-    # Must supply -lz because snownews configure relies on "xml2-config --libs" for
-    # it, which doesn't work on OS X prior to 10.11
-    system "make", "install", "EXTRA_LDFLAGS=#{ENV.ldflags} -L#{Formula["openssl"].opt_lib} -lz", "CC=#{ENV.cc}"
+    # Must supply -lz because configure relies on "xml2-config --libs"
+    # for it, which doesn't work on OS X prior to 10.11
+    system "make", "install", "EXTRA_LDFLAGS=#{ENV.ldflags} -L#{Formula["openssl@1.1"].opt_lib} -lz",
+           "CC=#{ENV.cc}", "INSTALL=ginstall"
+  end
+
+  test do
+    assert_match version.to_s, shell_output(bin/"snownews --help")
   end
 end
-
-__END__
-diff --git a/configure b/configure
-index a752cd6..74e61d7 100755
---- a/configure
-+++ b/configure
-@@ -13,7 +13,7 @@ chomp($xmlldflags);
-
- my $prefix = "/usr/local";
- my $cflags = "-Wall -Wno-format-y2k -O2 -DLOCALEPATH=\"\\\"\$(LOCALEPATH)\\\"\" -DOS=\\\"$os\\\" $xmlcflags \$(EXTRA_CFLAGS) ";
--my $ldflags = "-lncurses -lcrypto $xmlldflags \$(EXTRA_LDFLAGS) ";
-+my $ldflags = "\$(EXTRA_LDFLAGS) -lncurses -lcrypto $xmlldflags ";
-
- my $use_nls = 1;
- parse_cmdl_line();

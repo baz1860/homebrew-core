@@ -1,55 +1,67 @@
 class Ruby < Formula
   desc "Powerful, clean, object-oriented scripting language"
   homepage "https://www.ruby-lang.org/"
-  url "https://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.0.tar.xz"
-  sha256 "1da0afed833a0dab94075221a615c14487b05d0c407f991c8080d576d985b49b"
-  revision 2
+  url "https://cache.ruby-lang.org/pub/ruby/3.1/ruby-3.1.2.tar.gz"
+  sha256 "61843112389f02b735428b53bb64cf988ad9fb81858b8248e22e57336f24a83e"
+  license "Ruby"
 
-  bottle do
-    sha256 "8b7172fc5e08f11a70946e7513d8f1676b7a175f3d365e1fdc19ad6e50b2be6e" => :high_sierra
-    sha256 "5291ebf740c494f2a06c310059bcebeb5c5d01f958b209ba301bd6d36296c48a" => :sierra
-    sha256 "8368496c8b9254d2fa4c701aaef70777fd4488890653a1c40b817e269f545800" => :el_capitan
+  livecheck do
+    url "https://www.ruby-lang.org/en/downloads/"
+    regex(/href=.*?ruby[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  devel do
-    url "https://cache.ruby-lang.org/pub/ruby/2.6/ruby-2.6.0-preview1.tar.xz"
-    version "2.6.0-preview1"
-    sha256 "1d99139116e4e245ce543edb137b2a8873c26e9f0bde88d8cee6789617cc8d0e"
+  bottle do
+    sha256 arm64_monterey: "021656bba51b864c3a2b5d4b72ae8f83ac49913fd4d576a7375be2b1338508cd"
+    sha256 arm64_big_sur:  "e92288a687e891e51e6bdedc0a020aece0c159f4d508d7a62cf6e71ab226be27"
+    sha256 monterey:       "31567181a85e0f3003358466c689142464b14cf817f8c37a6c5367e0c85bc1fc"
+    sha256 big_sur:        "5465372af478fe2babb247ef3e2440645041d7ed284393f49c3ffbf450aa98e9"
+    sha256 catalina:       "a330778c6978faea285745bbd1026322eb06f13490e164cc92068f0932087588"
+    sha256 x86_64_linux:   "fa0984bbdd14c91aed6d1b279df99a4a1a122733464a23a22bcc47095588c15a"
   end
 
   head do
-    url "https://svn.ruby-lang.org/repos/ruby/trunk/"
+    url "https://github.com/ruby/ruby.git", branch: "trunk"
     depends_on "autoconf" => :build
   end
 
+  keg_only :provided_by_macos
+
   depends_on "pkg-config" => :build
   depends_on "libyaml"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
   depends_on "readline"
+
+  uses_from_macos "libffi"
+  uses_from_macos "zlib"
 
   # Should be updated only when Ruby is updated (if an update is available).
   # The exception is Rubygem security fixes, which mandate updating this
   # formula & the versioned equivalents and bumping the revisions.
   resource "rubygems" do
-    url "https://rubygems.org/rubygems/rubygems-2.7.6.tgz"
-    sha256 "67f714a582a9ce471bbbcb417374ea9cf9c061271c865dbb0d093f3bc3371eeb"
+    url "https://rubygems.org/rubygems/rubygems-3.3.11.tgz"
+    sha256 "64184aec5bf3d4314eca3b8bae2085c5ddec50564b822340035187431dc1c074"
   end
 
   def api_version
-    Utils.popen_read("#{bin}/ruby -e 'print Gem.ruby_api_version'")
+    Utils.safe_popen_read("#{bin}/ruby", "-e", "print Gem.ruby_api_version")
   end
 
   def rubygems_bindir
-    HOMEBREW_PREFIX/"bin"
+    HOMEBREW_PREFIX/"lib/ruby/gems/#{api_version}/bin"
   end
 
   def install
     # otherwise `gem` command breaks
     ENV.delete("SDKROOT")
 
-    system "autoconf" if build.head?
+    # Prevent `make` from trying to install headers into the SDK
+    # TODO: Remove this workaround when the following PR is merged/resolved:
+    #       https://github.com/Homebrew/brew/pull/12508
+    inreplace "tool/mkconfig.rb", /^(\s+val = )'"\$\(SDKROOT\)"'\+/, "\\1"
 
-    paths = %w[libyaml openssl readline].map { |f| Formula[f].opt_prefix }
+    system "./autogen.sh" if build.head?
+
+    paths = %w[libyaml openssl@1.1 readline].map { |f| Formula[f].opt_prefix }
     args = %W[
       --prefix=#{prefix}
       --enable-shared
@@ -57,8 +69,12 @@ class Ruby < Formula
       --with-sitedir=#{HOMEBREW_PREFIX}/lib/ruby/site_ruby
       --with-vendordir=#{HOMEBREW_PREFIX}/lib/ruby/vendor_ruby
       --with-opt-dir=#{paths.join(":")}
+      --without-gmp
     ]
-    args << "--disable-dtrace" unless MacOS::CLT.installed?
+    args << "--disable-dtrace" if OS.mac? && !MacOS::CLT.installed?
+
+    # Correct MJIT_CC to not use superenv shim
+    args << "MJIT_CC=/usr/bin/#{DevelopmentTools.default_compiler}"
 
     system "./configure", *args
 
@@ -88,15 +104,21 @@ class Ruby < Formula
 
       system "#{bin}/ruby", "setup.rb", "--prefix=#{buildpath}/vendor_gem"
       rg_in = lib/"ruby/#{api_version}"
+      rg_gems_in = lib/"ruby/gems/#{api_version}"
 
-      # Remove bundled Rubygem version.
-      rm_rf rg_in/"rubygems"
-      rm_f rg_in/"rubygems.rb"
-      rm_f rg_in/"ubygems.rb"
-      rm_f bin/"gem"
+      # Remove bundled Rubygem and Bundler
+      rm_r rg_in/"bundler"
+      rm rg_in/"bundler.rb"
+      rm_r Dir[rg_gems_in/"gems/bundler-*"]
+      rm Dir[rg_gems_in/"specifications/default/bundler-*.gemspec"]
+      rm_r rg_in/"rubygems"
+      rm rg_in/"rubygems.rb"
+      rm bin/"gem"
 
       # Drop in the new version.
       rg_in.install Dir[buildpath/"vendor_gem/lib/*"]
+      (rg_gems_in/"gems").install Dir[buildpath/"vendor_gem/gems/*"]
+      (rg_gems_in/"specifications/default").install Dir[buildpath/"vendor_gem/specifications/default/*"]
       bin.install buildpath/"vendor_gem/bin/gem" => "gem"
       (libexec/"gembin").install buildpath/"vendor_gem/bin/bundle" => "bundle"
       (libexec/"gembin").install_symlink "bundle" => "bundler"
@@ -126,68 +148,87 @@ class Ruby < Formula
     end
   end
 
-  def rubygems_config(api_version); <<~EOS
-    module Gem
-      class << self
-        alias :old_default_dir :default_dir
-        alias :old_default_path :default_path
-        alias :old_default_bindir :default_bindir
-        alias :old_ruby :ruby
-      end
+  def rubygems_config(api_version)
+    <<~EOS
+      module Gem
+        class << self
+          alias :old_default_dir :default_dir
+          alias :old_default_path :default_path
+          alias :old_default_bindir :default_bindir
+          alias :old_ruby :ruby
+          alias :old_default_specifications_dir :default_specifications_dir
+        end
 
-      def self.default_dir
-        path = [
-          "#{HOMEBREW_PREFIX}",
-          "lib",
-          "ruby",
-          "gems",
-          "#{api_version}"
-        ]
+        def self.default_dir
+          path = [
+            "#{HOMEBREW_PREFIX}",
+            "lib",
+            "ruby",
+            "gems",
+            "#{api_version}"
+          ]
 
-        @default_dir ||= File.join(*path)
-      end
+          @homebrew_path ||= File.join(*path)
+        end
 
-      def self.private_dir
-        path = if defined? RUBY_FRAMEWORK_VERSION then
-                 [
-                   File.dirname(RbConfig::CONFIG['sitedir']),
-                   'Gems',
-                   RbConfig::CONFIG['ruby_version']
-                 ]
-               elsif RbConfig::CONFIG['rubylibprefix'] then
-                 [
-                  RbConfig::CONFIG['rubylibprefix'],
-                  'gems',
-                  RbConfig::CONFIG['ruby_version']
-                 ]
-               else
-                 [
-                   RbConfig::CONFIG['libdir'],
-                   ruby_engine,
-                   'gems',
-                   RbConfig::CONFIG['ruby_version']
-                 ]
-               end
+        def self.private_dir
+          path = if defined? RUBY_FRAMEWORK_VERSION then
+                   [
+                     File.dirname(RbConfig::CONFIG['sitedir']),
+                     'Gems',
+                     RbConfig::CONFIG['ruby_version']
+                   ]
+                 elsif RbConfig::CONFIG['rubylibprefix'] then
+                   [
+                    RbConfig::CONFIG['rubylibprefix'],
+                    'gems',
+                    RbConfig::CONFIG['ruby_version']
+                   ]
+                 else
+                   [
+                     RbConfig::CONFIG['libdir'],
+                     ruby_engine,
+                     'gems',
+                     RbConfig::CONFIG['ruby_version']
+                   ]
+                 end
 
-        @private_dir ||= File.join(*path)
-      end
+          @private_dir ||= File.join(*path)
+        end
 
-      def self.default_path
-        if Gem.user_home && File.exist?(Gem.user_home)
-          [user_dir, default_dir, private_dir]
-        else
-          [default_dir, private_dir]
+        def self.default_path
+          if Gem.user_home && File.exist?(Gem.user_home)
+            [user_dir, default_dir, old_default_dir, private_dir]
+          else
+            [default_dir, old_default_dir, private_dir]
+          end
+        end
+
+        def self.default_bindir
+          "#{rubygems_bindir}"
+        end
+
+        def self.ruby
+          "#{opt_bin}/ruby"
+        end
+
+        # https://github.com/Homebrew/homebrew-core/issues/40872#issuecomment-542092547
+        # https://github.com/Homebrew/homebrew-core/pull/48329#issuecomment-584418161
+        def self.default_specifications_dir
+          File.join(Gem.old_default_dir, "specifications", "default")
         end
       end
+    EOS
+  end
 
-      def self.default_bindir
-        "#{rubygems_bindir}"
-      end
+  def caveats
+    return unless latest_version_installed?
 
-      def self.ruby
-        "#{opt_bin}/ruby"
-      end
-    end
+    <<~EOS
+      By default, binaries installed by gem will be placed into:
+        #{rubygems_bindir}
+
+      You may want to add this to your PATH.
     EOS
   end
 
@@ -201,7 +242,8 @@ class Ruby < Formula
       source 'https://rubygems.org'
       gem 'gemoji'
     EOS
-    system rubygems_bindir/"bundle", "install", "--binstubs=#{testpath}/bin"
+    system bin/"bundle", "exec", "ls" # https://github.com/Homebrew/homebrew-core/issues/53247
+    system bin/"bundle", "install", "--binstubs=#{testpath}/bin"
     assert_predicate testpath/"bin/gemoji", :exist?, "gemoji is not installed in #{testpath}/bin"
   end
 end

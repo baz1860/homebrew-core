@@ -1,38 +1,78 @@
 class Vte3 < Formula
   desc "Terminal emulator widget used by GNOME terminal"
-  homepage "https://developer.gnome.org/vte/"
-  url "https://download.gnome.org/sources/vte/0.50/vte-0.50.2.tar.xz"
-  sha256 "79dd316bfaff48f2fb74d066baae0d830e1f44436796fe410a57297e5c5f09cf"
+  homepage "https://wiki.gnome.org/Apps/Terminal/VTE"
+  url "https://download.gnome.org/sources/vte/0.68/vte-0.68.0.tar.xz"
+  sha256 "13e7d4789ca216a33780030d246c9b13ddbfd04094c6316eea7ff92284dd1749"
+  license "LGPL-2.0-or-later"
 
   bottle do
-    sha256 "8f67ad9f65eefe752d64d5af7ed4986d7f31303b73d2cccea7743aa5b07a7c4a" => :high_sierra
-    sha256 "a1e8ce10cbc89bf46d5af3fe7cfb93b52166155ff9afef29548f92feedb8831d" => :sierra
-    sha256 "d47a0e0879f1cfb58e5126275bb3c4ca4fdf0a935db842cd174dbdfd64973ad5" => :el_capitan
+    sha256 arm64_monterey: "7a222faea3146bcf8e1a3664cdbeb3590c4c54fd42e8ffc1a67a9dd4879da992"
+    sha256 arm64_big_sur:  "3d8a1cd65b167256f178776e8fa7b19809930b2a714f24387a8ac41671a31882"
+    sha256 monterey:       "0f710f6639e52a2467ae59d71fe15fbc82788e131b54ee9ab63549c8e4937b71"
+    sha256 big_sur:        "a3686bcb148e407698481364e5af292aa95e148644c17c2645b965af2e5dfd28"
+    sha256 catalina:       "628f861c0000531ac4a04269de6f34e38c8701594fb2f470e17510082ac8a844"
+    sha256 x86_64_linux:   "7fcab5f5558274cf130242c4eaa520a57465787b81e25a6b619967165d34c0a8"
   end
 
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
+  depends_on "vala" => :build
   depends_on "gettext"
-  depends_on "gtk+3"
   depends_on "gnutls"
-  depends_on "vala"
-  depends_on "gobject-introspection"
+  depends_on "gtk+3"
+  depends_on "icu4c"
+  depends_on macos: :mojave
   depends_on "pcre2"
 
+  on_macos do
+    depends_on "llvm" => [:build, :test] if DevelopmentTools.clang_build_version <= 1200
+  end
+
+  on_linux do
+    depends_on "linux-headers@4.15" => :build
+    depends_on "gcc" # for C++20
+    depends_on "systemd"
+  end
+
+  fails_with :clang do
+    build 1200
+    cause "Requires C++20"
+  end
+
+  fails_with :gcc do
+    version "9"
+    cause "Requires C++20"
+  end
+
+  # submitted upstream as https://gitlab.gnome.org/tschoonj/vte/merge_requests/1
+  patch :DATA
+
   def install
-    args = [
-      "--disable-dependency-tracking",
-      "--prefix=#{prefix}",
-      "--disable-Bsymbolic",
-      "--enable-introspection=yes",
-      "--enable-gnome-pty-helper",
+    ENV.remove "HOMEBREW_LIBRARY_PATHS", Formula["llvm"].opt_lib
+    ENV.llvm_clang if OS.mac? && (DevelopmentTools.clang_build_version <= 1200)
+
+    ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
+
+    args = std_meson_args + %w[
+      -Dgir=true
+      -Dgtk3=true
+      -Dgnutls=true
+      -Dvapi=true
+      -D_b_symbolic_functions=false
     ]
 
-    system "./configure", *args
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do
+    ENV.clang if OS.mac? && (DevelopmentTools.clang_build_version <= 1200)
+
     (testpath/"test.c").write <<~EOS
       #include <vte/vte.h>
 
@@ -50,6 +90,7 @@ class Vte3 < Formula
     glib = Formula["glib"]
     gnutls = Formula["gnutls"]
     gtkx3 = Formula["gtk+3"]
+    harfbuzz = Formula["harfbuzz"]
     libepoxy = Formula["libepoxy"]
     libpng = Formula["libpng"]
     libtasn1 = Formula["libtasn1"]
@@ -68,6 +109,7 @@ class Vte3 < Formula
       -I#{glib.opt_lib}/glib-2.0/include
       -I#{gnutls.opt_include}
       -I#{gtkx3.opt_include}/gtk-3.0
+      -I#{harfbuzz.opt_include}/harfbuzz
       -I#{include}/vte-2.91
       -I#{libepoxy.opt_include}
       -I#{libpng.opt_include}/libpng16
@@ -95,13 +137,40 @@ class Vte3 < Formula
       -lgnutls
       -lgobject-2.0
       -lgtk-3
-      -lintl
       -lpango-1.0
       -lpangocairo-1.0
       -lvte-2.91
       -lz
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end
 end
+
+__END__
+diff --git a/meson.build b/meson.build
+index e2200a75..df98872f 100644
+--- a/meson.build
++++ b/meson.build
+@@ -78,6 +78,8 @@ lt_age = vte_minor_version * 100 + vte_micro_version - lt_revision
+ lt_current = vte_major_version + lt_age
+
+ libvte_gtk3_soversion = '@0@.@1@.@2@'.format(libvte_soversion, lt_current, lt_revision)
++osx_version_current = lt_current + 1
++libvte_gtk3_osxversions = [osx_version_current, '@0@.@1@.0'.format(osx_version_current, lt_revision)]
+ libvte_gtk4_soversion = libvte_soversion.to_string()
+
+ # i18n
+diff --git a/src/meson.build b/src/meson.build
+index 79d4a702..0495dea8 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -224,6 +224,7 @@ if get_option('gtk3')
+     vte_gtk3_api_name,
+     sources: libvte_gtk3_sources,
+     version: libvte_gtk3_soversion,
++    darwin_versions: libvte_gtk3_osxversions,
+     include_directories: incs,
+     dependencies: libvte_gtk3_deps,
+     cpp_args: libvte_gtk3_cppflags,

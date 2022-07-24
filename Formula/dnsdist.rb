@@ -1,34 +1,53 @@
 class Dnsdist < Formula
   desc "Highly DNS-, DoS- and abuse-aware loadbalancer"
   homepage "https://www.dnsdist.org/"
-  url "https://downloads.powerdns.com/releases/dnsdist-1.2.0.tar.bz2"
-  sha256 "9885c9ee8ac7076aede586ea58d4642eb877e7b2d76c902254494e2a5a5faa78"
-  revision 1
+  url "https://downloads.powerdns.com/releases/dnsdist-1.7.2.tar.bz2"
+  sha256 "524bd2bb05aa2e05982a971ae8510f2812303ab4486a3861b62212d06b1127cd"
+  license "GPL-2.0-only"
+
+  livecheck do
+    url "https://downloads.powerdns.com/releases/"
+    regex(/href=.*?dnsdist[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "d23cd225aeb66390e5276bcd9cc3a6bf13384aedcb6c734aa646e76a75df2199" => :high_sierra
-    sha256 "bef25797c66ad3d829df4b4b7cbfaf3f9c1182b6698fed1bf0394e003f01b5fa" => :sierra
-    sha256 "f9391933f666eead5287f59fd9fc93c13c917dff27c533a6a28c7ee2b2b07481" => :el_capitan
+    sha256                               arm64_monterey: "217340674a363376daf3661f32c2228e6a47fdc18c56a255d80879011ba792ed"
+    sha256                               arm64_big_sur:  "d5754f3a410aca4e97f47838aea285328371d64e5ead938f46ca5775956e9192"
+    sha256                               monterey:       "ae1c1eab2e439280c15d986724170e308fbe675412cb43a7f8350028376d0ee9"
+    sha256                               big_sur:        "59dec63be07da8392bd6f469e8e45e2385862cbe3b00c652731ac3dcdbcd99c1"
+    sha256                               catalina:       "e5fb9b7356c8e2453ad5fd6a3ac9da6315f99b400214b6d93b664abe2520d455"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "954c1e0ae0b8def8a45c7fca6187f40ec0e55b6489a612426a9945e79d083aca"
   end
 
   depends_on "boost" => :build
   depends_on "pkg-config" => :build
-  depends_on "lua"
+  depends_on "cdb"
+  depends_on "fstrm"
+  depends_on "h2o"
+  depends_on "libsodium"
+  depends_on "luajit-openresty"
+  depends_on "openssl@1.1"
+  depends_on "protobuf"
+  depends_on "re2"
+
+  uses_from_macos "libedit"
+
+  on_linux do
+    depends_on "linux-headers@5.16" => :build
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
-    # error: unknown type name 'mach_port_t'
-    ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version == :sierra
-
-    if MacOS.version == :high_sierra
-      sdk = MacOS::CLT.installed? ? "" : MacOS.sdk_path
-      ENV["LIBEDIT_CFLAGS"] = "-I#{sdk}/usr/include -I#{sdk}/usr/include/editline"
-      ENV["LIBEDIT_LIBS"] = "-L/usr/lib -ledit -lcurses"
-    end
-
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--prefix=#{prefix}",
                           "--without-net-snmp",
+                          "--enable-dns-over-tls",
+                          "--enable-dns-over-https",
+                          "--enable-dnscrypt",
+                          "--with-re2",
                           "--sysconfdir=#{etc}/dnsdist"
     system "make", "install"
   end

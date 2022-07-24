@@ -1,28 +1,45 @@
 class Imageworsener < Formula
   desc "Utility and library for image scaling and processing"
-  homepage "http://entropymine.com/imageworsener/"
-  url "http://entropymine.com/imageworsener/imageworsener-1.3.2.tar.gz"
-  sha256 "0946f8e82eaf4c51b7f3f2624eef89bfdf73b7c5b04d23aae8d3fbe01cca3ea2"
+  homepage "https://entropymine.com/imageworsener/"
+  license "MIT"
   revision 1
 
+  stable do
+    url "https://entropymine.com/imageworsener/imageworsener-1.3.4.tar.gz"
+    sha256 "bae0b2bb35e565133dd804a6f4af303992527f53068cd67b03e5d9961d8512b6"
+
+    # Fix -flat_namespace being used on Big Sur and later.
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+      sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
+    end
+  end
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?imageworsener[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+
   bottle do
-    cellar :any
-    sha256 "1b8964b45f496d8e35c4dc72f2c26b51fa47d301fcd951f109e5062b9dbac13d" => :high_sierra
-    sha256 "e3da0b7bd45f393eb8dd514473a956f7954a6b1e7d5af7e5382b67b9a21d1510" => :sierra
-    sha256 "4bf452a3350cf9121ba3bd7dff9f63bc83bcda4c5e4be194cb1e8cd521a0a0b2" => :el_capitan
-    sha256 "3770deb61aade00b379e422691f4e2b4d13559b5493dd54bc13265b556df1a76" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "95a22e3ec38cf958cf529618b473c4d909ebf0a63f419eedbd3a967c2ee59437"
+    sha256 cellar: :any,                 arm64_big_sur:  "49a10087ef0a0e2844b1aac81d6288a55a38ae1a44e6838b4839a16d7ede1ccd"
+    sha256 cellar: :any,                 monterey:       "5107b352565dbde45e70ecb9c0014d398f1484e0188d67796b567caf6a3d89d9"
+    sha256 cellar: :any,                 big_sur:        "8b89eef7348b681120d65279b58a424495a07f74df19c1688be31131a2aa19a6"
+    sha256 cellar: :any,                 catalina:       "a7cdd866470feabfcc8c7e602f1765a69aebc122d48b5da391a7ad3661b5b8f6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "bda810cee57ed24f184221afcffa158ee54c8c2e474f8b6b45953ed94f8b2b45"
   end
 
   head do
-    url "https://github.com/jsummers/imageworsener.git"
-    depends_on "automake" => :build
+    url "https://github.com/jsummers/imageworsener.git", branch: "master"
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  depends_on "libpng" => :recommended
-  depends_on "jpeg" => :recommended
-  depends_on "webp" => :optional
+  depends_on "jpeg-turbo"
+  depends_on "libpng"
+
+  uses_from_macos "zlib"
 
   def install
     if build.head?
@@ -30,15 +47,7 @@ class Imageworsener < Formula
       system "./scripts/autogen.sh"
     end
 
-    args = %W[
-      --disable-dependency-tracking
-      --prefix=#{prefix}
-    ]
-    args << "--without-png" if build.without? "libpng"
-    args << "--without-jpeg" if build.without? "jpeg"
-    args << "--without-webp" if build.without? "webp"
-
-    system "./configure", *args
+    system "./configure", *std_configure_args, "--without-webp"
     system "make", "install"
     pkgshare.install "tests"
   end

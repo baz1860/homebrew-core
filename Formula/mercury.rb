@@ -1,41 +1,35 @@
 class Mercury < Formula
   desc "Logic/functional programming language"
   homepage "https://mercurylang.org/"
-  url "https://dl.mercurylang.org/release/mercury-srcdist-14.01.1.tar.gz"
-  sha256 "98f7cbde7a7425365400feef3e69f1d6a848b25dc56ba959050523d546c4e88b"
-  revision 1
+  url "https://dl.mercurylang.org/release/mercury-srcdist-22.01.3.tar.gz"
+  sha256 "d5b4b4b7b3a4a63a18731d97034b44f131bf589b6d1b10e8ebc4becef000d048"
+  license all_of: ["GPL-2.0-only", "LGPL-2.0-only", "MIT"]
 
-  bottle do
-    cellar :any
-    sha256 "2b68773f1e4dd35bb70ed17a94f82ef7bb4e11f5169869d8904d7f6ce667003a" => :high_sierra
-    sha256 "200fbd8b1e59fa3b4b7ef80d09955c697a31e83f15eb4c661bef1dc2458236d0" => :sierra
-    sha256 "daf916b14c3358f4d7ed6cdba153f96d6f4acec2d29b9fb43b027a6610bd783d" => :el_capitan
-    sha256 "afcff5ed87fdd477ce8037cca2f3fcab828b71cf78e1fbde951c4e17ae3e0b17" => :yosemite
-    sha256 "0e736ef6f5cc48bc9d6f7d50cb9df6fb52dba2b0b3bf2d83b378f83fcff4ecb9" => :mavericks
+  livecheck do
+    url "https://dl.mercurylang.org/"
+    regex(/href=.*?mercury-srcdist[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "erlang" => :optional
-  depends_on "hwloc" => :optional
-  depends_on "mono" => :optional
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "d4d7da746a3903308c29bdaf2a958a5fe2a8a39479b7915336189510daba2415"
+    sha256 cellar: :any,                 arm64_big_sur:  "ff56525679c46110bb62e291836a5f41603346a3c907d7b6c95ca9d7d9200903"
+    sha256 cellar: :any,                 monterey:       "3d8523d289526f717bcb3547492f5ab73b687b7fd93b8f93e123d993c5020f02"
+    sha256 cellar: :any,                 big_sur:        "b655f38b5eab501a46de0681b8861a98eacd26b86561c46cc3b1c9ee09a682f4"
+    sha256 cellar: :any,                 catalina:       "b28cfbfa350b95d12542948cb547bd9e93f23d9d9eb41c319e70e9eb7aa2f124"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5adad7ca5952d6548e893639c131f6fa000fc6564d077f37df1b69398ea35093"
+  end
+
+  depends_on "openjdk"
+
+  uses_from_macos "flex"
 
   def install
-    args = ["--prefix=#{prefix}",
+    system "./configure", "--prefix=#{prefix}",
             "--mandir=#{man}",
             "--infodir=#{info}",
-            "--disable-dependency-tracking",
-            "--enable-java-grade"]
+            "mercury_cv_is_littleender=yes" # Fix broken endianness detection
 
-    args << "--enable-erlang-grade" if build.with? "erlang"
-    args << "--with-hwloc" if build.with? "hwloc"
-    args << "--enable-csharp-grade" if build.with? "mono"
-
-    system "./configure", *args
-
-    # The build system doesn't quite honour the mandir/infodir autoconf
-    # parameters.
-    system "make", "install", "PARALLEL=-j",
-                              "INSTALL_MAN_DIR=#{man}",
-                              "INSTALL_INFO_DIR=#{info}"
+    system "make", "install", "PARALLEL=-j"
 
     # Remove batch files for windows.
     rm Dir.glob("#{bin}/*.bat")
@@ -53,7 +47,13 @@ class Mercury < Formula
       main(IOState_in, IOState_out) :-
           io.write_string("#{test_string}", IOState_in, IOState_out).
     EOS
-    system "#{bin}/mmc", "--make", "hello"
+
+    system "#{bin}/mmc", "-o", "hello_c", "hello"
+    assert_predicate testpath/"hello_c", :exist?
+
+    assert_equal test_string, shell_output("#{testpath}/hello_c")
+
+    system "#{bin}/mmc", "--grade", "java", "hello"
     assert_predicate testpath/"hello", :exist?
 
     assert_equal test_string, shell_output("#{testpath}/hello")

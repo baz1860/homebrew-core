@@ -1,64 +1,58 @@
-# Note that odd release numbers indicate unstable releases.
-# Please only submit PRs for [x.x.even] version numbers:
+# NOTE: Odd release numbers indicate unstable releases.
+# Please only submit PRs for [x.even.x] version numbers:
 # https://github.com/djcb/mu/commit/23f4a64bdcdee3f9956a39b9a5a4fd0c5c2370ba
 class Mu < Formula
   desc "Tool for searching e-mail messages stored in the maildir-format"
   homepage "https://www.djcbsoftware.nl/code/mu/"
-  url "https://github.com/djcb/mu/releases/download/v1.0/mu-1.0.tar.xz"
-  sha256 "966adc4db108f8ddf162891f9c3c24ba27f78c31f86575a0e05fbf14e857a513"
+  url "https://github.com/djcb/mu/releases/download/v1.8.6/mu-1.8.6.tar.xz"
+  sha256 "ad68072865536c314e7c251fbb65c7bf0c7908ffcc2aa024720eb2af752944f1"
+  license "GPL-3.0-or-later"
+  head "https://github.com/djcb/mu.git", branch: "master"
+
+  # We restrict matching to versions with an even-numbered minor version number,
+  # as an odd-numbered minor version number indicates a development version:
+  # https://github.com/djcb/mu/commit/23f4a64bdcdee3f9956a39b9a5a4fd0c5c2370ba
+  livecheck do
+    url :stable
+    regex(/^v?(\d+\.\d*[02468](?:\.\d+)*)$/i)
+  end
 
   bottle do
-    sha256 "d6d58dc0b9fc5d5454c0bf68230f6f8fb8cb973821de3e41ec267ce2614d8ec3" => :high_sierra
-    sha256 "0a818cbcfa365710bd48a97092218042dc8d00afd73b3f781c0982f8668a8410" => :sierra
-    sha256 "588ebfb6e7d577e8efd4a38ca1ae598998c8e015dd1101db8785641bdea17f6a" => :el_capitan
+    sha256 arm64_monterey: "f262f611d0b85ed0491392a99e621081a9ae437fb145dec082f0f4334e9af9ae"
+    sha256 arm64_big_sur:  "340213f4317c7e71c57ba0c76c9383fa77a5551e2e5a9afcfe40ef99a2841da8"
+    sha256 monterey:       "491c067e333648356d5814e385028768e8cfc903767814b109ee3db4cb1f2d67"
+    sha256 big_sur:        "510f6d930e205628a572eef152d241ea25d9d2984a61b29a869122c3575d6197"
+    sha256 catalina:       "24f945b97e39687c7ebde66403006d6f6bdc73a2bac6c5dc0a23478261651a31"
+    sha256 x86_64_linux:   "ecba9eda515bea059c7989b95467473513dfaa896475c80686959d7856189bdf"
   end
 
-  head do
-    url "https://github.com/djcb/mu.git"
-
-    depends_on "autoconf-archive" => :build
-  end
-
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
-  depends_on "pkg-config" => :build
+  depends_on "emacs" => :build
   depends_on "libgpg-error" => :build
+  depends_on "libtool" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
   depends_on "gettext"
   depends_on "glib"
+  depends_on "gmime"
   depends_on "xapian"
-  depends_on "emacs" => :optional
 
-  # Currently requires gmime 2.6.x
-  resource "gmime" do
-    url "https://download.gnome.org/sources/gmime/2.6/gmime-2.6.23.tar.xz"
-    sha256 "7149686a71ca42a1390869b6074815106b061aaeaaa8f2ef8c12c191d9a79f6a"
+  uses_from_macos "texinfo" => :build
+
+  on_linux do
+    depends_on "gcc"
   end
+
+  conflicts_with "mu-repo", because: "both install `mu` binaries"
+
+  fails_with gcc: "5"
 
   def install
-    resource("gmime").stage do
-      system "./configure", "--prefix=#{prefix}/gmime", "--disable-introspection"
-      system "make", "install"
-      ENV.append_path "PKG_CONFIG_PATH", "#{prefix}/gmime/lib/pkgconfig"
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dlispdir=#{elisp}", ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
-
-    # Explicitly tell the build not to include emacs support as the version
-    # shipped by default with macOS is too old.
-    ENV["EMACS"] = "no" if build.without? "emacs"
-
-    system "autoreconf", "-ivf"
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
-                          "--with-lispdir=#{elisp}"
-    system "make"
-    system "make", "install"
-  end
-
-  def caveats; <<~EOS
-    Existing mu users are recommended to run the following after upgrading:
-
-      mu index --rebuild
-    EOS
   end
 
   # Regression test for:
@@ -87,17 +81,17 @@ class Mu < Formula
       This used to happen outdoors. It was more fun then.
     EOS
 
-    system "#{bin}/mu", "index",
-                        "--muhome",
-                        testpath,
-                        "--maildir=#{testpath}"
+    system "#{bin}/mu", "init", "--muhome=#{testpath}", "--maildir=#{testpath}"
+    system "#{bin}/mu", "index", "--muhome=#{testpath}"
 
-    mu_find = "#{bin}/mu find --muhome #{testpath} "
+    mu_find = "#{bin}/mu find --muhome=#{testpath} "
     find_message = "#{mu_find} msgid:2222222222@example.com"
     find_message_and_related = "#{mu_find} --include-related msgid:2222222222@example.com"
 
     assert_equal 1, shell_output(find_message).lines.count
-    assert_equal 2, shell_output(find_message_and_related).lines.count,
-                 "You tripped over https://github.com/djcb/mu/issues/380\n\t--related doesn't work. Everything else should"
+    assert_equal 2, shell_output(find_message_and_related).lines.count, <<~EOS
+      You tripped over https://github.com/djcb/mu/issues/380
+        --related doesn't work. Everything else should
+    EOS
   end
 end

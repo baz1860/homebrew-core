@@ -1,33 +1,26 @@
 class ApacheCtakes < Formula
   desc "NLP system for extraction of information from EMR clinical text"
   homepage "https://ctakes.apache.org"
-  url "https://apache.osuosl.org/ctakes/ctakes-4.0.0/apache-ctakes-4.0.0-bin.tar.gz"
-  sha256 "37ca2b8dfe06465469ed1830fbb84dfc7bcc4295e5387d66e90a76ad2a5cdeaf"
+  url "https://dlcdn.apache.org//ctakes/ctakes-4.0.0.1/apache-ctakes-4.0.0.1-bin.tar.gz"
+  sha256 "f741016e3755054876f3bb27f916a8008af27175ef33785638a6292d300c972e"
+  license "Apache-2.0"
 
-  bottle :unneeded
-
-  option "with-ctakes-resources", "Install prebuilt dictionaries and models"
-
-  depends_on :java => "1.8+"
-
-  resource "ctakes-resources" do
-    url "https://downloads.sourceforge.net/project/ctakesresources/ctakes-resources-4.0-bin.zip"
-    sha256 "c72b5f64e1572c207c139f1dfbe6fa8b5e3708bc66e1f5d6f4c8863055121351"
+  bottle do
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "4c6af60f27e2795e09763b88aa81e00faa80ba6d46e6f6cac3d2cd0b72b9f69f"
   end
 
+  deprecate! date: "2021-12-21", because: "installs binaries and does not build from source"
+
+  depends_on "openjdk"
+
   def install
-    rm_f Dir["bin/*.bat", "bin/*.cmd", "bin/ctakes.profile", "bin/ctakes-ytex",
-             "libexec/*.bat", "libexec/*.cmd"]
+    rm Dir["**/*.{bat,cmd}"] + ["bin/ctakes.profile"]
     libexec.install %w[bin config desc lib resources]
     pkgshare.install_symlink libexec/"resources/org/apache/ctakes/examples"
 
-    if build.with? "ctakes-resources"
-      resource("ctakes-resources").stage do
-        system "ditto", "resources", libexec/"resources"
-      end
-    end
-
-    bin.write_exec_script Dir["#{libexec}/bin/*"]
+    bin.install Dir["#{libexec}/bin/*.sh"]
+    bin.env_script_all_files libexec/"bin", JAVA_HOME: Formula["openjdk"].opt_prefix
   end
 
   test do

@@ -1,30 +1,26 @@
 class Iamy < Formula
   desc "AWS IAM import and export tool"
   homepage "https://github.com/99designs/iamy"
-  url "https://github.com/99designs/iamy/archive/v2.1.1.tar.gz"
-  sha256 "c23e061ab0ebe8009e2db27fef95d733490a5a76a4f7d54bd1323ab8faf2441a"
-  head "https://github.com/99designs/iamy.git"
+  url "https://github.com/99designs/iamy/archive/v2.4.0.tar.gz"
+  sha256 "13bd9e66afbeb30d386aa132a4af5d2e9a231d2aadf54fe8e5dc325583379359"
+  license "MIT"
+  head "https://github.com/99designs/iamy.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "65aec3b7fda4554e1ae2d68a1f1828b237767d9d1b03e1a4010147dec671d07f" => :high_sierra
-    sha256 "0032e8af26d5f19e127680b3c2a46edf8acfcdcc43705ec28c59c29b5cb7cf8e" => :sierra
-    sha256 "e423ebfa60cb94e4af9d2bbe396c10791201f5be000da123981dbbce8bfca5fe" => :el_capitan
-    sha256 "7711c9a181026bbb9f662fa04b08da34cff6a3bc7744b5e7546e47bf1615b1b0" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "b0283107c1a133b0f8e7295de2fc2970a4824a2638011c63eb37cc55c654f8f1"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "9b81ec5512ba8332739f653b1c93a4b2118a1e9929329e0e6c4d2dd80c47d5a6"
+    sha256 cellar: :any_skip_relocation, monterey:       "df95bd8de163fb4fcecd92ba25fa559b75332c6fcb6a5aebb205ffbb3a4148dd"
+    sha256 cellar: :any_skip_relocation, big_sur:        "59dde9a556103175d876fd1fba134133ddd1b162daa491cdbf35bb58bfb4fc85"
+    sha256 cellar: :any_skip_relocation, catalina:       "54c8b998bcfe19443e99f609e34864a39e9d3b49cd5f935c78b9654727a81137"
+    sha256 cellar: :any_skip_relocation, mojave:         "1024d9cc234fb7e94ff17781c2f600ed6d286c5e7b6ab96b20e259e61a56a0ae"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "dc26edb3bea1993f7650cce2cfd848318ba19cf3a155ae7838823b4f4c3c8041"
   end
 
   depends_on "go" => :build
   depends_on "awscli"
 
   def install
-    ENV["GOPATH"] = buildpath
-    dir = buildpath/"src/github.com/99designs/iamy"
-    dir.install buildpath.children
-    cd dir do
-      system "go", "build", "-o", bin/"iamy", "-ldflags",
-             "-X main.Version=v#{version}"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args(ldflags: "-s -w -X main.Version=v#{version}")
   end
 
   test do

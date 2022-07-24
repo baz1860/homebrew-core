@@ -1,24 +1,23 @@
 class GnuProlog < Formula
   desc "Prolog compiler with constraint solving"
   homepage "http://www.gprolog.org/"
-  url "http://gprolog.univ-paris1.fr/gprolog-1.4.4.tar.gz"
-  sha256 "18c0e9644b33afd4dd3cdf29f94c099ad820d65e0c99da5495b1ae43b4f2b18e"
+  url "http://www.gprolog.org/gprolog-1.5.0.tar.gz"
+  sha256 "670642b43c0faa27ebd68961efb17ebe707688f91b6809566ddd606139512c01"
+  license any_of: ["LGPL-3.0-or-later", "GPL-2.0-or-later"]
 
-  bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "f8d446ec6be0b8db9d4a2b6602877386a050f678d7900e5b8b00f345a4562f5c" => :high_sierra
-    sha256 "9a449562401a31c551224e9703ec45dcf4b013b1a77d9b5de65a0b162c744d0a" => :sierra
-    sha256 "9d8e49f034bd641578443d1c422937a14f4819742ef6844dee4df1998a6388c9" => :el_capitan
-    sha256 "b835e9887909affa110d4a57abf7bfecee8d9aee0fb29f38432112c1347441d2" => :yosemite
-    sha256 "4412b7d3c6ee2390189fe3bd339f8c3ed028fb3a9b145794038f4c4f0f0ea90f" => :mavericks
+  livecheck do
+    url :homepage
+    regex(/href=.*?gprolog[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  # Upstream patch:
-  # https://sourceforge.net/p/gprolog/code/ci/784b3443a0a2f087c1d1e7976739fa517efe6af6
-  patch do
-    url "https://gist.githubusercontent.com/jacknagel/7549696/raw/3078eef282ca141c95a0bf74396f4248bbe34775/gprolog-clang.patch"
-    sha256 "3b47551d96f23ab697f37a68ab206219ee29f747bc46b9f0cae9b60c5dafa3b2"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "2743f08c397b6ae19c11270477b61afd7f5dc598aaaaab5146b4d5a08fd9289b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "417bfc3b0df319fa7b0b4ec3f262a5cdb3cbf8a10750c0850d9427afc3c408ac"
+    sha256 cellar: :any_skip_relocation, monterey:       "5e2d325ed9824cdf9283341f009ac01655616d8d61fe9c4b08b21f190a445611"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d0a8099131295fb00e49b1921a544e5cf0564593f52a35cccdae8fe239785c2c"
+    sha256 cellar: :any_skip_relocation, catalina:       "7d5b67ea483e7b80e2a2d1ff30874d53afe0d5f416ef6d7e4480beaa3be6153a"
+    sha256 cellar: :any_skip_relocation, mojave:         "b89f575f9b32a43180b7ad527e2ac9f71b9de4440285cccb1a326752a12ef7c3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "fdf61462c5418578e9d629fa743b527b462e6f767fbb64af23db63115a8d39c4"
   end
 
   def install
@@ -36,6 +35,6 @@ class GnuProlog < Formula
       main :- write('Hello World!'), nl, halt.
     EOS
     system "#{bin}/gplc", "test.pl"
-    assert_match /Hello World!/, shell_output("./test")
+    assert_match "Hello World!", shell_output("./test")
   end
 end

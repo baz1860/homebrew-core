@@ -1,57 +1,57 @@
-require "language/haskell"
-
 class HaskellStack < Formula
-  include Language::Haskell::Cabal
-
-  desc "The Haskell Tool Stack"
+  desc "Cross-platform program for developing Haskell projects"
   homepage "https://haskellstack.org/"
-  url "https://github.com/commercialhaskell/stack/releases/download/v1.6.5/stack-1.6.5-sdist-1.tar.gz"
-  version "1.6.5"
-  sha256 "71d02e2a3b507dcde7596f51d9a342865020aa74ebe79847d7bf815e1c7f2abb"
-  head "https://github.com/commercialhaskell/stack.git"
+  license "BSD-3-Clause"
+  head "https://github.com/commercialhaskell/stack.git", branch: "master"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "db238d3a7882f2daf3db591d299a4cdb61aa686dd98689dd067ec5ceb1f238d9" => :high_sierra
-    sha256 "89b99c0ecd45ce787072ddebb0bf50abdb131714ff68d83e9d0f0bf67126fa71" => :sierra
-    sha256 "3709f279175426311d54a8096dd7058bcd470e7dd8c4164d8cb2d3ef5f1be9f9" => :el_capitan
+  stable do
+    url "https://github.com/commercialhaskell/stack/archive/v2.7.5.tar.gz"
+    sha256 "7e77a91c9e2366b6be292188c1a36c96f8830f8a5f4a079fae7f73b9b0d2c8b6"
   end
 
-  option "without-bootstrap", "Don't bootstrap a stage 2 stack"
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "8544fc3515d4f792e985bcfc87f65f9b6d172a393ab46dfb68f9698067f0c387"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "3b1f9af2e37102a5986ba24591dad17800c4d8339b18dc74b11690b1a8a1fee9"
+    sha256 cellar: :any_skip_relocation, monterey:       "9694d69422504e9531370a44bccd72a2a02f2e3811876ab4da7eb414a43567df"
+    sha256 cellar: :any_skip_relocation, big_sur:        "258a48a663a48aaf3c7a7ae829e8ad3639efcbc9750158913987dacb89bf65dc"
+    sha256 cellar: :any_skip_relocation, catalina:       "0554a6de930c455adf30e59e47d7a08603a282ed093dc314dfe059d6aed38160"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "72fd574d73cb6fbd45707dfa91cf44a701e9db08d0f2dca87e6100307989c61f"
+  end
 
   depends_on "cabal-install" => :build
   depends_on "ghc" => :build
 
-  # Remove when stack.yaml uses GHC 8.2.x
-  resource "stack_nightly_yaml" do
-    url "https://raw.githubusercontent.com/commercialhaskell/stack/v1.6.5/stack-nightly.yaml"
-    version "1.6.5"
-    sha256 "07ef0e20d4ba52a02d94f9809ffbd6980fbc57c66316620ba6a4cacfa4c9a7dd"
+  uses_from_macos "zlib"
+
+  # All ghc versions before 9.2.1 requires LLVM Code Generator as a backend on
+  # ARM. GHC 8.10.7 user manual recommend use LLVM 9 through 12 and we met some
+  # unknown issue with LLVM 13 before so conservatively use LLVM 12 here.
+  #
+  # References:
+  #   https://downloads.haskell.org/~ghc/8.10.7/docs/html/users_guide/8.10.7-notes.html
+  #   https://gitlab.haskell.org/ghc/ghc/-/issues/20559
+  on_arm do
+    depends_on "llvm@12"
   end
 
   def install
-    buildpath.install resource("stack_nightly_yaml")
+    # https://github.com/JustusAdam/mustache/issues/41
+    cabal_install_constraints = ["--constraint=mustache^>=2.3.1"]
 
-    cabal_sandbox do
-      cabal_install "happy"
+    system "cabal", "v2-update"
+    system "cabal", "v2-install", *std_cabal_v2_args, *cabal_install_constraints
 
-      if build.with? "bootstrap"
-        cabal_install
-
-        # Let `stack` handle its own parallelization
-        # Prevents "install: mkdir ... ghc-7.10.3/lib: File exists"
-        jobs = ENV.make_jobs
-        ENV.deparallelize
-
-        system "stack", "-j#{jobs}", "--stack-yaml=stack-nightly.yaml", "setup"
-        system "stack", "-j#{jobs}", "--local-bin-path=#{bin}", "install"
-      else
-        install_cabal_package
-      end
-    end
+    bin.env_script_all_files libexec, PATH: "${PATH}:#{Formula["llvm@12"].opt_bin}" if Hardware::CPU.arm?
   end
 
   test do
     system bin/"stack", "new", "test"
+    assert_predicate testpath/"test", :exist?
+    assert_match "# test", File.read(testpath/"test/README.md")
   end
 end

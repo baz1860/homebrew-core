@@ -1,46 +1,36 @@
 class Itstool < Formula
   desc "Make XML documents translatable through PO files"
   homepage "http://itstool.org/"
-  revision 1
-
-  stable do
-    url "http://files.itstool.org/itstool/itstool-2.0.4.tar.bz2"
-    sha256 "97c208b51da33e0b553e830b92655f8deb9132f8fbe9a646771f95c33226eb60"
-
-    # Upstream commit from 25 Oct 2017 "Be more careful about libxml2 memory management"
-    # See https://github.com/itstool/itstool/issues/17
-    patch do
-      url "https://github.com/itstool/itstool/commit/9b84c00.patch?full_index=1"
-      sha256 "c33f44affc27604c6a91a8ae2e992273bf588c228e635ea46d958e2c3046e9ca"
-    end
-  end
+  url "https://github.com/itstool/itstool/archive/2.0.7.tar.gz"
+  sha256 "fba78a37dc3535e4686c7f57407b97d03c676e3a57beac5fb2315162b0cc3176"
+  license "GPL-3.0"
+  head "https://github.com/itstool/itstool.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "9dc3edc35150bd1701f9107b2248a5b275d1842447aa58f77341c4af8e478d7e" => :high_sierra
-    sha256 "9dc3edc35150bd1701f9107b2248a5b275d1842447aa58f77341c4af8e478d7e" => :sierra
-    sha256 "9dc3edc35150bd1701f9107b2248a5b275d1842447aa58f77341c4af8e478d7e" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "01fcbe25d1551ec84a14e3a880d9565057065d5024491f870626e5d89921565d"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "01fcbe25d1551ec84a14e3a880d9565057065d5024491f870626e5d89921565d"
+    sha256 cellar: :any_skip_relocation, monterey:       "acbdf687a02126c08c69514d248804c3833408331272fe8fb3751eb7d8dc0502"
+    sha256 cellar: :any_skip_relocation, big_sur:        "acbdf687a02126c08c69514d248804c3833408331272fe8fb3751eb7d8dc0502"
+    sha256 cellar: :any_skip_relocation, catalina:       "acbdf687a02126c08c69514d248804c3833408331272fe8fb3751eb7d8dc0502"
+    sha256 cellar: :any_skip_relocation, mojave:         "acbdf687a02126c08c69514d248804c3833408331272fe8fb3751eb7d8dc0502"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "01fcbe25d1551ec84a14e3a880d9565057065d5024491f870626e5d89921565d"
   end
 
-  head do
-    url "https://github.com/itstool/itstool.git"
-
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-  end
-
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
   depends_on "libxml2"
+  depends_on "python@3.9"
 
   def install
-    ENV.append_path "PYTHONPATH", "#{Formula["libxml2"].opt_lib}/python2.7/site-packages"
+    xy = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+    ENV.append_path "PYTHONPATH", "#{Formula["libxml2"].opt_lib}/python#{xy}/site-packages"
 
-    system "./autogen.sh" if build.head?
-    system "./configure", "--prefix=#{libexec}"
+    system "./autogen.sh", "--prefix=#{libexec}",
+                           "PYTHON=#{Formula["python@3.9"].opt_bin}/python3"
     system "make", "install"
 
     bin.install Dir["#{libexec}/bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    bin.env_script_all_files(libexec/"bin", PYTHONPATH: ENV["PYTHONPATH"])
     pkgshare.install_symlink libexec/"share/itstool/its"
     man1.install_symlink libexec/"share/man/man1/itstool.1"
   end

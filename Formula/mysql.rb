@@ -1,63 +1,69 @@
 class Mysql < Formula
   desc "Open source relational database management system"
-  homepage "https://dev.mysql.com/doc/refman/5.7/en/"
-  url "https://cdn.mysql.com/Downloads/MySQL-5.7/mysql-boost-5.7.21.tar.gz"
-  sha256 "ad29ecb6fb3c3571394fe231633a2d1d188d49e9eb749daa4e8799b7630daa09"
+  homepage "https://dev.mysql.com/doc/refman/8.0/en/"
+  url "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-8.0.29.tar.gz"
+  sha256 "fd34a84c65fc7b15609d55b1f5d128c4d5543a6b95fa638569c3277c5c7bb048"
+  license "GPL-2.0-only" => { with: "Universal-FOSS-exception-1.0" }
+  revision 1
+
+  livecheck do
+    url "https://dev.mysql.com/downloads/mysql/?tpl=files&os=src"
+    regex(/href=.*?mysql[._-](?:boost[._-])?v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "a7c26e2b52bb4efa8948c808270baabd9a77b7d88b7c66367497f6a4aa1b5954" => :high_sierra
-    sha256 "54954ee3932c803edf8dcbcf9b9d1eb6efca440803874715c84bcf8ae57fe3e5" => :sierra
-    sha256 "8fe03949331ab255c0b26e3bf88a311cf6f9f5f2de46ef01798d696d2b500652" => :el_capitan
+    sha256 arm64_monterey: "44ca13520fc178a8e0cdd632d60e9fb8b556cb97ccdefb0ce01e1e695d4d02a6"
+    sha256 arm64_big_sur:  "6efda5f408fb4ed7cb3af7fca7564e1f18d4cbd59ac92bed156c32f7fda9a2b0"
+    sha256 monterey:       "9bbc59b2f7435b53ac3ceabaced34aad617e0e31dfef0a0cd6f568e2e08c81b2"
+    sha256 big_sur:        "eb5a423947f6f86026e5b479b58d6ef1f005ec5c1bb4ca4abfbee01f9d5f5cd5"
+    sha256 catalina:       "3bc0f84e60e324af0653d0a85657b3cce73225b7528a07814d3f5ce350012a5f"
+    sha256 x86_64_linux:   "bd3d69df0f429cafbbebd39db3364d938ce725f4df7b3d11a90408402a21ebf3"
   end
-
-  devel do
-    url "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-boost-8.0.4-rc.tar.gz"
-    sha256 "648b1e39f45d7e4b65bae572f5d475db4a0c5e9db6ede75d8a3762972f312833"
-
-    fails_with :clang do
-      build 800
-      cause "Wrong inlining with Clang 8.0, see MySQL Bug #86711"
-    end
-    # GCC is not supported either, so exclude for El Capitan.
-    depends_on :macos => :sierra if DevelopmentTools.clang_build_version == 800
-  end
-
-  option "with-debug", "Build with debug support"
-  option "with-embedded", "Build the embedded server"
-  option "with-local-infile", "Build with local infile loading support"
-  option "with-memcached", "Build with InnoDB Memcached plugin"
-  option "with-test", "Build with unit tests"
-
-  deprecated_option "enable-debug" => "with-debug"
-  deprecated_option "enable-local-infile" => "with-local-infile"
-  deprecated_option "enable-memcached" => "with-memcached"
-  deprecated_option "with-tests" => "with-test"
 
   depends_on "cmake" => :build
-  depends_on "openssl"
+  depends_on "pkg-config" => :build
+  depends_on "icu4c"
+  depends_on "libevent"
+  depends_on "libfido2"
+  depends_on "lz4"
+  depends_on "openssl@1.1"
+  depends_on "protobuf"
+  depends_on "zstd"
 
-  # https://github.com/Homebrew/homebrew-core/issues/1475
-  # Needs at least Clang 3.3, which shipped alongside Lion.
-  # Note: MySQL themselves don't support anything below El Capitan.
-  depends_on :macos => :lion
+  uses_from_macos "curl"
+  uses_from_macos "cyrus-sasl"
+  uses_from_macos "libedit"
+  uses_from_macos "zlib"
 
-  conflicts_with "mysql-cluster", "mariadb", "percona-server",
-    :because => "mysql, mariadb, and percona install the same binaries."
-  conflicts_with "mysql-connector-c",
-    :because => "both install MySQL client libraries"
-  conflicts_with "mariadb-connector-c",
-    :because => "both install plugins"
+  on_linux do
+    depends_on "patchelf" => :build
+    depends_on "gcc" # for C++17
+  end
+
+  conflicts_with "mariadb", "percona-server",
+    because: "mysql, mariadb, and percona install the same binaries"
+
+  fails_with gcc: "5"
 
   def datadir
     var/"mysql"
   end
 
   def install
+    if OS.linux?
+      # Fix libmysqlgcs.a(gcs_logging.cc.o): relocation R_X86_64_32
+      # against `_ZN17Gcs_debug_options12m_debug_noneB5cxx11E' can not be used when making
+      # a shared object; recompile with -fPIC
+      ENV.append_to_cflags "-fPIC"
+
+      # Disable ABI checking
+      inreplace "cmake/abi_check.cmake", "RUN_ABI_CHECK 1", "RUN_ABI_CHECK 0"
+    end
+
     # -DINSTALL_* are relative to `CMAKE_INSTALL_PREFIX` (`prefix`)
     args = %W[
+      -DFORCE_INSOURCE_BUILD=1
       -DCOMPILATION_COMMENT=Homebrew
-      -DDEFAULT_CHARSET=utf8
-      -DDEFAULT_COLLATION=utf8_general_ci
       -DINSTALL_DOCDIR=share/doc/#{name}
       -DINSTALL_INCLUDEDIR=include/mysql
       -DINSTALL_INFODIR=share/info
@@ -66,36 +72,21 @@ class Mysql < Formula
       -DINSTALL_PLUGINDIR=lib/plugin
       -DMYSQL_DATADIR=#{datadir}
       -DSYSCONFDIR=#{etc}
+      -DWITH_SYSTEM_LIBS=ON
       -DWITH_BOOST=boost
       -DWITH_EDITLINE=system
-      -DWITH_SSL=yes
+      -DWITH_FIDO=system
+      -DWITH_ICU=system
+      -DWITH_LIBEVENT=system
+      -DWITH_LZ4=system
+      -DWITH_PROTOBUF=system
+      -DWITH_SSL=system
+      -DWITH_ZLIB=system
+      -DWITH_ZSTD=system
+      -DWITH_UNIT_TESTS=OFF
+      -DENABLED_LOCAL_INFILE=1
+      -DWITH_INNODB_MEMCACHED=ON
     ]
-
-    # To enable unit testing at build, we need to download the unit testing suite
-    if build.with? "test"
-      args << "-DENABLE_DOWNLOADS=ON"
-    else
-      args << "-DWITH_UNIT_TESTS=OFF"
-    end
-
-    # Build with debug support
-    args << "-DWITH_DEBUG=1" if build.with? "debug"
-
-    # Build the embedded server
-    args << "-DWITH_EMBEDDED_SERVER=ON" if build.with? "embedded"
-
-    # Build with local infile loading support
-    args << "-DENABLED_LOCAL_INFILE=1" if build.with? "local-infile"
-
-    # Build with InnoDB Memcached plugin
-    args << "-DWITH_INNODB_MEMCACHED=ON" if build.with? "memcached"
-
-    # To enable unit testing at build, we need to download the unit testing suite
-    if build.with? "test"
-      args << "-DENABLE_DOWNLOADS=ON"
-    else
-      args << "-DWITH_UNIT_TESTS=OFF"
-    end
 
     system "cmake", ".", *std_cmake_args, *args
     system "make"
@@ -105,8 +96,8 @@ class Mysql < Formula
       system "./mysql-test-run.pl", "status", "--vardir=#{Dir.mktmpdir}"
     end
 
-    # Remove the tests directory if they are not built.
-    rm_rf prefix/"mysql-test" if build.without? "test"
+    # Remove the tests directory
+    rm_rf prefix/"mysql-test"
 
     # Don't create databases inside of the prefix!
     # See: https://github.com/Homebrew/homebrew/issues/4975
@@ -124,14 +115,19 @@ class Mysql < Formula
       [mysqld]
       # Only allow connections from localhost
       bind-address = 127.0.0.1
+      mysqlx-bind-address = 127.0.0.1
     EOS
     etc.install "my.cnf"
   end
 
   def post_install
-    # Make sure the datadir exists
-    datadir.mkpath
-    unless (datadir/"mysql/user.frm").exist?
+    # Make sure the var/mysql directory exists
+    (var/"mysql").mkpath
+
+    # Don't initialize database, it clashes when testing other MySQL-like implementations.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
+    unless (datadir/"mysql/general_log.CSM").exist?
       ENV["TMPDIR"] = nil
       system bin/"mysqld", "--initialize-insecure", "--user=#{ENV["USER"]}",
         "--basedir=#{prefix}", "--datadir=#{datadir}", "--tmpdir=/tmp"
@@ -148,7 +144,7 @@ class Mysql < Formula
       To connect run:
           mysql -uroot
     EOS
-    if my_cnf = ["/etc/my.cnf", "/etc/mysql/my.cnf"].find { |x| File.exist? x }
+    if (my_cnf = ["/etc/my.cnf", "/etc/mysql/my.cnf"].find { |x| File.exist? x })
       s += <<~EOS
 
         A "#{my_cnf}" from another install may interfere with a Homebrew-built
@@ -158,49 +154,25 @@ class Mysql < Formula
     s
   end
 
-  plist_options :manual => "mysql.server start"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/mysqld_safe</string>
-        <string>--datadir=#{datadir}</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{datadir}</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"mysqld_safe", "--datadir=#{var}/mysql"]
+    keep_alive true
+    working_dir var/"mysql"
   end
 
   test do
-    begin
-      # Expects datadir to be a completely clean dir, which testpath isn't.
-      dir = Dir.mktmpdir
-      system bin/"mysqld", "--initialize-insecure", "--user=#{ENV["USER"]}",
-      "--basedir=#{prefix}", "--datadir=#{dir}", "--tmpdir=#{dir}"
-
-      pid = fork do
-        exec bin/"mysqld", "--bind-address=127.0.0.1", "--datadir=#{dir}"
-      end
-      sleep 2
-
-      output = shell_output("curl 127.0.0.1:3306")
-      output.force_encoding("ASCII-8BIT") if output.respond_to?(:force_encoding)
-      assert_match version.to_s, output
-    ensure
-      Process.kill(9, pid)
-      Process.wait(pid)
+    (testpath/"mysql").mkpath
+    (testpath/"tmp").mkpath
+    system bin/"mysqld", "--no-defaults", "--initialize-insecure", "--user=#{ENV["USER"]}",
+      "--basedir=#{prefix}", "--datadir=#{testpath}/mysql", "--tmpdir=#{testpath}/tmp"
+    port = free_port
+    fork do
+      system "#{bin}/mysqld", "--no-defaults", "--user=#{ENV["USER"]}",
+        "--datadir=#{testpath}/mysql", "--port=#{port}", "--tmpdir=#{testpath}/tmp"
     end
+    sleep 5
+    assert_match "information_schema",
+      shell_output("#{bin}/mysql --port=#{port} --user=root --password= --execute='show databases;'")
+    system "#{bin}/mysqladmin", "--port=#{port}", "--user=root", "--password=", "shutdown"
   end
 end

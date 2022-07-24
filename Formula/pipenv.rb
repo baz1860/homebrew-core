@@ -2,57 +2,51 @@ class Pipenv < Formula
   include Language::Python::Virtualenv
 
   desc "Python dependency management tool"
-  homepage "https://docs.pipenv.org/"
-  url "https://files.pythonhosted.org/packages/aa/74/24afb34771d81294f660e1bc2beb06a7ac674f0798bbac505b7ac856a3ae/pipenv-10.1.0.tar.gz"
-  sha256 "3732350e3cd8cc033d66748c418bab4b018dc0a4fcf1687f17a103ac44eac0c6"
+  homepage "https://github.com/pypa/pipenv"
+  url "https://files.pythonhosted.org/packages/14/15/72379e0884455c9b517015e8e5771c69e13749799af460e9199c3c7f6ab9/pipenv-2022.6.7.tar.gz"
+  sha256 "6ac0e7a8bbe02859d46c53c03d3f33136bbf49c8c7d9a6d818409e17a604eda0"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "8b0ce4c9ca0a94d223f0b1de9afa898a5d3f6fe9a9f59f9ebce67102b6e04d96" => :high_sierra
-    sha256 "8d6bca54006eac0036ea3c21cb126e338c3d55a09f2bd0c17553eccac3873c54" => :sierra
-    sha256 "3844ec0d823c570e81f8e2dcb2aeea26c87b90d218b52dad0d2b9e67224ad05e" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "b13deb536e0676b6e40266aa061a78706d2d7be4166a098cd1e7db912ba13778"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "86230b8730d7c14f1c84e57546b42c9d190b385acce8a1918dcc5dac6c974488"
+    sha256 cellar: :any_skip_relocation, monterey:       "65a14e232883fde3c5a6c63f705790a27767950246fbeee06b089423020f86bf"
+    sha256 cellar: :any_skip_relocation, big_sur:        "dff877347de085ef6b97d10bf561a6c86aad0af8f57d4b34a1c2e5e519858330"
+    sha256 cellar: :any_skip_relocation, catalina:       "8af57cf76b2d1168da661d18c72d4ffa751c5bbb79eea6f984b40935c648d7e8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a235f21a870624aca0096f44ef4b6b07da80b88e459bd4b8281dccdee6e7b4a8"
   end
 
-  depends_on "python3"
+  depends_on "python@3.10"
+  depends_on "six"
 
   resource "certifi" do
-    url "https://files.pythonhosted.org/packages/15/d4/2f888fc463d516ff7bf2379a4e9a552fef7f22a94147655d9b1097108248/certifi-2018.1.18.tar.gz"
-    sha256 "edbc3f203427eef571f79a7692bb160a2b0f7ccaa31953e99bd17e307cf63f7d"
+    url "https://files.pythonhosted.org/packages/07/10/75277f313d13a2b74fc56e29239d5c840c2bf09f17bf25c02b35558812c6/certifi-2022.5.18.1.tar.gz"
+    sha256 "9c5705e395cd70084351dd8ad5c41e65655e08ce46f2ec9cf6c2c08390f71eb7"
   end
 
-  resource "chardet" do
-    url "https://files.pythonhosted.org/packages/fc/bb/a5768c230f9ddb03acc9ef3f0d4a3cf93462473795d18e9535498c8f929d/chardet-3.0.4.tar.gz"
-    sha256 "84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"
+  resource "distlib" do
+    url "https://files.pythonhosted.org/packages/85/01/88529c93e41607f1a78c1e4b346b24c74ee43d2f41cfe33ecd2e20e0c7e3/distlib-0.3.4.zip"
+    sha256 "e4b58818180336dc9c529bfb9a0b58728ffc09ad92027a3f30b7cd91e3458579"
   end
 
-  resource "idna" do
-    url "https://files.pythonhosted.org/packages/f4/bd/0467d62790828c23c47fc1dfa1b1f052b24efdf5290f071c7a91d0d82fd3/idna-2.6.tar.gz"
-    sha256 "2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
+  resource "filelock" do
+    url "https://files.pythonhosted.org/packages/f3/c7/5c1aef87f1197d2134a096c0264890969213c9cbfb8a4102087e8d758b5c/filelock-3.7.1.tar.gz"
+    sha256 "3a0fd85166ad9dbab54c9aec96737b744106dc5f15c0b09a6744a445299fcf04"
   end
 
-  resource "pew" do
-    url "https://files.pythonhosted.org/packages/21/8c/585c136d5c63eb80ece3328eb290d16ccf6d2d55420848d9fc6a07de68ca/pew-1.1.2.tar.gz"
-    sha256 "b8312728526c9010295c88215c95a1b1731fdbd1a568f728e069932bd0545611"
-  end
-
-  resource "requests" do
-    url "https://files.pythonhosted.org/packages/b0/e1/eab4fc3752e3d240468a8c0b284607899d2fbfb236a56b7377a329aa8d09/requests-2.18.4.tar.gz"
-    sha256 "9c443e7324ba5b85070c4a818ade28bfabedf16ea10206da1132edaa6dda237e"
-  end
-
-  resource "urllib3" do
-    url "https://files.pythonhosted.org/packages/ee/11/7c59620aceedcc1ef65e156cc5ce5a24ef87be4107c2b74458464e437a5d/urllib3-1.22.tar.gz"
-    sha256 "cc44da8e1145637334317feebd728bd869a35285b93cbb4cca2577da7e62db4f"
+  resource "platformdirs" do
+    url "https://files.pythonhosted.org/packages/ff/7b/3613df51e6afbf2306fc2465671c03390229b55e3ef3ab9dd3f846a53be6/platformdirs-2.5.2.tar.gz"
+    sha256 "58c8abb07dcb441e6ee4b11d8df0ac856038f944ab98b7be6b27b2a3c7feef19"
   end
 
   resource "virtualenv" do
-    url "https://files.pythonhosted.org/packages/d4/0c/9840c08189e030873387a73b90ada981885010dd9aea134d6de30cd24cb8/virtualenv-15.1.0.tar.gz"
-    sha256 "02f8102c2436bb03b3ee6dede1919d1dac8a427541652e5ec95171ec8adbc93a"
+    url "https://files.pythonhosted.org/packages/5f/6c/d44c403a54ceb4ec5179d1a963c69887d30dc5b300529ce67c05b4f16212/virtualenv-20.14.1.tar.gz"
+    sha256 "ef589a79795589aada0c1c5b319486797c03b67ac3984c48c669c0e4f50df3a5"
   end
 
   resource "virtualenv-clone" do
-    url "https://files.pythonhosted.org/packages/36/66/d95f83255138ded1aec242de5ee51536226fa7b2582a7ce0863fea5dc4f2/virtualenv-clone-0.2.6.tar.gz"
-    sha256 "6b3be5cab59e455f08c9eda573d23006b7d6fb41fae974ddaa2b275c93cc4405"
+    url "https://files.pythonhosted.org/packages/85/76/49120db3bb8de4073ac199a08dc7f11255af8968e1e14038aee95043fafa/virtualenv-clone-0.5.7.tar.gz"
+    sha256 "418ee935c36152f8f153c79824bb93eaf6f0f7984bae31d3f48f350b9183501a"
   end
 
   def install
@@ -63,15 +57,24 @@ class Pipenv < Formula
     venv.pip_install resources
     venv.pip_install buildpath
 
-    # `pipenv` needs to be able to find `virtualenv` and `pew` on PATH. So we
+    # `pipenv` needs to be able to find `virtualenv` on PATH. So we
     # install symlinks for those scripts in `#{libexec}/tools` and create a
     # wrapper script for `pipenv` which adds `#{libexec}/tools` to PATH.
-    (libexec/"tools").install_symlink libexec/"bin/pew", libexec/"bin/pip",
-                                      libexec/"bin/virtualenv"
+    (libexec/"tools").install_symlink libexec/"bin/pip", libexec/"bin/virtualenv"
     env = {
-      :PATH => "#{libexec}/tools:$PATH",
+      PATH: "#{libexec}/tools:$PATH",
     }
     (bin/"pipenv").write_env_script(libexec/"bin/pipenv", env)
+
+    output = Utils.safe_popen_read(
+      { "_PIPENV_COMPLETE" => "zsh_source" }, libexec/"bin/pipenv", { err: :err }
+    )
+    (zsh_completion/"_pipenv").write output
+
+    output = Utils.safe_popen_read(
+      { "_PIPENV_COMPLETE" => "fish_source" }, libexec/"bin/pipenv", { err: :err }
+    )
+    (fish_completion/"pipenv.fish").write output
   end
 
   # Avoid relative paths
@@ -79,20 +82,22 @@ class Pipenv < Formula
     lib_python_path = Pathname.glob(libexec/"lib/python*").first
     lib_python_path.each_child do |f|
       next unless f.symlink?
+
       realpath = f.realpath
       rm f
       ln_s realpath, f
     end
-    inreplace lib_python_path/"orig-prefix.txt",
-              Formula["python3"].opt_prefix, Formula["python3"].prefix.realpath
   end
 
   test do
     ENV["LC_ALL"] = "en_US.UTF-8"
     assert_match "Commands", shell_output("#{bin}/pipenv")
+    system "#{bin}/pipenv", "--python", Formula["python@3.10"].opt_bin/"python3"
     system "#{bin}/pipenv", "install", "requests"
+    system "#{bin}/pipenv", "install", "boto3"
     assert_predicate testpath/"Pipfile", :exist?
     assert_predicate testpath/"Pipfile.lock", :exist?
     assert_match "requests", (testpath/"Pipfile").read
+    assert_match "boto3", (testpath/"Pipfile").read
   end
 end

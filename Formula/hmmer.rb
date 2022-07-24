@@ -1,29 +1,30 @@
 class Hmmer < Formula
   desc "Build profile HMMs and scan against sequence databases"
   homepage "http://hmmer.org/"
-  url "http://eddylab.org/software/hmmer3/3.1b2/hmmer-3.1b2.tar.gz"
-  sha256 "dd16edf4385c1df072c9e2f58c16ee1872d855a018a2ee6894205277017b5536"
-  revision 2
+  url "http://eddylab.org/software/hmmer/hmmer-3.3.2.tar.gz"
+  sha256 "92fee9b5efe37a5276352d3502775e7c46e9f7a0ee45a331eacb2a0cac713c69"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url "http://eddylab.org/software/hmmer/"
+    regex(/href=.*?hmmer[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "763753541930d4092f6e50fbde1669d9862d0ba4b096d6c6b144eb325019ca44" => :high_sierra
-    sha256 "01707b89414c42564e60609e8a70f464a48bffa84278169cd3f467a885dd17a2" => :sierra
-    sha256 "0f0254bebd48ec9003e6f99e2277e04914073e5dee00e764f5b5fb2ed9a7f1c3" => :el_capitan
+    sha256 cellar: :any_skip_relocation, monterey:     "85399c5d79f4d97c5e1755688bc29ce31985a6a489d8c859a5e080e5a564ad98"
+    sha256 cellar: :any_skip_relocation, big_sur:      "af45073d7f7d1ce1231c03381c5e50af9de1d6773762a65200a6067b84590c9d"
+    sha256 cellar: :any_skip_relocation, catalina:     "6bd9bbe8efab7ec335de773b059922574ec2a89d755afd09dc475f6b251fb886"
+    sha256 cellar: :any_skip_relocation, mojave:       "f170a16fcc45126a552ae1b0fdd3cbb25e73f77a53f10011e5c304afa69694fa"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "3ae7f46facfc99d3247a3d30db78ea54bc79fcf255ed4c099eb4ddca023d7458"
   end
 
   def install
     system "./configure", "--prefix=#{prefix}"
-
-    # Fix error: install: hmmalign: No such file or directory
-    system "make"
-
     system "make", "install"
     doc.install "Userguide.pdf", "tutorial"
   end
 
   test do
-    output = shell_output("#{bin}/hmmstat #{doc}/tutorial/minifam")
-    assert_match "PF00069.17", output
+    assert_match "PF00069.17", shell_output("#{bin}/hmmstat #{doc}/tutorial/Pkinase.hmm")
   end
 end

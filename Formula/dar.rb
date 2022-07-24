@@ -1,48 +1,40 @@
 class Dar < Formula
   desc "Backup directory tree and files"
   homepage "http://dar.linux.free.fr/doc/index.html"
-  url "https://downloads.sourceforge.net/project/dar/dar/2.5.14/dar-2.5.14-bis.tar.gz"
-  sha256 "a5e744f04dde0b3af28f36deccaf274906e1cb29688b9f8bef7c62578b3d6de9"
+  url "https://downloads.sourceforge.net/project/dar/dar/2.7.6/dar-2.7.6.tar.gz"
+  sha256 "3d5e444891350768109d7e9051e26039bdeb906de30294e7e0d71105b87d6daa"
+  license "GPL-2.0-or-later"
 
-  bottle do
-    sha256 "d9d0a90712f3fe179767ea5caf79a46f4b57702a09b8a55e030e99fab002c800" => :high_sierra
-    sha256 "ece73e9dd56771993d6b8aedba32e0035b60866aec58ce85ae70197be1c5d43c" => :sierra
-    sha256 "098d2cb0df8236d49a08a11ff0c3fa77ea8817baa2880ac8c473bb816318bf29" => :el_capitan
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/dar[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
-  option "with-doxygen", "build libdar API documentation and html man page"
-  option "with-libgcrypt", "enable strong encryption support"
-  option "with-lzo", "enable lzo compression support"
-  option "with-upx", "make executables compressed at installation time"
+  bottle do
+    sha256               arm64_monterey: "07fb29f0d1099bed6ebb8f1704dba22dd2be8e9f709c83d5eb790a52234cafbc"
+    sha256               arm64_big_sur:  "38a24276c643cf51652048b63d4d25ed766b46a5895137e3079420ad726315cd"
+    sha256 cellar: :any, monterey:       "c791caab3de9c794d4c8e8fbaf928a550bc819b343bf10d086e758c26d6d2d27"
+    sha256 cellar: :any, big_sur:        "1471725ed4a9718c3b8c98690963c327c96fa3e3f66823711938e68e56df59e5"
+    sha256 cellar: :any, catalina:       "2c1d03575a50d09cf9290b9e0bfae2677308f0bfed36c2b72a7989f7008df5d7"
+    sha256               x86_64_linux:   "c66a42b6b25ceeef4304473a7347ec3a62ac5b0bd2dbd79ba7227d2d69b21d03"
+  end
 
-  deprecated_option "with-docs" => "with-doxygen"
+  depends_on "libgcrypt"
+  depends_on "lzo"
 
-  depends_on :macos => :el_capitan # needs thread-local storage
-  depends_on "doxygen" => [:build, :optional]
-  depends_on "upx" => [:build, :optional]
-  depends_on "libgcrypt" => :optional
-  depends_on "lzo" => :optional
-  depends_on "xz" => :optional
+  uses_from_macos "zlib"
 
-  needs :cxx11
+  on_intel do
+    depends_on "upx" => :build
+  end
 
   def install
-    ENV.cxx11
-
-    args = %W[
-      --enable-mode=64
-      --disable-debug
-      --disable-dependency-tracking
-      --disable-dar-static
-      --prefix=#{prefix}
-    ]
-    args << "--disable-build-html" if build.without? "doxygen"
-    args << "--disable-upx" if build.without? "upx"
-    args << "--disable-libgcrypt-linking" if build.without? "libgcrypt"
-    args << "--disable-liblzo2-linking" if build.without? "lzo"
-    args << "--disable-libxz-linking" if build.without? "xz"
-
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}",
+                          "--disable-build-html",
+                          "--disable-dar-static",
+                          "--disable-dependency-tracking",
+                          "--disable-libxz-linking",
+                          "--enable-mode=64"
     system "make", "install"
   end
 

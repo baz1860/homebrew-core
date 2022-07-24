@@ -1,23 +1,32 @@
 class CernNdiff < Formula
   desc "Numerical diff tool"
-  # Note: ndiff is a sub-project of Mad-X at the moment..
+  # NOTE: ndiff is a sub-project of Mad-X at the moment..
   homepage "https://mad.web.cern.ch/mad/"
-  url "http://svn.cern.ch/guest/madx/tags/5.02.11/madX/tools/numdiff"
-  head "http://svn.cern.ch/guest/madx/trunk/madX/tools/numdiff"
+  url "https://github.com/MethodicalAcceleratorDesign/MAD-X/archive/5.08.01.tar.gz"
+  sha256 "89c943fcb474344a4f7d28de98e8eae0aec40f779bf908daff79043bf3520555"
+  head "https://github.com/MethodicalAcceleratorDesign/MAD-X.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "968aec80d215b1ee9b73ebd4434c090771c9a729a232fe5974af89348476594c" => :high_sierra
-    sha256 "3d9d4e7b36137b7cdef5f3f5b63e8ec33400766c8d104e3f8849d8eb3781d804" => :sierra
-    sha256 "8e7e455e086ec860d08e709b2db00da57a70a9275e5060f4969cd145fa624c56" => :el_capitan
-    sha256 "4f6e84d404a05431989edeb723416692489e891b02d5379e3d06e1230c07ec09" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "ef87f0ce60ad2f81011942a949a3e70b32ee45322c435cd860e406ad61e7f52c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "6c850063e8050b34b933757634a4b1119608e1afaee4f01e159c5c07f15da399"
+    sha256 cellar: :any_skip_relocation, monterey:       "c6b90768ba05a796a504a47ed93c62c617a2340f5cfc5716c74b9282225d56a6"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d17efd81d490ed73468eaf41dc2e64061fd01ba049c7ea1a22647b3c981cd0c2"
+    sha256 cellar: :any_skip_relocation, catalina:       "06c3c33a9d470f3466dec139945861748aadf3c78a697d458004f14a503614d3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8a63d894f310616820d5e31d87c9e6d131694976e3b26a4f4cc7061d288bb50d"
   end
 
   depends_on "cmake" => :build
 
   def install
-    system "cmake", ".", *std_cmake_args
-    system "make", "install"
+    cd "tools/numdiff" do
+      system "cmake", ".", *std_cmake_args
+      system "make", "install"
+    end
   end
 
   test do

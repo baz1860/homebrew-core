@@ -1,46 +1,48 @@
 class Rubberband < Formula
   desc "Audio time stretcher tool and library"
-  homepage "http://breakfastquay.com/rubberband/"
-  head "https://bitbucket.org/breakfastquay/rubberband/", :using => :hg
+  homepage "https://breakfastquay.com/rubberband/"
+  url "https://breakfastquay.com/files/releases/rubberband-3.0.0.tar.bz2"
+  sha256 "df6530b403c8300a23973df22f36f3c263f010d53792063e411f633cebb9ed85"
+  license "GPL-2.0-or-later"
+  head "https://hg.sr.ht/~breakfastquay/rubberband", using: :hg
 
-  stable do
-    url "http://code.breakfastquay.com/attachments/download/34/rubberband-1.8.1.tar.bz2"
-    mirror "https://mirrorservice.org/sites/ftp.debian.org/debian/pool/main/r/rubberband/rubberband_1.8.1.orig.tar.bz2"
-    sha256 "ff0c63b0b5ce41f937a8a3bc560f27918c5fe0b90c6bc1cb70829b86ada82b75"
-
-    # replace vecLib.h by Accelerate.h
-    # already fixed in upstream:
-    # https://bitbucket.org/breakfastquay/rubberband/commits/cb02b7ed1500f0c06c0ffd196921c812dbcf6888
-    # https://bitbucket.org/breakfastquay/rubberband/commits/9e32f693c6122b656a0df63bc77e6a96d6ba213d
-    patch :p1 do
-      url "https://raw.githubusercontent.com/Homebrew/formula-patches/1fd51a983/rubberband/rubberband-1.8.1-yosemite.diff"
-      sha256 "7686dd9d05fddbcbdf4015071676ac37ecad5c7594cc06470440a18da17c71cd"
-    end
+  livecheck do
+    url :homepage
+    regex(/href=.*?rubberband[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "b05e8e38194a9b067ccfa2df621d4f36b7d4bb24b0fb61bd2dc430b5bf5b7ddc" => :high_sierra
-    sha256 "fd0d92643b23e338992204be763362480ffd8ee54c407908bf0dcd589d066b68" => :sierra
-    sha256 "ec6ec212a0173ba661601b2fb5ae1dace5dab1100688d3b5c9a460796eae705b" => :el_capitan
-    sha256 "6a62c8da1d779672bf0ef276656b2dfa5edf885e704a875c606a27b9aea863fe" => :yosemite
-    sha256 "5ca9579f1b84a3a843e5b52654f41b25e4c02fdc5df05a0966c6d8627843dac4" => :mavericks
+    sha256 cellar: :any, arm64_monterey: "5e69d82b8ac49175b0d5f7ce7cd144cf5ad0a1a53256ec3d320a88e049f519d4"
+    sha256 cellar: :any, arm64_big_sur:  "fe47590afe376f2f7e1b24a239a5e4947534d8425e97c42a3a34b30d343f3d02"
+    sha256 cellar: :any, monterey:       "ff93a71a132ce14e836d9f3d80d430ef41c39470da40d4088d3d8d3e58cf827f"
+    sha256 cellar: :any, big_sur:        "b02d05078216b43fe33e2b1354fd8a67fa5c3330f893480ccb3bc2b6bb9880f2"
+    sha256 cellar: :any, catalina:       "b73a156422b447a2c5a9426abbc70e58e97b0bb644080849e796d8ddbbbab630"
+    sha256               x86_64_linux:   "2edf30d682c1aeebe61f194a30e8d06203baa8bf88a05a83a5465e4fa30496d3"
   end
 
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "libsamplerate"
   depends_on "libsndfile"
 
-  def install
-    system "make", "-f", "Makefile.osx"
-    bin.install "bin/rubberband"
-    lib.install "lib/librubberband.dylib"
-    include.install "rubberband"
+  on_linux do
+    depends_on "fftw"
+    depends_on "gcc"
+    depends_on "ladspa-sdk"
+    depends_on "vamp-plugin-sdk"
+  end
 
-    cp "rubberband.pc.in", "rubberband.pc"
-    inreplace "rubberband.pc", "%PREFIX%", opt_prefix
-    (lib/"pkgconfig").install "rubberband.pc"
+  fails_with gcc: "5"
+
+  def install
+    args = ["-Dresampler=libsamplerate"]
+    args << "-Dfft=fftw" if OS.linux?
+    mkdir "build" do
+      system "meson", *std_meson_args, *args
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do

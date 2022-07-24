@@ -1,36 +1,42 @@
 class Assimp < Formula
   desc "Portable library for importing many well-known 3D model formats"
-  homepage "http://www.assimp.org"
-  url "https://github.com/assimp/assimp/archive/v4.1.0.tar.gz"
-  sha256 "3520b1e9793b93a2ca3b797199e16f40d61762617e072f2d525fad70f9678a71"
-  head "https://github.com/assimp/assimp.git"
+  homepage "https://www.assimp.org/"
+  url "https://github.com/assimp/assimp/archive/v5.2.4.tar.gz"
+  sha256 "6a4ff75dc727821f75ef529cea1c4fc0a7b5fc2e0a0b2ff2f6b7993fe6cb54ba"
+  license :cannot_represent
+  head "https://github.com/assimp/assimp.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "2a3c4f77532717d3cd6b8de75a4cdb033b26fc4d64736f17e90d836e11b90fe4" => :high_sierra
-    sha256 "632ab4d0bd3f3aaa002945ace7e90362b396154ef3c4536b884872f82f3dd30d" => :sierra
-    sha256 "5991caf1877f8193889d0929399aa24790e8eeab96736c3c1d28800966d75169" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "67d6e7b43419f11e105b6ac7e4a147ce07aef50b933c41fbfdf02382508abff5"
+    sha256 cellar: :any,                 arm64_big_sur:  "7caf721e862862f3c4dbcaba048fe8707368a9ec148b7ec578ee34cebaaa3455"
+    sha256 cellar: :any,                 monterey:       "f5fdb9347de7b36866ac711c002366412971219d02c365af91fd7a620f9ab88f"
+    sha256 cellar: :any,                 big_sur:        "b9402a7cc394876768c95b76e4e9893ac32a2c0dcd7c4ce893e77ba6582d91cf"
+    sha256 cellar: :any,                 catalina:       "f0b432d116da9f388c812fdc39c05dfe8bab467f285b4046f29023a3bee2f073"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f3489f9eba0842af02276b74aec5da76188f48b5d13366c9cb0a69e36135a27f"
   end
-
-  option "without-boost", "Compile without thread safe logging or multithreaded computation if boost isn't installed"
 
   depends_on "cmake" => :build
-  depends_on "boost" => [:recommended, :build]
+  depends_on "ninja" => :build
 
-  # Fix "unzip.c:150:11: error: unknown type name 'z_crc_t'"
-  # Upstream PR from 12 Dec 2017 "unzip: fix build with older zlib"
-  if MacOS.version <= :el_capitan
-    patch do
-      url "https://github.com/assimp/assimp/pull/1634.patch?full_index=1"
-      sha256 "79b93f785ee141dc2f56d557b2b8ee290eed0afc7dd373ad84715c6c9aa23460"
-    end
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "gcc"
   end
 
+  fails_with gcc: "5"
+
   def install
-    args = std_cmake_args
-    args << "-DASSIMP_BUILD_TESTS=OFF"
-    system "cmake", *args
-    system "make", "install"
+    args = std_cmake_args + %W[
+      -GNinja
+      -DASSIMP_BUILD_TESTS=OFF
+      -DCMAKE_INSTALL_RPATH=#{rpath}
+    ]
+
+    mkdir "build" do
+      system "cmake", *args, ".."
+      system "ninja", "install"
+    end
   end
 
   test do
@@ -42,7 +48,7 @@ class Assimp < Formula
         return 0;
       }
     EOS
-    system ENV.cc, "test.cpp", "-L#{lib}", "-lassimp", "-o", "test"
+    system ENV.cc, "-std=c++11", "test.cpp", "-L#{lib}", "-lassimp", "-o", "test"
     system "./test"
 
     # Application test.

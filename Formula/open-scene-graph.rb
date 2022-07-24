@@ -1,84 +1,76 @@
 class OpenSceneGraph < Formula
   desc "3D graphics toolkit"
   homepage "https://github.com/openscenegraph/OpenSceneGraph"
-  url "https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.5.9.tar.gz"
-  sha256 "e18bd54d7046ea73525941244ef4f77b38b2a90bdf21d81468ac3874c41e9448"
-  head "https://github.com/openscenegraph/OpenSceneGraph.git"
+  license "LGPL-2.1-or-later" => { with: "WxWindows-exception-3.1" }
+  revision 2
+  head "https://github.com/openscenegraph/OpenSceneGraph.git", branch: "master"
 
-  bottle do
-    sha256 "e29e28e5812042f63f2225549191b00306ca1f428538d2150453bd69789c97aa" => :high_sierra
-    sha256 "90b2999887964f4392d2467fab2ee178e372d9b85ee969d3da428a5a116375bd" => :sierra
-    sha256 "51ae8250fb6131a510c052969e6e4834bb5b69ec40b85b184b575595453be2cd" => :el_capitan
+  stable do
+    url "https://github.com/openscenegraph/OpenSceneGraph/archive/OpenSceneGraph-3.6.5.tar.gz"
+    sha256 "aea196550f02974d6d09291c5d83b51ca6a03b3767e234a8c0e21322927d1e12"
+
+    # patch to fix build from source when asio library is present
+    patch do
+      url "https://github.com/openscenegraph/OpenSceneGraph/commit/21f5a0adfb57dc4c28b696e93beface45de28194.patch?full_index=1"
+      sha256 "d1e4e33b50ab006420417c7998d7e0d43d0349e6f407b5eb92a3fc6636523fbf"
+    end
   end
 
-  option "with-docs", "Build the documentation with Doxygen and Graphviz"
-
-  deprecated_option "docs" => "with-docs"
+  bottle do
+    sha256 arm64_monterey: "cea275ac6fd59178f3d55ef6bf2ffedd5d8aab1431877007cba73d7844dc6091"
+    sha256 arm64_big_sur:  "637623babd3324b945b39a4af706874c3f48420854e7b591e0df2ef0d1c77dc1"
+    sha256 monterey:       "2f2617969f263e4aa08b51fb64d9a7023c42e2d14e2c075a7a4602ba95a726f3"
+    sha256 big_sur:        "95a78e9f79bdb83a94b9d9be412e4b4520f2467a2f55ea8479b494144175b2cf"
+    sha256 catalina:       "1d38f6730fda72b85bdd25600cd415e747f5ade8645a6f4270d9e87dd275103e"
+    sha256 x86_64_linux:   "43c4367454e8de65443937a3509f96d4d273b50431b0a4fde16607c88183b247"
+  end
 
   depends_on "cmake" => :build
+  depends_on "doxygen" => :build
+  depends_on "graphviz" => :build
   depends_on "pkg-config" => :build
-  depends_on "jpeg"
-  depends_on "gtkglext"
+  depends_on "fontconfig"
   depends_on "freetype"
-  depends_on "sdl"
-  depends_on "gdal" => :optional
-  depends_on "jasper" => :optional
-  depends_on "openexr" => :optional
-  depends_on "dcmtk" => :optional
-  depends_on "librsvg" => :optional
-  depends_on "collada-dom" => :optional
-  depends_on "gnuplot" => :optional
-  depends_on "ffmpeg" => :optional
+  depends_on "jpeg-turbo"
+  depends_on "sdl2"
 
-  # patch necessary to ensure support for gtkglext-quartz
-  # filed as an issue to the developers https://github.com/openscenegraph/osg/issues/34
-  patch :DATA
-
-  if build.with? "docs"
-    depends_on "doxygen" => :build
-    depends_on "graphviz" => :build
+  on_linux do
+    depends_on "librsvg"
+    depends_on "mesa"
+    depends_on "mesa-glu"
   end
 
   def install
     # Fix "fatal error: 'os/availability.h' file not found" on 10.11 and
     # "error: expected function body after function declarator" on 10.12
-    if MacOS.version == :sierra || MacOS.version == :el_capitan
-      ENV["SDKROOT"] = MacOS.sdk_path
-    end
+    # Requires the CLT to be the active developer directory if Xcode is installed
+    ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version <= :sierra
 
-    args = std_cmake_args
-    # Disable opportunistic linkage
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_GDAL=ON" if build.without? "gdal"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_Jasper=ON" if build.without? "jasper"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_OpenEXR=ON" if build.without? "openexr"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_DCMTK=ON" if build.without? "dcmtk"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_RSVG=ON" if build.without? "librsvg"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_COLLADA=ON" if build.without? "collada-dom"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_FFmpeg=ON" if build.without? "ffmpeg"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_cairo=ON"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_TIFF=ON"
+    args = std_cmake_args + %w[
+      -DBUILD_DOCUMENTATION=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_FFmpeg=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_GDAL=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_Jasper=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_OpenEXR=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_SDL=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_TIFF=ON
+      -DCMAKE_CXX_FLAGS=-Wno-error=narrowing
+    ]
 
-    args << "-DBUILD_DOCUMENTATION=" + (build.with?("docs") ? "ON" : "OFF")
-    args << "-DCMAKE_CXX_FLAGS=-Wno-error=narrowing" # or: -Wno-c++11-narrowing
-
-    if MacOS.prefer_64_bit?
-      args << "-DCMAKE_OSX_ARCHITECTURES=#{Hardware::CPU.arch_64_bit}"
-      args << "-DOSG_DEFAULT_IMAGE_PLUGIN_FOR_OSX=imageio"
-      args << "-DOSG_WINDOWING_SYSTEM=Cocoa"
-    else
-      args << "-DCMAKE_OSX_ARCHITECTURES=#{Hardware::CPU.arch_32_bit}"
-    end
-
-    if build.with? "collada-dom"
-      args << "-DCOLLADA_INCLUDE_DIR=#{Formula["collada-dom"].opt_include}/collada-dom2.4"
+    if OS.mac?
+      args += %w[
+        -DCMAKE_OSX_ARCHITECTURES=x86_64
+        -DOSG_DEFAULT_IMAGE_PLUGIN_FOR_OSX=imageio
+        -DOSG_WINDOWING_SYSTEM=Cocoa
+      ]
     end
 
     mkdir "build" do
       system "cmake", "..", *args
       system "make"
-      system "make", "doc_openscenegraph" if build.with? "docs"
+      system "make", "doc_openscenegraph"
       system "make", "install"
-      doc.install Dir["#{prefix}/doc/OpenSceneGraphReferenceDocs/*"] if build.with? "docs"
+      doc.install Dir["#{prefix}/doc/OpenSceneGraphReferenceDocs/*"]
     end
   end
 
@@ -97,17 +89,3 @@ class OpenSceneGraph < Formula
     assert_equal `./test`.chomp, version.to_s
   end
 end
-__END__
-diff --git a/CMakeModules/FindGtkGl.cmake b/CMakeModules/FindGtkGl.cmake
-index 321cede..6497589 100644
---- a/CMakeModules/FindGtkGl.cmake
-+++ b/CMakeModules/FindGtkGl.cmake
-@@ -10,7 +10,7 @@ IF(PKG_CONFIG_FOUND)
-     IF(WIN32)
-         PKG_CHECK_MODULES(GTKGL gtkglext-win32-1.0)
-     ELSE()
--        PKG_CHECK_MODULES(GTKGL gtkglext-x11-1.0)
-+        PKG_CHECK_MODULES(GTKGL gtkglext-quartz-1.0)
-     ENDIF()
-
- ENDIF()

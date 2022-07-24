@@ -1,36 +1,109 @@
 class Sysdig < Formula
   desc "System-level exploration and troubleshooting tool"
-  homepage "https://www.sysdig.org/"
-  url "https://github.com/draios/sysdig/archive/0.20.0.tar.gz"
-  sha256 "e1f7e824831a9b902f6df0e818c41bdfc21175398d58318d7892df9c601e7e96"
+  homepage "https://sysdig.com/"
+  license "Apache-2.0"
+  revision 3
+
+  stable do
+    url "https://github.com/draios/sysdig/archive/0.29.3.tar.gz"
+    sha256 "6b96797859002ab69a2bed4fdba1c7fe8064ecf8661621ae7d8fbf8599ffa636"
+
+    # Update to value of FALCOSECURITY_LIBS_VERSION found in
+    # https://github.com/draios/sysdig/blob/#{version}/cmake/modules/falcosecurity-libs.cmake
+    resource "falcosecurity-libs" do
+      url "https://github.com/falcosecurity/libs/archive/e5c53d648f3c4694385bbe488e7d47eaa36c229a.tar.gz"
+      sha256 "80903bc57b7f9c5f24298ecf1531cf66ef571681b4bd1e05f6e4db704ffb380b"
+    end
+  end
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "e4a6c6d3fdc2e2af66ef4a187dea9a1eef21726efffc6898d1489a1bcc4325b2" => :high_sierra
-    sha256 "f860f82acc1405a29e181582ed1abf6daeb99623e6186dd90e20e20ef7b10cde" => :sierra
-    sha256 "583116ada7e9981e62a776f8aa3aae66ac912e3a5c5b0da1f33da9dad98da520" => :el_capitan
+    sha256                               arm64_monterey: "2d6f3f56bc296c1a61ebb845d21c306f0c221649ec4e9eef1dc960e1436eb7cd"
+    sha256                               arm64_big_sur:  "2b94a4f8b946be161a4049e197d03f7d3c9b4d6515e84777c90de54fe8e6847d"
+    sha256                               monterey:       "a036c52834863c81b36d9bc61f2e4beae91071e5a78dcdffcf7cff0c42ee50cb"
+    sha256                               big_sur:        "d7f3d67ee95aab34dd69b2be6df866ac50968d83b3ba30d2ba32f6afeb1dfc49"
+    sha256                               catalina:       "f2a6d211b2ae24f9223a90a5ca0a278a93ee8cee8f0dfe132f6cab0227bfde9b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b8b585f6db774e56c095f30b22807c509b41d5f9ecf8638eb2c7b352b7a5ee5f"
+  end
+
+  head do
+    url "https://github.com/draios/sysdig.git", branch: "dev"
+
+    resource "falcosecurity-libs" do
+      url "https://github.com/falcosecurity/libs.git", branch: "master"
+    end
   end
 
   depends_on "cmake" => :build
+  depends_on "nlohmann-json" => :build
+  depends_on "c-ares"
   depends_on "jsoncpp"
-  depends_on "luajit"
+  depends_on "luajit-openresty"
+  depends_on "openssl@1.1"
+  depends_on "tbb"
+  depends_on "yaml-cpp"
+
+  uses_from_macos "curl"
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "libb64" => :build
+    depends_on "elfutils"
+    depends_on "gcc"
+    depends_on "grpc"
+    depends_on "jq"
+    depends_on "protobuf"
+  end
+
+  fails_with gcc: "5" # C++17
 
   # More info on https://gist.github.com/juniorz/9986999
-  resource "sample_file" do
+  resource "homebrew-sample_file" do
     url "https://gist.githubusercontent.com/juniorz/9986999/raw/a3556d7e93fa890a157a33f4233efaf8f5e01a6f/sample.scap"
     sha256 "efe287e651a3deea5e87418d39e0fe1e9dc55c6886af4e952468cd64182ee7ef"
   end
 
   def install
-    ENV.libcxx if MacOS.version < :mavericks
+    (buildpath/"falcosecurity-libs").install resource("falcosecurity-libs")
 
-    mkdir "build" do
-      system "cmake", "..", "-DSYSDIG_VERSION=#{version}",
-                            "-DUSE_BUNDLED_DEPS=OFF",
-                            *std_cmake_args
-      system "make", "install"
+    # FIXME: Workaround Apple ARM loader error due to packing.
+    # ld: warning: pointer not aligned at address 0x10017E21D
+    #   (_g_event_info + 527453 from ../../libscap/libscap.a(event_table.c.o))
+    # ld: unaligned pointer(s) for architecture arm64
+    inreplace "falcosecurity-libs/driver/ppm_events_public.h", " __attribute__((packed))", "" if Hardware::CPU.arm?
+
+    # These flags are not needed for LuaJIT 2.1 (Ref: https://luajit.org/install.html).
+    # On Apple ARM, the flags results in broken binaries and need to be removed.
+    inreplace %w[CMakeLists.txt falcosecurity-libs/cmake/modules/CompilerFlags.cmake],
+              "set(CMAKE_EXE_LINKER_FLAGS \"-pagezero_size 10000 -image_base 100000000\")",
+              ""
+
+    args = std_cmake_args + %W[
+      -DSYSDIG_VERSION=#{version}
+      -DUSE_BUNDLED_DEPS=OFF
+      -DCREATE_TEST_TARGETS=OFF
+      -DBUILD_LIBSCAP_EXAMPLES=OFF
+      -DDIR_ETC=#{etc}
+      -DFALCOSECURITY_LIBS_SOURCE_DIR=#{buildpath}/falcosecurity-libs
+    ]
+
+    # `USE_BUNDLED_*=OFF` flags are implied by `USE_BUNDLED_DEPS=OFF`, but let's be explicit.
+    %w[LUAJIT JSONCPP ZLIB TBB JQ NCURSES B64 OPENSSL CURL CARES PROTOBUF GRPC].each do |dep|
+      args << "-DUSE_BUNDLED_#{dep}=OFF"
     end
 
-    (pkgshare/"demos").install resource("sample_file").files("sample.scap")
+    args << "-DBUILD_DRIVER=OFF" if OS.linux?
+
+    system "cmake", "-S", ".", "-B", "build", *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+
+    (pkgshare/"demos").install resource("homebrew-sample_file").files("sample.scap")
   end
 
   test do

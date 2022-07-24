@@ -1,97 +1,78 @@
 class Nghttp2 < Formula
   desc "HTTP/2 C Library"
   homepage "https://nghttp2.org/"
-  url "https://github.com/nghttp2/nghttp2/releases/download/v1.30.0/nghttp2-1.30.0.tar.xz"
-  sha256 "089afb4c22a53f72384b71ea06194be255a8a73b50b1412589105d0e683c52ac"
+  url "https://github.com/nghttp2/nghttp2/releases/download/v1.48.0/nghttp2-1.48.0.tar.gz"
+  sha256 "66d4036f9197bbe3caba9c2626c4565b92662b3375583be28ef136d62b092998"
+  license "MIT"
 
   bottle do
-    sha256 "d92627da52dc441d9f06f6a79a1c8789765ea98d167a1773d53bf253bcc22dfa" => :high_sierra
-    sha256 "08a359fb5e9abff20a2376a40d42567a8a92a0b34436a83c0f25a6529fa10aaa" => :sierra
-    sha256 "2d9c183cd6a091f91567a783c7d9501c8210194e38e343127989d559bd0ce04d" => :el_capitan
+    sha256 arm64_monterey: "8cb8572b8604fb7853e326d101d2c3b73edb39848283b5eb395b464e0ecb2682"
+    sha256 arm64_big_sur:  "d88fb101954a241441f10d8bf3070d56bb1bf93c0cf13e8a3ffefa5d5ba3d737"
+    sha256 monterey:       "5c7085f6873d423bdadf6cf67b41d10d9fd4e247b2746a65625380956305c1fa"
+    sha256 big_sur:        "ccbeaa80fb930a4818f192f22d886b99933d5f638246696d9c7d54d3990e97d8"
+    sha256 catalina:       "f7ab5fca18a41864eed3d5e4b0aec5d91e4cb7b44bbcda96d257055d2bfc8ba3"
+    sha256 x86_64_linux:   "4109b31cf9fa99a29fa49f4ae2208b6853eac48d4c2a269f38ca468d563466bf"
   end
 
   head do
-    url "https://github.com/nghttp2/nghttp2.git"
+    url "https://github.com/nghttp2/nghttp2.git", branch: "master"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  option "with-examples", "Compile and install example programs"
-  option "with-python3", "Build python3 bindings"
-
-  depends_on "python3" => :optional
-  depends_on "sphinx-doc" => :build
-  depends_on "libxml2" if MacOS.version <= :lion
   depends_on "pkg-config" => :build
-  depends_on "cunit" => :build
   depends_on "c-ares"
+  depends_on "jemalloc"
   depends_on "libev"
-  depends_on "openssl"
-  depends_on "libevent"
-  depends_on "jansson"
-  depends_on "boost"
-  depends_on "jemalloc" => :recommended
+  depends_on "libnghttp2"
+  depends_on "openssl@1.1"
 
-  resource "Cython" do
-    url "https://files.pythonhosted.org/packages/ee/2a/c4d2cdd19c84c32d978d18e9355d1ba9982a383de87d0fcb5928553d37f4/Cython-0.27.3.tar.gz"
-    sha256 "6a00512de1f2e3ce66ba35c5420babaef1fe2d9c43a8faab4080b0dbcc26bc64"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+
+  on_linux do
+    # Fix: shrpx_api_downstream_connection.cc:57:3: error:
+    # array must be initialized with a brace-enclosed initializer
+    # https://github.com/nghttp2/nghttp2/pull/1269
+    patch do
+      url "https://github.com/nghttp2/nghttp2/commit/829258e7038fe7eff849677f1ccaeca3e704eb67.patch?full_index=1"
+      sha256 "c4bcf5cf73d5305fc479206676027533bb06d4ff2840eb672f6265ba3239031e"
+    end
   end
 
-  # https://github.com/tatsuhiro-t/nghttp2/issues/125
-  # Upstream requested the issue closed and for users to use gcc instead.
-  # Given this will actually build with Clang with cxx11, just use that.
-  needs :cxx11
-
   def install
-    ENV.cxx11
+    # fix for clang not following C++14 behaviour
+    # https://github.com/macports/macports-ports/commit/54d83cca9fc0f2ed6d3f873282b6dd3198635891
+    inreplace "src/shrpx_client_handler.cc", "return dconn;", "return std::move(dconn);"
+
+    # Don't build nghttp2 library - use the previously built one.
+    inreplace "Makefile.in", /(SUBDIRS =) lib/, "\\1"
+    inreplace Dir["**/Makefile.in"] do |s|
+      # These don't exist in all files, hence audit_result being false.
+      s.gsub!(%r{^(LDADD = )\$[({]top_builddir[)}]/lib/libnghttp2\.la}, "\\1-lnghttp2", false)
+      s.gsub!(%r{\$[({]top_builddir[)}]/lib/libnghttp2\.la}, "", false)
+    end
 
     args = %W[
       --prefix=#{prefix}
       --disable-silent-rules
       --enable-app
-      --with-boost=#{Formula["boost"].opt_prefix}
-      --enable-asio-lib
+      --disable-examples
+      --disable-hpack-tools
       --disable-python-bindings
+      --without-systemd
     ]
-
-    args << "--enable-examples" if build.with? "examples"
-    args << "--with-xml-prefix=/usr" if MacOS.version > :lion
-    args << "--without-jemalloc" if build.without? "jemalloc"
 
     system "autoreconf", "-ivf" if build.head?
     system "./configure", *args
     system "make"
-    system "make", "check"
-
-    # Currently this is not installed by the make install stage.
-    if build.with? "docs"
-      system "make", "html"
-      doc.install Dir["doc/manual/html/*"]
-    end
-
     system "make", "install"
-    libexec.install "examples" if build.with? "examples"
-
-    if build.with? "python3"
-      pyver = Language::Python.major_minor_version "python3"
-      ENV["PYTHONPATH"] = cythonpath = buildpath/"cython/lib/python#{pyver}/site-packages"
-      cythonpath.mkpath
-      ENV.prepend_create_path "PYTHONPATH", lib/"python#{pyver}/site-packages"
-
-      resource("Cython").stage do
-        system "python3", *Language::Python.setup_install_args(buildpath/"cython")
-      end
-
-      cd "python" do
-        system buildpath/"cython/bin/cython", "nghttp2.pyx"
-        system "python3", *Language::Python.setup_install_args(prefix)
-      end
-    end
   end
 
   test do
     system bin/"nghttp", "-nv", "https://nghttp2.org"
+    refute_path_exists lib
   end
 end

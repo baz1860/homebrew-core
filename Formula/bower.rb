@@ -3,14 +3,17 @@ require "language/node"
 class Bower < Formula
   desc "Package manager for the web"
   homepage "https://bower.io/"
-  url "https://registry.npmjs.org/bower/-/bower-1.8.2.tgz"
-  sha256 "6bcf10e9c192fdbd6e89f98e431e095764c8571f66bcd6dd08fbcbd52e8dd722"
+  url "https://registry.npmjs.org/bower/-/bower-1.8.14.tgz"
+  sha256 "00df3dcc6e8b3a4dd7668934a20e60e6fc0c4269790192179388c928553a3f7e"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "359ec9939072dd0feed1a6e7409e2d4e37412753c63cc6b04ef85c536b89c0a7" => :high_sierra
-    sha256 "9620d23985975efe543f6d6fcdcbb13bc2f1d439184f9ef05104437425714665" => :sierra
-    sha256 "19d149753affff318a3923ee83c93589d887140d51e667d6a11ddeeaa3f19c5f" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "4f83f0b7576c438668ad19edcfab2606901bcd5f9092cf62c45b70d8b4778235"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "4f83f0b7576c438668ad19edcfab2606901bcd5f9092cf62c45b70d8b4778235"
+    sha256 cellar: :any_skip_relocation, monterey:       "f155eb229286bef7f21e55ada513c525913b38cc8db1d86a3b47fc7ee9a1f1fe"
+    sha256 cellar: :any_skip_relocation, big_sur:        "f155eb229286bef7f21e55ada513c525913b38cc8db1d86a3b47fc7ee9a1f1fe"
+    sha256 cellar: :any_skip_relocation, catalina:       "f155eb229286bef7f21e55ada513c525913b38cc8db1d86a3b47fc7ee9a1f1fe"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "4f83f0b7576c438668ad19edcfab2606901bcd5f9092cf62c45b70d8b4778235"
   end
 
   depends_on "node"

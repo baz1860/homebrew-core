@@ -1,66 +1,83 @@
-# This now builds a version of JACKv1 which matches the current API
-# for JACKv2. JACKv2 is not buildable on a number of macOS
-# distributions, and the JACK team instead suggests installation of
-# JACKOSX, a pre-built binary form for which the source is not available.
-# If you require JACKv2, you should use that. Otherwise, this formula should
-# operate fine.
-# Please see https://github.com/Homebrew/homebrew/pull/22043 for more info
 class Jack < Formula
   desc "Audio Connection Kit"
-  homepage "http://jackaudio.org"
-  url "http://jackaudio.org/downloads/jack-audio-connection-kit-0.125.0.tar.gz"
-  sha256 "3517b5bff82139a76b2b66fe2fd9a3b34b6e594c184f95a988524c575b11d444"
-  revision 2
+  homepage "https://jackaudio.org/"
+  url "https://github.com/jackaudio/jack2/archive/v1.9.21.tar.gz"
+  sha256 "8b044a40ba5393b47605a920ba30744fdf8bf77d210eca90d39c8637fe6bc65d"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "abc0921ccf479b78ccd3d9ce393290800bed6c059046dc9f42029cc4c954b3ad" => :high_sierra
-    sha256 "abc0921ccf479b78ccd3d9ce393290800bed6c059046dc9f42029cc4c954b3ad" => :sierra
-    sha256 "85a868bc1467309193251f81640e54d91a3ee2369cf83dae2f2e4cca2755dddf" => :el_capitan
+    sha256 arm64_monterey: "5b8c6629a97e463b96bb2672c3a0cfb8da8b5cf91d147f632c7f6d351a7fe3cb"
+    sha256 arm64_big_sur:  "a9732675aef73bf6a133a8130b46a81a275aad83abfc0d0d72b91f34580d11fb"
+    sha256 monterey:       "8047fbdd9eefa085dd3e66584d907bbbcfee2e7651f80836ff621844d39a53aa"
+    sha256 big_sur:        "f1f19dbf7ba59e389e51d325997b6c4173ebcf3c076732edd1d3ebbf51af5ab0"
+    sha256 catalina:       "d4ac8617761bb59dfaa1390d237ef7ad2b2733283353a8484fd4a1c8a82b4f79"
+    sha256 x86_64_linux:   "8a52eb2b5ec3ad62d4b573e7dd5997142d7435600da01cae8156dd6f6b0dae9b"
   end
 
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
   depends_on "pkg-config" => :build
+  depends_on "python@3.10" => :build
   depends_on "berkeley-db"
-  depends_on "libsndfile"
   depends_on "libsamplerate"
+  depends_on "libsndfile"
+  depends_on "readline"
+
+  on_macos do
+    depends_on "aften"
+  end
+
+  on_linux do
+    depends_on "alsa-lib"
+    depends_on "systemd"
+  end
 
   def install
-    # Makefile hardcodes Carbon header location
-    inreplace Dir["drivers/coreaudio/Makefile.{am,in}"],
-      "/System/Library/Frameworks/Carbon.framework/Headers/Carbon.h",
-      "#{MacOS.sdk_path}/System/Library/Frameworks/Carbon.framework/Headers/Carbon.h"
-
-    ENV["LINKFLAGS"] = ENV.ldflags
-    system "./configure", "--prefix=#{prefix}"
-    system "make", "install"
+    if OS.mac? && MacOS.version <= :high_sierra
+      # See https://github.com/jackaudio/jack2/issues/640#issuecomment-723022578
+      ENV.append "LDFLAGS", "-Wl,-compatibility_version,1"
+      ENV.append "LDFLAGS", "-Wl,-current_version,#{version}"
+    end
+    system Formula["python@3.10"].opt_bin/"python3", "./waf", "configure", "--prefix=#{prefix}", "--example-tools"
+    system Formula["python@3.10"].opt_bin/"python3", "./waf", "build"
+    system Formula["python@3.10"].opt_bin/"python3", "./waf", "install"
   end
 
-  plist_options :manual => "jackd -d coreaudio"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>WorkingDirectory</key>
-      <string>#{prefix}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/jackd</string>
-        <string>-d</string>
-        <string>coreaudio</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>KeepAlive</key>
-      <true/>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"jackd", "-X", "coremidi", "-d", "coreaudio"]
+    keep_alive true
+    working_dir opt_prefix
+    environment_variables PATH: "/usr/bin:/bin:/usr/sbin:/sbin:#{HOMEBREW_PREFIX}/bin"
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/jackd --version")
+    source_name = "test_source"
+    sink_name = "test_sink"
+    fork do
+      if OS.mac?
+        exec "#{bin}/jackd", "-X", "coremidi", "-d", "dummy"
+      else
+        exec "#{bin}/jackd", "-d", "dummy"
+      end
+    end
+    system "#{bin}/jack_wait", "--wait", "--timeout", "10"
+    fork do
+      exec "#{bin}/jack_midiseq", source_name, "16000", "0", "60", "8000"
+    end
+    midi_sink = IO.popen "#{bin}/jack_midi_dump #{sink_name}"
+    sleep 1
+    system "#{bin}/jack_connect", "#{source_name}:out", "#{sink_name}:input"
+    sleep 1
+    Process.kill "TERM", midi_sink.pid
+
+    midi_dump = midi_sink.read
+    assert_match "90 3c 40", midi_dump
+    assert_match "80 3c 40", midi_dump
   end
 end

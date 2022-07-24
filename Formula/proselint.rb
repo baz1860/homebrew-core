@@ -3,33 +3,32 @@ class Proselint < Formula
 
   desc "Linter for prose"
   homepage "http://proselint.com"
-  url "https://files.pythonhosted.org/packages/1b/d2/2e6afa3f933a12bfb1eb588f1ec8c26f915935356d8a0e51b2e5c53bfd04/proselint-0.8.0.tar.gz"
-  sha256 "08d48494533f178eb7a978cbdf10ddf85ed7fc2eb486ff5e7d0aecfa08e81bbd"
-  head "https://github.com/amperser/proselint.git"
+  url "https://files.pythonhosted.org/packages/a2/be/2c1bcc43d85b23fe97dae02efd3e39b27cd66cca4a9f9c70921718b74ac2/proselint-0.13.0.tar.gz"
+  sha256 "7dd2b63cc2aa390877c4144fcd3c80706817e860b017f04882fbcd2ab0852a58"
+  license "BSD-3-Clause"
+  revision 1
+  head "https://github.com/amperser/proselint.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "348b9735cf0f74e60458401ea04443e1bdee7b16425bbab7dc4dcc22a3b4afe2" => :high_sierra
-    sha256 "2b21bf831fb77fb70d54f7df0ec4d17828b6b3dd34fd8067f5e4c0907936f510" => :sierra
-    sha256 "1a519abf70fb0ff474a9cb7f1f26cc47ab14db96e0bff2234dde0cf8a21a4162" => :el_capitan
-    sha256 "3251f7ab8536ce8ce27973ae7b3578a404b712688dfa79c4f7d2413d1760ae32" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "699747e7855830ae0811ee1c43e421e651acaf1c9d63e11e77bc8bbf48803fa6"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "25aedee29b1cf3e7e209aad66b37a4ba29673ef7f52a515f02196c4114c71a8a"
+    sha256 cellar: :any_skip_relocation, monterey:       "6d6ec687b47919c8e959f98699adf00f2f39560b7c057c2c006efb9ce73cc431"
+    sha256 cellar: :any_skip_relocation, big_sur:        "7308b866170e550ff04917a632f6975c338f4fe505c65243740083e9df0aa135"
+    sha256 cellar: :any_skip_relocation, catalina:       "00fa37c1f98845d77dc8466f249ae0edc8bb12e24c26bbc0ebca1d15c8404765"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "02f3545e37bf0c95d02262d54eb0d3ad27e71e4f2082e05f44aadb4ebf949b85"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
+  depends_on "six"
 
   resource "click" do
-    url "https://files.pythonhosted.org/packages/95/d9/c3336b6b5711c3ab9d1d3a80f1a3e2afeb9d8c02a7166462f6cc96570897/click-6.7.tar.gz"
-    sha256 "f15516df478d5a56180fbf80e68f206010e6d160fc39fa508b65e035fd75130b"
+    url "https://files.pythonhosted.org/packages/f4/09/ad003f1e3428017d1c3da4ccc9547591703ffea548626f47ec74509c5824/click-8.0.3.tar.gz"
+    sha256 "410e932b050f5eed773c4cda94de75971c89cdb3155a72a0831139a79e5ecb5b"
   end
 
   resource "future" do
-    url "https://files.pythonhosted.org/packages/00/2b/8d082ddfed935f3608cc61140df6dcbf0edea1bc3ab52fb6c29ae3e81e85/future-0.16.0.tar.gz"
-    sha256 "e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb"
-  end
-
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+    url "https://files.pythonhosted.org/packages/45/0b/38b06fd9b92dc2b68d58b75f900e97884c45bedd2ff83203d933cf5851c9/future-0.18.2.tar.gz"
+    sha256 "b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"
   end
 
   def install
@@ -38,6 +37,6 @@ class Proselint < Formula
 
   test do
     output = pipe_output("#{bin}/proselint --compact -", "John is very unique.")
-    assert_match /weasel_words\.very.*uncomparables/m, output
+    assert_match "Comparison of an uncomparable", output
   end
 end

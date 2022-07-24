@@ -1,17 +1,35 @@
 class ApacheArchiva < Formula
-  desc "The Build Artifact Repository Manager"
+  desc "Build Artifact Repository Manager"
   homepage "https://archiva.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=archiva/2.2.3/binaries/apache-archiva-2.2.3-bin.tar.gz"
-  sha256 "cf90d097e7c2763f6ff8df458b64be0348b35847de8b238c3e1e28e006da8bad"
+  url "https://www.apache.org/dyn/closer.lua?path=archiva/2.2.8/binaries/apache-archiva-2.2.8-bin.tar.gz"
+  mirror "https://archive.apache.org/dist/archiva/2.2.8/binaries/apache-archiva-2.2.8-bin.tar.gz"
+  sha256 "8ef2c2b866260de1102db39929902d6f8365492a0ac12c1300f937ae9f65da31"
+  license all_of: ["Apache-2.0", "GPL-2.0-only"]
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "26714e5d6850b4e9636407601d0c3abd7c66e010c8c7ce47ad1f3930309eedb9"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "26714e5d6850b4e9636407601d0c3abd7c66e010c8c7ce47ad1f3930309eedb9"
+    sha256 cellar: :any_skip_relocation, monterey:       "26714e5d6850b4e9636407601d0c3abd7c66e010c8c7ce47ad1f3930309eedb9"
+    sha256 cellar: :any_skip_relocation, big_sur:        "26714e5d6850b4e9636407601d0c3abd7c66e010c8c7ce47ad1f3930309eedb9"
+    sha256 cellar: :any_skip_relocation, catalina:       "26714e5d6850b4e9636407601d0c3abd7c66e010c8c7ce47ad1f3930309eedb9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0df59cf09aa5511494063569457fcc82c256b53e87005be3101455fc737b5b6c"
+  end
 
-  depends_on :java => "1.7+"
+  depends_on "ant" => :build
+  depends_on "java-service-wrapper"
+  depends_on "openjdk"
 
   def install
     libexec.install Dir["*"]
+    rm_f libexec.glob("bin/wrapper*")
+    rm_f libexec.glob("lib/libwrapper*")
+    (bin/"archiva").write_env_script libexec/"bin/archiva", Language::Java.java_home_env
 
-    bin.install_symlink libexec/"bin/archiva"
+    wrapper = Formula["java-service-wrapper"].opt_libexec
+    ln_sf wrapper/"bin/wrapper", libexec/"bin/wrapper"
+    libext = OS.mac? ? "jnilib" : "so"
+    ln_sf wrapper/"lib/libwrapper.#{libext}", libexec/"lib/libwrapper.#{libext}"
+    ln_sf wrapper/"lib/wrapper.jar", libexec/"lib/wrapper.jar"
   end
 
   def post_install
@@ -22,36 +40,10 @@ class ApacheArchiva < Formula
     cp_r libexec/"conf", var/"archiva"
   end
 
-  plist_options :manual => "ARCHIVA_BASE=#{HOMEBREW_PREFIX}/var/archiva #{HOMEBREW_PREFIX}/opt/apache-archiva/bin/archiva console"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/archiva</string>
-          <string>console</string>
-        </array>
-        <key>Disabled</key>
-        <false/>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>UserName</key>
-        <string>archiva</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/archiva/logs/launchd.log</string>
-        <key>EnvironmentVariables</key>
-        <dict>
-          <key>ARCHIVA_BASE</key>
-          <string>#{var}/archiva</string>
-        </dict>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"archiva", "console"]
+    environment_variables ARCHIVA_BASE: var/"archiva"
+    log_path var/"archiva/logs/launchd.log"
   end
 
   test do

@@ -2,17 +2,20 @@ class Braid < Formula
   desc "Simple tool to help track vendor branches in a Git repository"
   homepage "https://cristibalan.github.io/braid/"
   url "https://github.com/cristibalan/braid.git",
-      :tag => "v1.1.0",
-      :revision => "599ca7e520e1c34625f9cda3d87cdf73346ce0fd"
+      tag:      "v1.1.8",
+      revision: "d7391f2585fc86a8057d88de248ddc082eb8fa1b"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "85e5e00d45d219a89ade2d984d154db8fa2456ea6d288a6bdc7e95556703c0e7" => :high_sierra
-    sha256 "b525274128bcbc05bccddd697da56eca01f4ce71dc1dab01b8faf3d01ec82173" => :sierra
-    sha256 "f6f8898a22dca7eba5bc1ef9077b3bfb82c3167cedf863fb82df7f151d02e5c9" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "9b87226e335b4bbf5ab6db80f4ae502c64849bdb1a3e93c0d40b954a7b8729f7"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ef6c996ced958c4fbf1782ab4dbfdb7ce1fd4109253dd86b338978876b29a312"
+    sha256 cellar: :any_skip_relocation, monterey:       "9b87226e335b4bbf5ab6db80f4ae502c64849bdb1a3e93c0d40b954a7b8729f7"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ef6c996ced958c4fbf1782ab4dbfdb7ce1fd4109253dd86b338978876b29a312"
+    sha256 cellar: :any_skip_relocation, catalina:       "ef6c996ced958c4fbf1782ab4dbfdb7ce1fd4109253dd86b338978876b29a312"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f41f9bcb623db022eb830f348a1fe7f408332d4ef8d41e90aca6701da7476ccd"
   end
 
-  depends_on "ruby" if MacOS.version <= :sierra
+  uses_from_macos "ruby", since: :high_sierra
 
   resource "arrayfields" do
     url "https://rubygems.org/gems/arrayfields-4.9.2.gem"
@@ -25,13 +28,18 @@ class Braid < Formula
   end
 
   resource "fattr" do
-    url "https://rubygems.org/gems/fattr-2.3.0.gem"
-    sha256 "0430a798270a7097c8c14b56387331808b8d9bb83904ba643b196c895bdf5993"
+    url "https://rubygems.org/gems/fattr-2.4.0.gem"
+    sha256 "a7544665977e6ff2945e204436f3b8e932edf8ed3d7174d5d027a265e328fc08"
+  end
+
+  resource "json" do
+    url "https://rubygems.org/gems/json-2.6.1.gem"
+    sha256 "7ff682a2db805d6b924e4e87341c3c0036824713a23c58ca53267ce7e5ce2ffd"
   end
 
   resource "main" do
-    url "https://rubygems.org/gems/main-6.2.2.gem"
-    sha256 "af04ee3eb4b7455eb5ab17e98ab86b0dad8b8420ad3ae605313644a4c6f49675"
+    url "https://rubygems.org/gems/main-6.2.3.gem"
+    sha256 "f630bf47a3ddfa09483a201a47c9601fd0ec9656d51b4a1196696ec57d33abf1"
   end
 
   resource "map" do
@@ -42,24 +50,28 @@ class Braid < Formula
   def install
     ENV["GEM_HOME"] = libexec
     resources.each do |r|
-      r.verify_download_integrity(r.fetch)
+      next if r.name == "json" && MacOS.version >= :high_sierra
+
+      r.fetch
       system "gem", "install", r.cached_download, "--ignore-dependencies",
              "--no-document", "--install-dir", libexec
     end
     system "gem", "build", "braid.gemspec"
     system "gem", "install", "--ignore-dependencies", "braid-#{version}.gem"
     bin.install libexec/"bin/braid"
-    bin.env_script_all_files(libexec/"bin", :GEM_HOME => ENV["GEM_HOME"])
+    bin.env_script_all_files(libexec/"bin", GEM_HOME: ENV["GEM_HOME"])
   end
 
   test do
-    system "git", "init"
-    (testpath/"README").write "Testing"
-    (testpath/".gitignore").write "Library"
-    system "git", "add", "README", ".gitignore"
-    system "git", "commit", "-m", "Initial commit"
-    output = shell_output("#{bin}/braid add https://github.com/cristibalan/braid.git")
-    assert_match "Braid: Added mirror at '", output
-    assert_match "braid (", shell_output("#{bin}/braid status")
+    mkdir "test" do
+      system "git", "init"
+      (Pathname.pwd/"README").write "Testing"
+      (Pathname.pwd/".gitignore").write "Library"
+      system "git", "add", "README", ".gitignore"
+      system "git", "commit", "-m", "Initial commit"
+      output = shell_output("#{bin}/braid add https://github.com/cristibalan/braid.git")
+      assert_match "Braid: Added mirror at '", output
+      assert_match "braid (", shell_output("#{bin}/braid status")
+    end
   end
 end

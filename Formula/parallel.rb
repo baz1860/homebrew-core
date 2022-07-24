@@ -1,26 +1,45 @@
 class Parallel < Formula
   desc "Shell command parallelization utility"
   homepage "https://savannah.gnu.org/projects/parallel/"
-  url "https://ftp.gnu.org/gnu/parallel/parallel-20180122.tar.bz2"
-  mirror "https://ftpmirror.gnu.org/parallel/parallel-20180122.tar.bz2"
-  sha256 "e906c271dfa0e973a9ea151fe7caaba742e0f400e86a69687ea6b04ad6bd6bf2"
-  head "https://git.savannah.gnu.org/git/parallel.git"
+  url "https://ftp.gnu.org/gnu/parallel/parallel-20220622.tar.bz2"
+  mirror "https://ftpmirror.gnu.org/parallel/parallel-20220622.tar.bz2"
+  sha256 "a4bd15a8f53b20fd19b0b41b26206527c07a1dda28a7891d5253d856fe5fd5a0"
+  license "GPL-3.0-or-later"
+  version_scheme 1
+  head "https://git.savannah.gnu.org/git/parallel.git", branch: "master"
+
+  livecheck do
+    url :homepage
+    regex(/GNU Parallel v?(\d{6,8}).*? released/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "30ca3fe740f0c4d43984116ce53b7c1058f4e5bf4d029ad6d24ebf28771b4ee8" => :high_sierra
-    sha256 "30ca3fe740f0c4d43984116ce53b7c1058f4e5bf4d029ad6d24ebf28771b4ee8" => :sierra
-    sha256 "30ca3fe740f0c4d43984116ce53b7c1058f4e5bf4d029ad6d24ebf28771b4ee8" => :el_capitan
+    sha256 cellar: :any_skip_relocation, all: "5ecefe46cb80644d4ff3f6b37d41bb39ce1bd1f81a078440be479c2917221417"
   end
 
-  if Tab.for_name("moreutils").with?("parallel")
-    conflicts_with "moreutils",
-      :because => "both install a `parallel` executable."
-  end
+  conflicts_with "moreutils", because: "both install a `parallel` executable"
 
   def install
+    ENV.append_path "PATH", bin
     system "./configure", "--prefix=#{prefix}"
     system "make", "install"
+
+    inreplace_files = [
+      bin/"parallel",
+      doc/"parallel.texi",
+      doc/"parallel_design.texi",
+      man1/"parallel.1",
+      man7/"parallel_design.7",
+    ]
+    inreplace inreplace_files, "/usr/local", HOMEBREW_PREFIX
+  end
+
+  def caveats
+    <<~EOS
+      To use the --csv option, the Perl Text::CSV module has to be installed.
+      You can install it via:
+        perl -MCPAN -e'install Text::CSV'
+    EOS
   end
 
   test do

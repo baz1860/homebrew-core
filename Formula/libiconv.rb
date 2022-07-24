@@ -1,19 +1,22 @@
 class Libiconv < Formula
   desc "Conversion library"
   homepage "https://www.gnu.org/software/libiconv/"
-  url "https://ftp.gnu.org/gnu/libiconv/libiconv-1.15.tar.gz"
-  mirror "https://ftpmirror.gnu.org/libiconv/libiconv-1.15.tar.gz"
-  sha256 "ccf536620a45458d26ba83887a983b96827001e92a13847b45e4925cc8913178"
+  url "https://ftp.gnu.org/gnu/libiconv/libiconv-1.17.tar.gz"
+  mirror "https://ftpmirror.gnu.org/libiconv/libiconv-1.17.tar.gz"
+  sha256 "8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313"
+  license all_of: ["GPL-3.0-or-later", "LGPL-2.0-or-later"]
 
   bottle do
-    cellar :any
-    sha256 "2e16b57017ea3f5c34a57ea7fe39f2aa22db73452eb438d67eb43a4ba8d5bc9d" => :high_sierra
-    sha256 "53766c5e51bc8e63b0e4c03bae4bcd22d414882eb484a4b55cb3ebe735e20a09" => :sierra
-    sha256 "1b7a98758ed53e484768a99cfdd0941bad8393ffce23d0f9650bbeff945da1f0" => :el_capitan
-    sha256 "19eb1ef341c6f45c08347bfb8d24e50d666a269523753862fa9a7a62691c0199" => :yosemite
+    sha256 cellar: :any, arm64_monterey: "2621f09f8681897e86d452876e64f73156042713db36beb52c95074f648c3ee6"
+    sha256 cellar: :any, arm64_big_sur:  "c79ae70f794ef2747b10d0aa7c4ab27435a742509ec17131902f1d075002e043"
+    sha256 cellar: :any, monterey:       "9484d4d80192da3c0dfd8d3eaa8b391db0120dd7d259670b821a38de7f404539"
+    sha256 cellar: :any, big_sur:        "a68939ed416afc78c2d9ece02bab394858783db5e03e3cd4575f66dc9a43160f"
+    sha256 cellar: :any, catalina:       "dfb536db610c9b2bad0e62d114ea81852d6d97da68b1360a404b9eb452413ab5"
   end
 
   keg_only :provided_by_macos
+
+  depends_on :macos # is not needed on Linux, where iconv.h is provided by glibc
 
   patch do
     url "https://raw.githubusercontent.com/Homebrew/patches/9be2793af/libiconv/patch-utf8mac.diff"

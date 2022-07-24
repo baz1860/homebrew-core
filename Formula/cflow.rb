@@ -1,17 +1,18 @@
 class Cflow < Formula
   desc "Generate call graphs from C code"
   homepage "https://www.gnu.org/software/cflow/"
-  url "https://ftp.gnu.org/gnu/cflow/cflow-1.5.tar.bz2"
-  mirror "https://ftpmirror.gnu.org/cflow/cflow-1.5.tar.bz2"
-  sha256 "6fe40a106a9ffd6a5489938b939d4301c04fa28a09596294b4f787abca1c037b"
+  url "https://ftp.gnu.org/gnu/cflow/cflow-1.7.tar.bz2"
+  mirror "https://ftpmirror.gnu.org/cflow/cflow-1.7.tar.bz2"
+  sha256 "d01146caf9001e266133417c2a8258a64b5fc16fcb082a14f6528204d0c97086"
+  license "GPL-3.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "d97871418bd311cd914ac0b7dbcf900d599ea706c8bb91d20cf9c63406c3d066" => :high_sierra
-    sha256 "40efaa5c5298d6aa3ca2bce884ede21d21cb59df94eee0bc121a588dcb58257b" => :sierra
-    sha256 "4bde642d869a9ea7347ad91bdb87a0de3c93f3766e8b74bb6e74a763278724c3" => :el_capitan
-    sha256 "ae1fcbcfbf28417dfcc4836f32446ece545e9fceee61f34617d6364a2dd106e0" => :yosemite
-    sha256 "b50f226680f8b0e3acaea2e09781cd6d7b03bdf1191fe338658d9aacef448a9f" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "775aa08b6d73ae6aa6eaeef7e1b187acc8b78daf87c7be6771914213d3907b4d"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "c243b38883f723c09ea4ebadc5cca19ede2f3210fd75379f4636fa7320fb0e0e"
+    sha256 cellar: :any_skip_relocation, monterey:       "3631370161b2fe088572eb63e1653c9d591184870cbf5e6ec31187f919082cd8"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ca4cbcfa33c53ff166dced09c73683076a112b6053ae4667abf3f97fd0aaf1be"
+    sha256 cellar: :any_skip_relocation, catalina:       "aa461817268ac09391a88903ab13a8a13852c943a4d38dfe5342c202f1daf5d6"
+    sha256                               x86_64_linux:   "62e41fe118da0de3ee5bbf3a85273d53aec1ada3b389f2e4b7876f4aa9f9ee0a"
   end
 
   def install
@@ -60,6 +61,6 @@ class Cflow < Formula
       }
     EOS
 
-    assert_match /getpwuid()/, shell_output("#{bin}/cflow --main who_am_i #{testpath}/whoami.c")
+    assert_match "getpwuid()", shell_output("#{bin}/cflow --main who_am_i #{testpath}/whoami.c")
   end
 end

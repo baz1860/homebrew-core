@@ -1,68 +1,67 @@
 class Zsh < Formula
   desc "UNIX shell (command interpreter)"
   homepage "https://www.zsh.org/"
-  url "https://downloads.sourceforge.net/project/zsh/zsh/5.4.2/zsh-5.4.2.tar.gz"
-  mirror "https://www.zsh.org/pub/zsh-5.4.2.tar.gz"
-  sha256 "957bcdb2c57f64c02f673693ea5a7518ef24b6557aeb3a4ce222cefa6d74acc9"
-  revision 3
+  url "https://downloads.sourceforge.net/project/zsh/zsh/5.9/zsh-5.9.tar.xz"
+  mirror "https://www.zsh.org/pub/zsh-5.9.tar.xz"
+  sha256 "9b8d1ecedd5b5e81fbf1918e876752a7dd948e05c1a0dba10ab863842d45acd5"
+  license "MIT-Modern-Variant"
+
+  livecheck do
+    url "https://sourceforge.net/projects/zsh/rss?path=/zsh"
+  end
 
   bottle do
-    sha256 "9071f9ae246b1c2d577cf0e2115f38e3612994d456a1925918c9ea25218c202d" => :high_sierra
-    sha256 "daa5e14fd14dd3051ac99e29d3c8ec5954f99e613229c200c1898d8e682549af" => :sierra
-    sha256 "1dbc516e7193753876e2d1648cfb90c0d15fb3f0c6483a929fbcc4b129be0d46" => :el_capitan
+    sha256 arm64_monterey: "1c6d208a7aa0601b25d04c5d41a393424b1094cf188e5b0c80fafc6e1e2755ef"
+    sha256 arm64_big_sur:  "0a93821dee76829dac49770d4b32d08d0678272c43937e3858d7f901bab86cd6"
+    sha256 monterey:       "b9a38fa0344b187333771a5585ad2d01c27e69a7e5362ba3fc8d7389aa3279f3"
+    sha256 big_sur:        "722236bd8c9a094e1eca09263f5e83a94d4c97c2ca797804eef4f9564ef729ec"
+    sha256 catalina:       "64c8757cc6db0247fb9f604ff84f61726fb5d91318c566157fa2957782040403"
+    sha256 x86_64_linux:   "fb0b59e7b1407323ea06b7c757de4d75bbcfb0836ce05857b0b2cf7816a231e0"
   end
 
   head do
-    url "https://git.code.sf.net/p/zsh/code.git"
+    url "https://git.code.sf.net/p/zsh/code.git", branch: "master"
     depends_on "autoconf" => :build
   end
 
-  option "without-etcdir", "Disable the reading of Zsh rc files in /etc"
-  option "with-unicode9", "Build with Unicode 9 character width support"
+  depends_on "ncurses"
+  depends_on "pcre"
 
-  deprecated_option "disable-etcdir" => "without-etcdir"
-
-  depends_on "gdbm" => :optional
-  depends_on "pcre" => :optional
+  uses_from_macos "texinfo"
 
   resource "htmldoc" do
-    url "https://downloads.sourceforge.net/project/zsh/zsh-doc/5.4.2/zsh-5.4.2-doc.tar.xz"
-    mirror "https://www.zsh.org/pub/zsh-5.4.2-doc.tar.xz"
-    sha256 "5229cc93ebe637a07deb5b386b705c37a50f4adfef788b3c0f6647741df4f6bd"
+    url "https://downloads.sourceforge.net/project/zsh/zsh-doc/5.9/zsh-5.9-doc.tar.xz"
+    mirror "https://www.zsh.org/pub/zsh-5.9-doc.tar.xz"
+    sha256 "6f7c091249575e68c177c5e8d5c3e9705660d0d3ca1647aea365fd00a0bd3e8a"
   end
 
   def install
+    # Work around configure issues with Xcode 12
+    # https://www.zsh.org/mla/workers/2020/index.html
+    # https://github.com/Homebrew/homebrew-core/issues/64921
+    ENV.append "CFLAGS", "-Wno-implicit-function-declaration"
+
     system "Util/preconfig" if build.head?
 
-    args = %W[
-      --prefix=#{prefix}
-      --enable-fndir=#{pkgshare}/functions
-      --enable-scriptdir=#{pkgshare}/scripts
-      --enable-site-fndir=#{HOMEBREW_PREFIX}/share/zsh/site-functions
-      --enable-site-scriptdir=#{HOMEBREW_PREFIX}/share/zsh/site-scripts
-      --enable-runhelpdir=#{pkgshare}/help
-      --enable-cap
-      --enable-maildir-support
-      --enable-multibyte
-      --enable-zsh-secure-free
-      --with-tcsetpgrp
-    ]
-
-    args << "--disable-gdbm" if build.without? "gdbm"
-    args << "--enable-pcre" if build.with? "pcre"
-    args << "--enable-unicode9" if build.with? "unicode9"
-
-    if build.without? "etcdir"
-      args << "--disable-etcdir"
-    else
-      args << "--enable-etcdir=/etc"
-    end
-
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}",
+           "--enable-fndir=#{pkgshare}/functions",
+           "--enable-scriptdir=#{pkgshare}/scripts",
+           "--enable-site-fndir=#{HOMEBREW_PREFIX}/share/zsh/site-functions",
+           "--enable-site-scriptdir=#{HOMEBREW_PREFIX}/share/zsh/site-scripts",
+           "--enable-runhelpdir=#{pkgshare}/help",
+           "--enable-cap",
+           "--enable-maildir-support",
+           "--enable-multibyte",
+           "--enable-pcre",
+           "--enable-zsh-secure-free",
+           "--enable-unicode9",
+           "--enable-etcdir=/etc",
+           "--with-tcsetpgrp",
+           "DL_EXT=bundle"
 
     # Do not version installation directories.
     inreplace ["Makefile", "Src/Makefile"],
-      "$(libdir)/$(tzsh)/$(VERSION)", "$(libdir)"
+              "$(libdir)/$(tzsh)/$(VERSION)", "$(libdir)"
 
     if build.head?
       # disable target install.man, because the required yodl comes neither with macOS nor Homebrew

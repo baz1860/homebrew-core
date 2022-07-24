@@ -3,22 +3,27 @@ class Prefixsuffix < Formula
   homepage "https://github.com/murraycu/prefixsuffix"
   url "https://download.gnome.org/sources/prefixsuffix/0.6/prefixsuffix-0.6.9.tar.xz"
   sha256 "fc3202bddf2ebbb93ffd31fc2a079cfc05957e4bf219535f26e6d8784d859e9b"
+  license "GPL-2.0-or-later"
+  revision 9
 
   bottle do
-    sha256 "adf52f2e594b7e519fc4cbe02d07f30020bcef48d37b580b8ad5a66ad1a17030" => :high_sierra
-    sha256 "cf1ee40aeaa52ad6fe92570c1f914d98275a3d9c2bbc6f93ca1ea9f061c0f973" => :sierra
-    sha256 "1143a29769e566e030bec8f3bf7a3f24a9c7fc69638511b6964571cc255b696f" => :el_capitan
-    sha256 "544f17fbc8873abb8725d469f2cb076245d93527008f805f7b29416b6b20a82f" => :yosemite
-    sha256 "eb984287bf98618cf61cf5e9ed85103077aaf4a36c8309fdcb6c9ecb736b4272" => :mavericks
+    sha256 arm64_monterey: "f4a3934702cc68077a096d0baca50a4baf033309cec38b2225b144a4bd825b45"
+    sha256 arm64_big_sur:  "03a102fc5cbf319029a6b536b60caf5db40396b25e1d6de1eda1baf297cb0d81"
+    sha256 monterey:       "941432357b54d13c0b0333c120b72ec0ce467230a05de210a0a4837e3a898e31"
+    sha256 big_sur:        "4300af03702b1873b307890bfb3bf9e08da08e43c401c958a2dcf796d56a34e8"
+    sha256 catalina:       "8384f85dfc725d9a754030a2f94320124845b3d63968a2a3348a918afd096415"
+    sha256 mojave:         "3e25c1930c085b61c073b5015895db250ec1113b3102384ebf84c1f8d0a65731"
+    sha256 x86_64_linux:   "fc0145d8cfcf008d3801cf7d90611303c510c4529974d4f2fa5b7224d09c027b"
   end
 
-  depends_on "pkg-config" => :build
   depends_on "intltool" => :build
+  depends_on "pkg-config" => :build
   depends_on "gtkmm3"
 
-  needs :cxx11
+  uses_from_macos "perl" => :build
 
   def install
+    ENV.prepend_path "PERL5LIB", Formula["intltool"].libexec/"lib/perl5" unless OS.mac?
     ENV.cxx11
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
@@ -32,6 +37,7 @@ class Prefixsuffix < Formula
   end
 
   test do
-    system "#{bin}/prefixsuffix", "--version"
+    # Disable this part of the test on Linux because display is not available.
+    system "#{bin}/prefixsuffix", "--version" if OS.mac?
   end
 end

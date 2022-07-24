@@ -1,26 +1,31 @@
 class Hebcal < Formula
   desc "Perpetual Jewish calendar for the command-line"
   homepage "https://github.com/hebcal/hebcal"
-  url "https://github.com/hebcal/hebcal/archive/v4.13.tar.gz"
-  sha256 "7b2e69b0e400ffd727fd818d926484c3f15a51cd6b325cea2483354501d6fce9"
+  url "https://github.com/hebcal/hebcal/archive/v4.30.tar.gz"
+  sha256 "c9acc93483369ea82cad18ceeec5b7505462ad468f4ae72ba8ce0f7d446d2a0d"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "95fd596027fcf571cd1091be417f28ad59ee838aab4c0769f8f36ae10896eeb0" => :high_sierra
-    sha256 "b520aadc300e1660d66e8ee26712405b3581ad32b20c119908c5890d90f721e9" => :sierra
-    sha256 "55630d52364af42172ae1abc10847110fabe93f94ae21708863803be7c35fdc9" => :el_capitan
-    sha256 "37d26466a7deb14cb2f38cc7eff1621eef652239bb973b3f5c5c870cb624399d" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "6858b58451056d5b885ff20511769f4157a1c90a9de07f5d0f6c7724e9084844"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "5aa1e58ab697e42039660251d6512940c45aa058d040e53b7042758841fcb369"
+    sha256 cellar: :any_skip_relocation, monterey:       "92fb89a3ebeb16ca08dc6beacc2e54ed566e4069ccbdbf26bebc3a920bb774de"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d13168e7d833058699c3090d9b92bf6a52bf33eb19ec44a7c8821b288aea71d5"
+    sha256 cellar: :any_skip_relocation, catalina:       "aa2c7f4e49fa685a6280e0426027176f737d43a94ceb4cc4fdf18dbaf6b3f274"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "4cae6a21f371bf895ab49451d470033dba72f5d1ffbe4f116ee87b493370c9ce"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
+  uses_from_macos "gperf" => :build
 
   def install
+    system "autoreconf", "-fiv"
     system "./configure", "--prefix=#{prefix}", "ACLOCAL=aclocal", "AUTOMAKE=automake"
     system "make", "install"
   end
 
   test do
-    system "#{bin}/hebcal"
+    output = shell_output("#{bin}/hebcal 01 01 2020").chomp
+    assert_equal output, "1/1/2020 4th of Tevet, 5780"
   end
 end

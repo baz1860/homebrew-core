@@ -1,14 +1,22 @@
 class Pgroonga < Formula
   desc "PostgreSQL plugin to use Groonga as index"
   homepage "https://pgroonga.github.io/"
-  url "https://packages.groonga.org/source/pgroonga/pgroonga-2.0.2.tar.gz"
-  sha256 "4d644f9e59661e5aa8b1cd372d5aa345f976b0aae850523e287274110f394300"
+  url "https://packages.groonga.org/source/pgroonga/pgroonga-2.3.7.tar.gz"
+  sha256 "12876aa58177c0925d8331d91ea998d2db2b1766271a2ae741609668367dbfc1"
+  license "PostgreSQL"
+
+  livecheck do
+    url "https://packages.groonga.org/source/pgroonga/"
+    regex(/href=.*?pgroonga[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "11bff1f45d9e6f1f633285c071da9d71ca441e74e1638d67bf37c3705b8eeff8" => :high_sierra
-    sha256 "1e43cf3e31c4517f71dfc661895fb0b94ddf6addb25b4841171674f89675f680" => :sierra
-    sha256 "ef3ec18dc482103a27c1777b9385d9deea506ebc22b496aae334a7660b4f14a4" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "16551ec9cfb78e392ae041b59a7100b45ee3f207e71667697eeee0cdc47f26b5"
+    sha256 cellar: :any,                 arm64_big_sur:  "d018a14d3260ddb6328f3d21c543992d974597081c15c0d7d4a4a8b56d9c3aca"
+    sha256 cellar: :any,                 monterey:       "abbd588474294ce7da953e43eafda79f76e4486815cc959af3aec2062a3a26b4"
+    sha256 cellar: :any,                 big_sur:        "fe23a052e2261c20504b17112179e58bf622716546f1f892d747cff2dfcb27dc"
+    sha256 cellar: :any,                 catalina:       "b93565f48e6629cc2f15c392153c5d28af30431240371ca2cabc4fdeac2b4793"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e600bc5df63d1bc5f7229327fbb0cc6d36becd975abc59bd2227837580196c33"
   end
 
   depends_on "pkg-config" => :build
@@ -20,24 +28,14 @@ class Pgroonga < Formula
     mkdir "stage"
     system "make", "install", "DESTDIR=#{buildpath}/stage"
 
-    lib.install Dir["stage/**/lib/*"]
-    (share/"postgresql/extension").install Dir["stage/**/share/postgresql/extension/*"]
+    stage_path = File.join("stage", HOMEBREW_PREFIX)
+    lib.install (buildpath/stage_path/"lib").children
+    share.install (buildpath/stage_path/"share").children
+    include.install (buildpath/stage_path/"include").children
   end
 
   test do
-    pg_bin = Formula["postgresql"].opt_bin
-    pg_port = "55561"
-    system "#{pg_bin}/initdb", testpath/"test"
-    pid = fork { exec "#{pg_bin}/postgres", "-D", testpath/"test", "-p", pg_port }
-
-    begin
-      sleep 2
-      system "#{pg_bin}/createdb", "-p", pg_port
-      system "#{pg_bin}/psql", "-p", pg_port, "--command", "CREATE DATABASE test;"
-      system "#{pg_bin}/psql", "-p", pg_port, "-d", "test", "--command", "CREATE EXTENSION pgroonga;"
-    ensure
-      Process.kill 9, pid
-      Process.wait pid
-    end
+    expected = "PGroonga database management module"
+    assert_match expected, (share/"postgresql/extension/pgroonga_database.control").read
   end
 end

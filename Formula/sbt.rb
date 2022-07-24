@@ -1,12 +1,21 @@
 class Sbt < Formula
   desc "Build tool for Scala projects"
   homepage "https://www.scala-sbt.org/"
-  url "https://github.com/sbt/sbt/releases/download/v1.1.1/sbt-1.1.1.tgz"
-  sha256 "8a9072155578f06c861be406e7f9fe989b3770d8da4069dd3cb5ad6c6d25c03b"
+  url "https://github.com/sbt/sbt/releases/download/v1.7.1/sbt-1.7.1.tgz"
+  mirror "https://sbt-downloads.cdnedge.bluemix.net/releases/v1.7.1/sbt-1.7.1.tgz"
+  sha256 "8a183afdb3519290dde2f8c81c9b2bad19ddd78735ef311fb5fb9bdcf68d3fe4"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
-  depends_on :java => "1.8+"
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "f0ae85a514c49e1e3c1412b42e34ae29603ada77cf3361226e4dcbf66fcdfede"
+  end
+
+  depends_on "openjdk"
 
   def install
     inreplace "bin/sbt" do |s|
@@ -14,31 +23,29 @@ class Sbt < Formula
       s.gsub! "/etc/sbt/sbtopts", "#{etc}/sbtopts"
     end
 
-    libexec.install "bin", "lib"
+    libexec.install "bin"
     etc.install "conf/sbtopts"
 
-    (bin/"sbt").write <<~EOS
-      #!/bin/sh
-      if [ -f "$HOME/.sbtconfig" ]; then
-        echo "Use of ~/.sbtconfig is deprecated, please migrate global settings to #{etc}/sbtopts" >&2
-        . "$HOME/.sbtconfig"
-      fi
-      exec "#{libexec}/bin/sbt" "$@"
-    EOS
+    # Removes:
+    # 1. `sbt.bat` (Windows-only)
+    # 2. `sbtn` (pre-compiled native binary)
+    (libexec/"bin").glob("sbt{.bat,n-x86_64*}").map(&:unlink)
+    (bin/"sbt").write_env_script libexec/"bin/sbt", Language::Java.overridable_java_home_env
   end
 
-  def caveats;  <<~EOS
-    You can use $SBT_OPTS to pass additional JVM options to SBT:
-       SBT_OPTS="-XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=256M"
+  def caveats
+    <<~EOS
+      You can use $SBT_OPTS to pass additional JVM options to sbt.
+      Project specific options should be placed in .sbtopts in the root of your project.
+      Global settings should be placed in #{etc}/sbtopts
 
-    This formula uses the standard Lightbend sbt launcher script.
-    Project specific options should be placed in .sbtopts in the root of your project.
-    Global settings should be placed in #{etc}/sbtopts
+      #{tap.user}'s installation does not include `sbtn`.
     EOS
   end
 
   test do
     ENV.append "_JAVA_OPTIONS", "-Dsbt.log.noformat=true"
-    assert_match "[info] #{version}", shell_output("#{bin}/sbt sbtVersion")
+    system bin/"sbt", "--sbt-create", "about"
+    assert_match version.to_s, shell_output("#{bin}/sbt sbtVersion")
   end
 end

@@ -1,31 +1,24 @@
 class Buildifier < Formula
   desc "Format bazel BUILD files with a standard convention"
   homepage "https://github.com/bazelbuild/buildtools"
-  url "https://github.com/bazelbuild/buildtools.git",
-      :tag => "0.6.0",
-      :revision => "a05406a1a855c6d8ebfc368555ace7638d83c0d9"
+  url "https://github.com/bazelbuild/buildtools/archive/5.1.0.tar.gz"
+  sha256 "e3bb0dc8b0274ea1aca75f1f8c0c835adbe589708ea89bf698069d0790701ea3"
+  license "Apache-2.0"
+  head "https://github.com/bazelbuild/buildtools.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a486db453f4b9901d00b57395c3b0a8212e95abc9af08b4e53b2b54c115a4447" => :high_sierra
-    sha256 "41977ab25b828d6a155f815eb04b06a705ef35cbe41f430f9b145c4aa1c48c41" => :sierra
-    sha256 "af36ea0545473e8811915386c19d278a2be4fcdbdd9f74eaaaf9e87dac2c5821" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "d5067b1bd99a3c972caefb196e7a07204dbd0fb06566554b3056da2b3176eef7"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "d5067b1bd99a3c972caefb196e7a07204dbd0fb06566554b3056da2b3176eef7"
+    sha256 cellar: :any_skip_relocation, monterey:       "b50c4c7e9a0bda54792c4f478417a8678c164aeaf08520d922dd7f8e9ef89bff"
+    sha256 cellar: :any_skip_relocation, big_sur:        "b50c4c7e9a0bda54792c4f478417a8678c164aeaf08520d922dd7f8e9ef89bff"
+    sha256 cellar: :any_skip_relocation, catalina:       "b50c4c7e9a0bda54792c4f478417a8678c164aeaf08520d922dd7f8e9ef89bff"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1120f937bbcbbc5d6a37690470e5ec48cc56f1a237683e7bb1e30ebb37a0dab7"
   end
 
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/bazelbuild").mkpath
-    ln_sf buildpath, buildpath/"src/github.com/bazelbuild/buildtools"
-
-    commit = Utils.popen_read("git", "rev-parse", "HEAD").chomp
-    inreplace "buildifier/buildifier.go" do |s|
-      s.gsub! /^(var buildifierVersion = ")redacted/, "\\1#{version}"
-      s.gsub! /^(var buildScmRevision = ")redacted/, "\\1#{commit}"
-    end
-
-    system "go", "build", "-o", bin/"buildifier", "buildifier/buildifier.go"
+    system "go", "build", *std_go_args(ldflags: "-s -w"), "./buildifier"
   end
 
   test do

@@ -1,17 +1,18 @@
 class Bedops < Formula
   desc "Set and statistical operations on genomic data of arbitrary scale"
   homepage "https://github.com/bedops/bedops"
-  url "https://github.com/bedops/bedops/archive/v2.4.30.tar.gz"
-  sha256 "218e0e367aa79747b2f90341d640776eea17befc0fdc35b0cec3c6184098d462"
+  url "https://github.com/bedops/bedops/archive/v2.4.41.tar.gz"
+  sha256 "3b868c820d59dd38372417efc31e9be3fbdca8cf0a6b39f13fb2b822607d6194"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f0ca3de056c5490202aabcf39467c27dc3cba80e8fd561346aec232659d020c0" => :high_sierra
-    sha256 "2cda86557abfe9449ef177523789a5bac561a4535579dce12f610b742905ac00" => :sierra
-    sha256 "913f411dbc2f1d1cb7a31bcdd804ca97ed24337b158943ad3e53ea7f61961af5" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "fa0e42d870cb2e5fd71ecfe637ec760352eb571074aa19156564f8fd1fc0cb2f"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "4716026be4f889b0c6ea10e8288be373cac72224aa63376b08192ab07f440d5c"
+    sha256 cellar: :any_skip_relocation, monterey:       "044fcad68d63ce2863dc43d69cbcff7b0b8d519086565ab8a2fa654b07f78bf0"
+    sha256 cellar: :any_skip_relocation, big_sur:        "12419efcde367c515fd963910d949141e3b95ff57c288730ba6e176499e519a2"
+    sha256 cellar: :any_skip_relocation, catalina:       "394609dcde4bcafc5ce17c92e2fa0a0a98761aa7127c697c55af8bf66ae5838c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a70293dadd6ad59de7bdb253081cb4b954b0b50008cd9f996ec81e30e043b83a"
   end
-
-  needs :cxx11
 
   def install
     system "make"

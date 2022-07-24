@@ -1,26 +1,26 @@
 class Jump < Formula
   desc "Helps you navigate your file system faster by learning your habits"
   homepage "https://github.com/gsamokovarov/jump"
-  url "https://github.com/gsamokovarov/jump/archive/v0.18.0.tar.gz"
-  sha256 "68d520d2aa67981e8f59a70cec24137375ed0bd757fa8d44e670efbc21b7a2c6"
-  head "https://github.com/gsamokovarov/jump.git"
+  url "https://github.com/gsamokovarov/jump/archive/v0.50.0.tar.gz"
+  sha256 "7832e968c81659e3750b8ecaaa49eb769fff4a96e790e28ef3d1e479f11affb4"
+  license "MIT"
+  head "https://github.com/gsamokovarov/jump.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "3aadaf3585a6385ead346e6aec41c860cb2324d03ca8e6d32bcb6b54258ffc06" => :high_sierra
-    sha256 "86fc2255812cd798f7cb75a056e82a6284183a166a5c39abfa2bfcd1cb9042b8" => :sierra
-    sha256 "72a0d85e9d7d205543a954d577e3187541476edeef02017730b823d2fcfe88ee" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "987dfba1cccc632159347ae8150db80a7cd6456bea696cb3c15c3d8064ebc0bc"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "987dfba1cccc632159347ae8150db80a7cd6456bea696cb3c15c3d8064ebc0bc"
+    sha256 cellar: :any_skip_relocation, monterey:       "3c2fe9f884aa4752c8256358a0c444da6b22c3143eb1d5d361ab79271c90c650"
+    sha256 cellar: :any_skip_relocation, big_sur:        "3c2fe9f884aa4752c8256358a0c444da6b22c3143eb1d5d361ab79271c90c650"
+    sha256 cellar: :any_skip_relocation, catalina:       "3c2fe9f884aa4752c8256358a0c444da6b22c3143eb1d5d361ab79271c90c650"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ad5a151b8c861fd49cdbfca4f0f9f9e844daab3f77515839df277039dfbc1e94"
   end
 
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/gsamokovarov").mkpath
-    ln_s buildpath, buildpath/"src/github.com/gsamokovarov/jump"
-
-    system "go", "build", "-o", "#{bin}/jump"
+    system "go", "build", "-ldflags", "-s -w", "-trimpath", "-o", "#{bin}/jump"
     man1.install "man/jump.1"
+    man1.install "man/j.1"
   end
 
   test do

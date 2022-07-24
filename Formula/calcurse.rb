@@ -1,20 +1,42 @@
 class Calcurse < Formula
   desc "Text-based personal organizer"
-  homepage "http://calcurse.org/"
-  url "http://calcurse.org/files/calcurse-4.3.0.tar.gz"
-  sha256 "31ecc3dc09e1e561502b4c94f965ed6b167c03e9418438c4a7ad5bad2c785f9a"
+  homepage "https://calcurse.org/"
+  url "https://calcurse.org/files/calcurse-4.8.0.tar.gz"
+  sha256 "48a736666cc4b6b53012d73b3aa70152c18b41e6c7b4807fab0f168d645ae32c"
+  license "BSD-2-Clause"
+
+  livecheck do
+    url "https://calcurse.org/downloads/"
+    regex(/href=.*?calcurse[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "0fbabcf326ec92cf28ec57ff76f77e1a6fa41217f7d11ef5090c18b7bfc5b8aa" => :high_sierra
-    sha256 "0a4237919a02a48d0c661ae43a4da579c69bf826921af07d14d9ade6f835374a" => :sierra
-    sha256 "4cca241225bacb88ffd8c9f97e8c7b4027068551523f07874975362995eacf54" => :el_capitan
+    sha256 arm64_monterey: "c052a312420fb5e3a244df5c013c72817f3f72e6575f3d4dc2df05616d42bf77"
+    sha256 arm64_big_sur:  "9e3f2eea1bab3d8e28dc2923c536a2b4585affe1c484024c684ad77dd1e75b8c"
+    sha256 monterey:       "5f1bc21c76038efd7812be974b649630a982d24a1f0b9de05d229ed4cd3c471a"
+    sha256 big_sur:        "157648881c6baa721a8ad91efc402f703211fdad5b9739d6221806fb42c1586c"
+    sha256 catalina:       "4e711564ffefe3d1479d3ad0efec99f4c87708ad48e3e71a0c7143a9003ddab5"
+    sha256 x86_64_linux:   "37bf63e3ebcd930c5019010e97c237d54171ca92c4eb7c2fdbebfd07dc290e4c"
+  end
+
+  head do
+    url "https://git.calcurse.org/calcurse.git"
+
+    depends_on "asciidoc" => :build
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
   end
 
   depends_on "gettext"
 
   def install
-    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
-    system "make"
+    system "./autogen.sh" if build.head?
+
+    system "./configure", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}"
+
+    # Specify XML_CATALOG_FILES for asciidoc
+    system "make", "XML_CATALOG_FILES=/usr/local/etc/xml/catalog"
     system "make", "install"
   end
 

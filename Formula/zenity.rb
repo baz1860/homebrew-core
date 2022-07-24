@@ -1,30 +1,40 @@
 class Zenity < Formula
   desc "GTK+ dialog boxes for the command-line"
-  homepage "https://live.gnome.org/Zenity"
-  url "https://download.gnome.org/sources/zenity/3.26/zenity-3.26.0.tar.xz"
-  sha256 "6a7f34626dd62b751fe22bcdb32f3558f8a8fdddcc9406893dd264f0ac18e830"
+  homepage "https://wiki.gnome.org/Projects/Zenity"
+  url "https://download.gnome.org/sources/zenity/3.42/zenity-3.42.1.tar.xz"
+  sha256 "a08e0c8e626615ee2c23ff74628eba6f8b486875dd54371ca7e2d7605b72a87c"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "8d21567ffffb86f7345993dcc93a865ded92d2df181dfa8c65f9e35fd7beaf00" => :high_sierra
-    sha256 "618ff56a163ed4094c60339853ab76492e8bfec46250a41a94258c13a09b38ed" => :sierra
-    sha256 "07292dedf997e00cf082909b10ba11d1aabf6ca82b1c1832808f31d34377781b" => :el_capitan
+    sha256 arm64_monterey: "a9e84c3b0eefa50aafb0f41cc6e0a9ccdce95ece584680c1d14591fd9fa4250c"
+    sha256 arm64_big_sur:  "0df17f657645d0075244735559ee97fb35ea64356843f5a1be5bbb1f29472293"
+    sha256 monterey:       "c102812429cf49155840fd2aeccae7bda7aec45f26ebea12848b628aa4f44397"
+    sha256 big_sur:        "e3b50cd62e794c4efe5355adb5eafabc4d93b2785a6fc1a8c638eb5bae681aee"
+    sha256 catalina:       "98f1939e7cf78bc7a66329c20e84f0067009d3e7be13d9f3b2f2156ea11f5b26"
+    sha256 x86_64_linux:   "3b64e8ebc5f116dc1d0b85f9c42f2a0adb7e0cdbef3930fc69eb249a8b0d1374"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
   depends_on "itstool" => :build
-  depends_on "libxml2"
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
+  depends_on "glib"
   depends_on "gtk+3"
-  depends_on "gnome-doc-utils"
-  depends_on "rarian"
 
   def install
-    system "./configure", "--prefix=#{prefix}"
-    system "make"
-    system "make", "install"
+    ENV["DESTDIR"] = "/"
+
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do
+    # (zenity:30889): Gtk-WARNING **: 13:12:26.818: cannot open display
+    return if OS.linux? && ENV["HOMEBREW_GITHUB_ACTIONS"]
+
     system bin/"zenity", "--help"
   end
 end

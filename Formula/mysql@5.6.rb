@@ -1,37 +1,34 @@
 class MysqlAT56 < Formula
   desc "Open source relational database management system"
   homepage "https://dev.mysql.com/doc/refman/5.6/en/"
-  url "https://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.39.tar.gz"
-  sha256 "ab1814b03af77bf88dc381eff558ed2e73e19e8e5a4170a78ba3370cd5da434d"
+  url "https://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.51.tar.gz"
+  sha256 "262ccaf2930fca1f33787505dd125a7a04844f40d3421289a51974b5935d9abc"
+  license "GPL-2.0-only"
 
   bottle do
-    sha256 "eae5096522de72b75b3d77e76b4c66608fc4e71cf76a732ae9ba09f472788693" => :high_sierra
-    sha256 "7338a26397d9f484b378ca89eae4ab74a66c132b74ca2adbc2add0b3123cb338" => :sierra
-    sha256 "a2e0f7c2fa8992ab4dd5ce1821c9b436f87011f9586acf9a2eb38e1219b3ec85" => :el_capitan
+    rebuild 1
+    sha256 monterey:     "e3132c3b1381b6ea6a2298166866e637560b0be3223912d1512a150b096fa104"
+    sha256 big_sur:      "30a530ddb785efe7542641366126d7b4afcce09bde0fa104b869814fa69fc9e2"
+    sha256 catalina:     "a5309a985dccc02490ff9bd0be1575a4e8908ca3e15dcfaa77e7d2b2bd616cfd"
+    sha256 mojave:       "1ba2347383b539258d1c0a29cbbee722c30e6c28446c22a669a8a7deabd5f53e"
+    sha256 x86_64_linux: "91b24798f46a2bc7b616fb73fc47a5337acb5b8e0a6f9be1c657eade6fade45b"
   end
 
   keg_only :versioned_formula
 
-  option "with-test", "Build with unit tests"
-  option "with-embedded", "Build the embedded server"
-  option "with-archive-storage-engine", "Compile with the ARCHIVE storage engine enabled"
-  option "with-blackhole-storage-engine", "Compile with the BLACKHOLE storage engine enabled"
-  option "with-local-infile", "Build with local infile loading support"
-  option "with-memcached", "Enable innodb-memcached support"
-  option "with-debug", "Build with debug support"
-
-  deprecated_option "enable-local-infile" => "with-local-infile"
-  deprecated_option "enable-memcached" => "with-memcached"
-  deprecated_option "enable-debug" => "with-debug"
-  deprecated_option "with-tests" => "with-test"
+  deprecate! date: "2021-02-01", because: :unsupported
 
   depends_on "cmake" => :build
-  depends_on "pidof" unless MacOS.version >= :mountain_lion
-  depends_on "openssl"
+  depends_on "openssl@1.1"
+
+  uses_from_macos "libedit"
 
   def datadir
     var/"mysql"
   end
+
+  # Fixes loading of VERSION file, backported from mysql/mysql-server@51675dd
+  patch :DATA
 
   def install
     # Don't hard-code the libtool path. See:
@@ -40,55 +37,44 @@ class MysqlAT56 < Formula
       "COMMAND /usr/bin/libtool -static -o ${TARGET_LOCATION}",
       "COMMAND libtool -static -o ${TARGET_LOCATION}"
 
+    # Fix loading of VERSION file; required in conjunction with patch
+    File.rename "VERSION", "MYSQL_VERSION"
+
     # -DINSTALL_* are relative to `CMAKE_INSTALL_PREFIX` (`prefix`)
     args = %W[
-      -DMYSQL_DATADIR=#{datadir}
-      -DINSTALL_INCLUDEDIR=include/mysql
-      -DINSTALL_MANDIR=share/man
-      -DINSTALL_DOCDIR=share/doc/#{name}
-      -DINSTALL_INFODIR=share/info
-      -DINSTALL_MYSQLSHAREDIR=share/mysql
-      -DWITH_SSL=system
+      -DCOMPILATION_COMMENT=Homebrew
       -DDEFAULT_CHARSET=utf8
       -DDEFAULT_COLLATION=utf8_general_ci
+      -DINSTALL_DOCDIR=share/doc/#{name}
+      -DINSTALL_INCLUDEDIR=include/mysql
+      -DINSTALL_INFODIR=share/info
+      -DINSTALL_MANDIR=share/man
+      -DINSTALL_MYSQLSHAREDIR=share/mysql
+      -DMYSQL_DATADIR=#{datadir}
       -DSYSCONFDIR=#{etc}
-      -DCOMPILATION_COMMENT=Homebrew
       -DWITH_EDITLINE=system
+      -DWITH_NUMA=OFF
+      -DWITH_SSL=yes
+      -DWITH_UNIT_TESTS=OFF
+      -DWITH_EMBEDDED_SERVER=ON
+      -DWITH_ARCHIVE_STORAGE_ENGINE=1
+      -DWITH_BLACKHOLE_STORAGE_ENGINE=1
+      -DENABLED_LOCAL_INFILE=1
+      -DWITH_INNODB_MEMCACHED=ON
     ]
-
-    # To enable unit testing at build, we need to download the unit testing suite
-    if build.with? "tests"
-      args << "-DENABLE_DOWNLOADS=ON"
-    else
-      args << "-DWITH_UNIT_TESTS=OFF"
-    end
-
-    # Build the embedded server
-    args << "-DWITH_EMBEDDED_SERVER=ON" if build.with? "embedded"
-
-    # Compile with ARCHIVE engine enabled if chosen
-    args << "-DWITH_ARCHIVE_STORAGE_ENGINE=1" if build.with? "archive-storage-engine"
-
-    # Compile with BLACKHOLE engine enabled if chosen
-    args << "-DWITH_BLACKHOLE_STORAGE_ENGINE=1" if build.with? "blackhole-storage-engine"
-
-    # Build with local infile loading support
-    args << "-DENABLED_LOCAL_INFILE=1" if build.with? "local-infile"
-
-    # Build with memcached support
-    args << "-DWITH_INNODB_MEMCACHED=1" if build.with? "memcached"
-
-    # Build with debug support
-    args << "-DWITH_DEBUG=1" if build.with? "debug"
 
     system "cmake", ".", *std_cmake_args, *args
     system "make"
     system "make", "install"
 
-    # We don't want to keep a 240MB+ folder around most users won't need.
+    # Avoid references to the Homebrew shims directory
+    inreplace bin/"mysqlbug", "#{Superenv.shims_path}/", ""
+
     (prefix/"mysql-test").cd do
       system "./mysql-test-run.pl", "status", "--vardir=#{Dir.mktmpdir}"
     end
+
+    # Remove the tests directory
     rm_rf prefix/"mysql-test"
 
     # Don't create databases inside of the prefix!
@@ -98,10 +84,10 @@ class MysqlAT56 < Formula
     # Link the setup script into bin
     bin.install_symlink prefix/"scripts/mysql_install_db"
 
-    # Fix up the control script and link into bin
+    # Fix up the control script and link into bin.
     inreplace "#{prefix}/support-files/mysql.server",
-              /^(PATH=".*)(")/, "\\1:#{HOMEBREW_PREFIX}/bin\\2"
-
+              /^(PATH=".*)(")/,
+              "\\1:#{HOMEBREW_PREFIX}/bin\\2"
     bin.install_symlink prefix/"support-files/mysql.server"
 
     libexec.install bin/"mysqlaccess"
@@ -118,69 +104,74 @@ class MysqlAT56 < Formula
   end
 
   def post_install
-    # Make sure the datadir exists
-    datadir.mkpath
-    unless (datadir/"mysql/user.frm").exist?
+    # Make sure the var/mysql directory exists
+    (var/"mysql").mkpath
+
+    # Don't initialize database, it clashes when testing other MySQL-like implementations.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
+    unless (datadir/"mysql/general_log.CSM").exist?
       ENV["TMPDIR"] = nil
       system bin/"mysql_install_db", "--verbose", "--user=#{ENV["USER"]}",
         "--basedir=#{prefix}", "--datadir=#{datadir}", "--tmpdir=/tmp"
     end
   end
 
-  def caveats; <<~EOS
-    A "/etc/my.cnf" from another install may interfere with a Homebrew-built
-    server starting up correctly.
+  def caveats
+    <<~EOS
+      A "/etc/my.cnf" from another install may interfere with a Homebrew-built
+      server starting up correctly.
 
-    MySQL is configured to only allow connections from localhost by default
+      MySQL is configured to only allow connections from localhost by default
 
-    To connect:
-        mysql -uroot
+      To connect:
+          mysql -uroot
     EOS
   end
 
-  plist_options :manual => "#{HOMEBREW_PREFIX}/opt/mysql@5.6/bin/mysql.server start"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/mysqld_safe</string>
-        <string>--datadir=#{datadir}</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{datadir}</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"mysqld_safe", "--datadir=#{var}/mysql"]
+    keep_alive true
+    working_dir var/"mysql"
   end
 
   test do
-    begin
-      # Expects datadir to be a completely clean dir, which testpath isn't.
-      dir = Dir.mktmpdir
-      system bin/"mysql_install_db", "--user=#{ENV["USER"]}",
-      "--basedir=#{prefix}", "--datadir=#{dir}", "--tmpdir=#{dir}"
-
-      pid = fork do
-        exec bin/"mysqld", "--datadir=#{dir}"
-      end
-      sleep 2
-
-      output = shell_output("curl 127.0.0.1:3306")
-      output.force_encoding("ASCII-8BIT") if output.respond_to?(:force_encoding)
-      assert_match version.to_s, output
-    ensure
-      Process.kill(9, pid)
-      Process.wait(pid)
+    (testpath/"mysql").mkpath
+    (testpath/"tmp").mkpath
+    system bin/"mysql_install_db", "--no-defaults", "--user=#{ENV["USER"]}",
+      "--basedir=#{prefix}", "--datadir=#{testpath}/mysql", "--tmpdir=#{testpath}/tmp"
+    port = free_port
+    fork do
+      system "#{bin}/mysqld", "--no-defaults", "--user=#{ENV["USER"]}",
+        "--datadir=#{testpath}/mysql", "--port=#{port}", "--tmpdir=#{testpath}/tmp"
     end
+    sleep 5
+    assert_match "information_schema",
+      shell_output("#{bin}/mysql --port=#{port} --user=root --password= --execute='show databases;'")
+    system "#{bin}/mysqladmin", "--port=#{port}", "--user=root", "--password=", "shutdown"
   end
 end
+
+__END__
+diff --git a/cmake/mysql_version.cmake b/cmake/mysql_version.cmake
+index 34ed6f4..4becbbc 100644
+--- a/cmake/mysql_version.cmake
++++ b/cmake/mysql_version.cmake
+@@ -31,7 +31,7 @@ SET(DOT_FRM_VERSION "6")
+
+ # Generate "something" to trigger cmake rerun when VERSION changes
+ CONFIGURE_FILE(
+-  ${CMAKE_SOURCE_DIR}/VERSION
++  ${CMAKE_SOURCE_DIR}/MYSQL_VERSION
+   ${CMAKE_BINARY_DIR}/VERSION.dep
+ )
+
+@@ -39,7 +39,7 @@ CONFIGURE_FILE(
+
+ MACRO(MYSQL_GET_CONFIG_VALUE keyword var)
+  IF(NOT ${var})
+-   FILE (STRINGS ${CMAKE_SOURCE_DIR}/VERSION str REGEX "^[ ]*${keyword}=")
++   FILE (STRINGS ${CMAKE_SOURCE_DIR}/MYSQL_VERSION str REGEX "^[ ]*${keyword}=")
+    IF(str)
+      STRING(REPLACE "${keyword}=" "" str ${str})
+      STRING(REGEX REPLACE  "[ ].*" ""  str "${str}")

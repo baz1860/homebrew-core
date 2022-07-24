@@ -1,38 +1,36 @@
 class Nsd < Formula
   desc "Name server daemon"
   homepage "https://www.nlnetlabs.nl/projects/nsd/"
-  url "https://www.nlnetlabs.nl/downloads/nsd/nsd-4.1.20.tar.gz"
-  sha256 "8a97f61d7bbb98a2ce04dc4425596f9023677a5f1c5ea743ff408d487f82f713"
+  url "https://www.nlnetlabs.nl/downloads/nsd/nsd-4.6.0.tar.gz"
+  sha256 "09062d9b83dfcdde4e4e53ec3615496d68c2821d8381d0d464ebea31a5975c81"
+  license "BSD-3-Clause"
 
-  bottle do
-    sha256 "c424d27cec3fa434513f7c6e259fe7c70ce7f3050f284b6acfa033e753785b6a" => :high_sierra
-    sha256 "a9d32854dab1a8aa5814c57c4d025f7b5d225350129d75d7179f08133d491f86" => :sierra
-    sha256 "34efcdbf02f61a9740f1ee8d3e71149dd6f311e62eb3dbd282455980ac664bf4" => :el_capitan
+  # We check the GitHub repo tags instead of
+  # https://www.nlnetlabs.nl/downloads/nsd/ since the first-party site has a
+  # tendency to lead to an `execution expired` error.
+  livecheck do
+    url "https://github.com/NLnetLabs/nsd.git"
+    regex(/^NSD[._-]v?(\d+(?:[._]\d+)+)[._-]REL$/i)
   end
 
-  option "with-root-server", "Allow NSD to run as a root name server"
-  option "with-bind8-stats", "Enable BIND8-like NSTATS & XSTATS"
-  option "with-ratelimit", "Enable rate limiting"
-  option "with-zone-stats", "Enable per-zone statistics"
+  bottle do
+    sha256 arm64_monterey: "eb1748e23dbdd462828ae89da55c35b2aa05b5c3dd587da3a09c679f1e528d1a"
+    sha256 arm64_big_sur:  "a34549c04aad76d4436d3ea96bfeb40382497002b5dd294bfdec9592b149f64e"
+    sha256 monterey:       "9a53af7722e58e842810eb8818459f435253656e5d0785f01bc23eb6e4957c92"
+    sha256 big_sur:        "cc40feb2a8f0fadd9e0efaebb48aa0ae1c46eaa2629be8721fcdcceb0b6b841c"
+    sha256 catalina:       "3b5674fa6a5149317eb3e684d703f9b859f43895ab7777e3e2a36b397c9c6643"
+    sha256 x86_64_linux:   "25eb58224d17ae889a1b8c9f02c048e48ab1338f6f9c09271ee2a89b81873118"
+  end
 
   depends_on "libevent"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
 
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --sysconfdir=#{etc}
-      --localstatedir=#{var}
-      --with-libevent=#{Formula["libevent"].opt_prefix}
-      --with-ssl=#{Formula["openssl"].opt_prefix}
-    ]
-
-    args << "--enable-root-server" if build.with? "root-server"
-    args << "--enable-bind8-stats" if build.with? "bind8-stats"
-    args << "--enable-ratelimit" if build.with? "ratelimit"
-    args << "--enable-zone-stats" if build.with? "zone-stats"
-
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}",
+                          "--sysconfdir=#{etc}",
+                          "--localstatedir=#{var}",
+                          "--with-libevent=#{Formula["libevent"].opt_prefix}",
+                          "--with-ssl=#{Formula["openssl@1.1"].opt_prefix}"
     system "make", "install"
   end
 

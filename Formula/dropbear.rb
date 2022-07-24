@@ -1,23 +1,36 @@
 class Dropbear < Formula
   desc "Small SSH server/client for POSIX-based system"
   homepage "https://matt.ucc.asn.au/dropbear/dropbear.html"
-  url "https://matt.ucc.asn.au/dropbear/releases/dropbear-2017.75.tar.bz2"
-  mirror "https://dropbear.nl/mirror/dropbear-2017.75.tar.bz2"
-  sha256 "6cbc1dcb1c9709d226dff669e5604172a18cf5dbf9a201474d5618ae4465098c"
+  url "https://matt.ucc.asn.au/dropbear/releases/dropbear-2022.82.tar.bz2"
+  sha256 "3a038d2bbc02bf28bbdd20c012091f741a3ec5cbe460691811d714876aad75d1"
+  license "MIT"
+  revision 1
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?dropbear[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "5c69d621d5e75b5890f219f2d9b1f368b63b28a01974e2db1cb06d61fd3a27d6" => :high_sierra
-    sha256 "42f20b1d0ef40b052c31487e0127a259743787b43d593b8bdcbfe3eafb5b5f21" => :sierra
-    sha256 "4a55b7ea9de69871d141a34662bd3acfd3dd0db9151542ce165f12d0a74db597" => :el_capitan
-    sha256 "f6813d3b81b32e7534391f53d521cf3af9f87f3f40b45f63d9a9dd9723540683" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "6bc09368b9c67d9ad8a2836357f5d11ccc7f05e6d8de952c1dffc96dbd60deb0"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "8bc0edcd4401f0fe4b5434c747d571b22f6a6565199573cb0e452e2866b57218"
+    sha256 cellar: :any_skip_relocation, monterey:       "8987521c3eb19a4c0118994ef58a99119889117c9034a218a91feaf5b724b07f"
+    sha256 cellar: :any_skip_relocation, big_sur:        "33bb0e7178d106b25b33488c53cc9cbc9bd3b1c77db7c1d109bf0b13db27403e"
+    sha256 cellar: :any_skip_relocation, catalina:       "9e7555bf7f8596b7524050e87beaad1f2037314a8a3ff2520170b7737071f876"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9c6621499402388271d7d197e3c74c3d8ceac5c6069df55898bd84d94777bde8"
   end
 
   head do
     url "https://github.com/mkj/dropbear.git"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
+  end
+
+  uses_from_macos "libxcrypt"
+
+  on_linux do
+    depends_on "linux-pam"
   end
 
   def install

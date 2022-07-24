@@ -1,25 +1,37 @@
 class Nfdump < Formula
   desc "Tools to collect and process netflow data on the command-line"
-  homepage "https://nfdump.sourceforge.io"
-  url "https://github.com/phaag/nfdump/archive/v1.6.16.tar.gz"
-  sha256 "b18479215c51a98fbdf973ef548464780e7a9d9f7fe73e4fab9ab7ec8a3bdc8f"
+  homepage "https://github.com/phaag/nfdump"
+  url "https://github.com/phaag/nfdump/archive/v1.6.24.tar.gz"
+  sha256 "11ea7ecba405d57076c321f6f77491f1c64538062630131c98ac62dc4870545e"
+  license "BSD-3-Clause"
+  head "https://github.com/phaag/nfdump.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "8d6bf64877ed6b75bb1cf07e58d3474aba7dba982e3cd5c76c5adf646f1e6782" => :high_sierra
-    sha256 "a387e4ffa2c5da2aa4a44fe411fefc9434f888d7f8310e110d10c566f2e61160" => :sierra
-    sha256 "8007ce2f9c414dc027fd156a3ef2b2023b16a8c51e3b76ee37a82cca3a96d769" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "94d16672b219706f75baa315d47e2c9bde577eca38c3e9eaf95fa40e0dcc82c1"
+    sha256 cellar: :any,                 arm64_big_sur:  "e8cd2e522bebe3e5ca989f2c0c7d490bdb55c278a4e372def868a5711855a348"
+    sha256 cellar: :any,                 monterey:       "799210a49e9a258a26860480ec867cf5969194965bbd4d08df359b8e2cbfd7e3"
+    sha256 cellar: :any,                 big_sur:        "19884a8b8d4e0755a5673c018f92bac5153a4a68910ab7b274fe2e632a8830af"
+    sha256 cellar: :any,                 catalina:       "4d68bef98b73b63f23efd5022bb1c0739b2721de66ffb8fbba25bdfbd050bcc8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "753bf18d599587685b2f4c6d565d07388e0a633ffdf9322b83545beb4097125b"
   end
 
+  depends_on "autoconf" => :build
   depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
+  uses_from_macos "bzip2"
+  uses_from_macos "libpcap"
 
   def install
-    system "./configure", "--prefix=#{prefix}", "--enable-readpcap"
-    # https://github.com/phaag/nfdump/issues/32
-    ENV.deparallelize { system "make", "install" }
+    system "./autogen.sh"
+    system "./configure", *std_configure_args, "--enable-readpcap", "LEXLIB="
+    system "make", "install"
   end
 
   test do
-    system bin/"nfdump", "-Z 'host 8.8.8.8'"
+    system bin/"nfdump", "-Z", "host 8.8.8.8"
   end
 end

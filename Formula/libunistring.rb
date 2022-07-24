@@ -1,15 +1,19 @@
 class Libunistring < Formula
   desc "C string library for manipulating Unicode strings"
   homepage "https://www.gnu.org/software/libunistring/"
-  url "https://ftp.gnu.org/gnu/libunistring/libunistring-0.9.8.tar.xz"
-  mirror "https://ftpmirror.gnu.org/libunistring/libunistring-0.9.8.tar.xz"
-  sha256 "7b9338cf52706facb2e18587dceda2fbc4a2a3519efa1e15a3f2a68193942f80"
+  url "https://ftp.gnu.org/gnu/libunistring/libunistring-1.0.tar.gz"
+  mirror "https://ftpmirror.gnu.org/libunistring/libunistring-1.0.tar.gz"
+  mirror "http://ftp.gnu.org/gnu/libunistring/libunistring-1.0.tar.gz"
+  sha256 "3c0184c0e492d7c208ce31d25dd1d2c58f0c3ed6cbbe032c5b248cddad318544"
+  license any_of: ["GPL-2.0-only", "LGPL-3.0-or-later"]
 
   bottle do
-    cellar :any
-    sha256 "ccc4789699aed620a7f961549e9888a77df38e608cfcff60b5d59b292b9807dc" => :high_sierra
-    sha256 "b685813e92dbd3a4eedcaac4b1a87ee3aae00a2dd4cf49cfc8d03cde079fac16" => :sierra
-    sha256 "ef72051cb81989e396175cbbf82cde4c62bf8dbb1ef3028c4658af6402ad6133" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b8b2f6fe30eefd002bf0dbb5fc0e5c6dc0d5f9b9219f4d6fcddc48e3bc229b23"
+    sha256 cellar: :any,                 arm64_big_sur:  "df13d54b58c8c86c0e609f7343677175eae0a58ba0cceabbceb08023d23021c3"
+    sha256 cellar: :any,                 monterey:       "18a1691229db1dbc9c716236df52f447aa9949121c36ae65b4d6fdf284d260c6"
+    sha256 cellar: :any,                 big_sur:        "50c3003f7db296810b0fbebdb86d94edd88f56195c48327f615d6ef52608628e"
+    sha256 cellar: :any,                 catalina:       "3b5bb302d087ae03b3a87b0d722a3db1a66dc83ff45f77e624a62590c3d0c95d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b1d76e62d1bafe89c7535ca21aad48fe99370b5353d0c4efeafe564db367401d"
   end
 
   def install
@@ -25,7 +29,7 @@ class Libunistring < Formula
     (testpath/"test.c").write <<~EOS
       #include <uniname.h>
       #include <unistdio.h>
-      #include <stdio.h>
+      #include <unistr.h>
       #include <stdlib.h>
       int main (void) {
         uint32_t s[2] = {};

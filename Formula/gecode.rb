@@ -1,32 +1,39 @@
 class Gecode < Formula
   desc "Toolkit for developing constraint-based systems and applications"
-  homepage "http://www.gecode.org/"
-  url "http://www.gecode.org/download/gecode-6.0.0.tar.gz"
-  sha256 "79b8ef0253ba5ac2cbc8b8adf45abff2884b1ba6705bc26d6a1758331e79f8db"
+  homepage "https://www.gecode.org/"
+  url "https://github.com/Gecode/gecode/archive/release-6.2.0.tar.gz"
+  sha256 "27d91721a690db1e96fa9bb97cec0d73a937e9dc8062c3327f8a4ccb08e951fd"
+  license "MIT"
+  revision 1
 
-  bottle do
-    cellar :any
-    sha256 "2d060e1fb1c00e96a71b8cab6ef55f1ca5bfdfb9f1055cba9ab912ec3390723f" => :high_sierra
-    sha256 "56f0ad61ca96479733c686a0bcf94640d88ab08a5931a216355db3e27aa320fc" => :sierra
-    sha256 "a56de24c36f255f23ed845f582498fa8987f0b485bcc13de49bd5fdf715b6bbc" => :el_capitan
+  livecheck do
+    url "https://github.com/Gecode/gecode"
   end
 
-  deprecated_option "with-qt5" => "with-qt"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "f3cdbbfb25adcd0da1e9c5c41f3e5dec376b11925637c32aa107804697587842"
+    sha256 cellar: :any,                 arm64_big_sur:  "e0f6097e794cc4e9c329707cf95f23ff9dae359cae580f5dbb3024eb7d4d6053"
+    sha256 cellar: :any,                 monterey:       "95a66c471cd8e046619670b975b5d4e328577b3c8507f8bdae0f13d1fc4ffddc"
+    sha256 cellar: :any,                 big_sur:        "c3f810ac6de7a14b4822df9605150d209ec30b19635e0ee76447f36837e68d0c"
+    sha256 cellar: :any,                 catalina:       "aefca2af2ff839b0089eb1cb82cb77351ccd8edfb89a43231b9f33faf5e35fd2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8c1527a7288d9563ccb403b3b9a7bf42fec644efa476661d36d3c36a05aed017"
+  end
 
-  depends_on "qt" => :optional
+  depends_on "qt@5"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     args = %W[
       --prefix=#{prefix}
       --disable-examples
+      --enable-qt
     ]
     ENV.cxx11
-    if build.with? "qt"
-      args << "--enable-qt"
-      ENV.append_path "PKG_CONFIG_PATH", "#{HOMEBREW_PREFIX}/opt/qt/lib/pkgconfig"
-    else
-      args << "--disable-qt"
-    end
     system "./configure", *args
     system "make", "install"
   end
@@ -35,12 +42,7 @@ class Gecode < Formula
     (testpath/"test.cpp").write <<~EOS
       #include <gecode/driver.hh>
       #include <gecode/int.hh>
-      #if defined(GECODE_HAS_QT) && defined(GECODE_HAS_GIST)
-      #include <QtGui/QtGui>
-      #if QT_VERSION >= 0x050000
       #include <QtWidgets/QtWidgets>
-      #endif
-      #endif
       using namespace Gecode;
       class Test : public Script {
       public:
@@ -63,10 +65,8 @@ class Gecode < Formula
       int main(int argc, char* argv[]) {
         Options opt("Test");
         opt.iterations(500);
-      #if defined(GECODE_HAS_QT) && defined(GECODE_HAS_GIST)
         Gist::Print<Test> p("Print solution");
         opt.inspect.click(&p);
-      #endif
         opt.parse(argc, argv);
         Script::run<Test, DFS, Options>(opt);
         return 0;
@@ -75,17 +75,29 @@ class Gecode < Formula
 
     args = %W[
       -std=c++11
-      -I#{HOMEBREW_PREFIX}/opt/qt/include
+      -fPIC
+      -I#{Formula["qt@5"].opt_include}
       -I#{include}
       -lgecodedriver
       -lgecodesearch
       -lgecodeint
       -lgecodekernel
       -lgecodesupport
+      -lgecodegist
       -L#{lib}
       -o test
     ]
-    args << "-lgecodegist" if build.with? "qt"
+    if OS.linux?
+      args += %W[
+        -lQt5Core
+        -lQt5Gui
+        -lQt5Widgets
+        -lQt5PrintSupport
+        -L#{Formula["qt@5"].opt_lib}
+      ]
+      ENV.append_path "LD_LIBRARY_PATH", Formula["qt@5"].opt_lib
+    end
+
     system ENV.cxx, "test.cpp", *args
     assert_match "{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}", shell_output("./test")
   end

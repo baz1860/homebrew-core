@@ -1,31 +1,34 @@
 class Freetype < Formula
   desc "Software library to render fonts"
   homepage "https://www.freetype.org/"
-  url "https://downloads.sourceforge.net/project/freetype/freetype2/2.9/freetype-2.9.tar.bz2"
-  mirror "https://download.savannah.gnu.org/releases/freetype/freetype-2.9.tar.bz2"
-  sha256 "e6ffba3c8cef93f557d1f767d7bc3dee860ac7a3aaff588a521e081bc36f4c8a"
+  url "https://downloads.sourceforge.net/project/freetype/freetype2/2.12.1/freetype-2.12.1.tar.xz"
+  mirror "https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.xz"
+  sha256 "4766f20157cc4cf0cd292f80bf917f92d1c439b243ac3018debf6b9140c41a7f"
+  license "FTL"
 
-  bottle do
-    cellar :any
-    sha256 "2978dbec18cf06827ddc93ee04262bc3f78b14a9ed2e91058b53a8a997f81451" => :high_sierra
-    sha256 "8680a89d47fa9eea998d230ec1f7d39422f87fc3152a0ab3b6b936832d9a154e" => :sierra
-    sha256 "1e66987caa45ffcbe3cd18924f7b1a82c37207a23c89085d27ad3008df5ef914" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/url=.*?freetype[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  keg_only :provided_pre_mountain_lion
-
-  option "without-subpixel", "Disable sub-pixel rendering (a.k.a. LCD rendering, or ClearType)"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "3e190f2fa02702aa86e46cf33e7dde1d93e879f1de38f3d1b61e301f8367136d"
+    sha256 cellar: :any,                 arm64_big_sur:  "deb09510fb83adf76d9bb0d4ac4a3d3a2ddfff0d0154e09d3719edb73b058278"
+    sha256 cellar: :any,                 monterey:       "3d4afd3f040571ea464c7afc010be38faf77665f919a79f557369d2eceee13d1"
+    sha256 cellar: :any,                 big_sur:        "69a5d61245af56e6b088986b16c6e5b842c3d4f5896c34e013341ca94f4a45d1"
+    sha256 cellar: :any,                 catalina:       "cafa6fee3a0ca54b1659f433667a145acef2c2d2061292d2f8bc088db7f0ea4f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "43be70d09e51402bb453d491d69021af20f0d0c5154092bd5571b365673d4e2f"
+  end
 
   depends_on "libpng"
 
-  def install
-    if build.with? "subpixel"
-      inreplace "include/freetype/config/ftoption.h",
-          "/* #define FT_CONFIG_OPTION_SUBPIXEL_RENDERING */",
-          "#define FT_CONFIG_OPTION_SUBPIXEL_RENDERING"
-    end
+  uses_from_macos "bzip2"
+  uses_from_macos "zlib"
 
-    system "./configure", "--prefix=#{prefix}", "--without-harfbuzz"
+  def install
+    system "./configure", "--prefix=#{prefix}",
+                          "--enable-freetype-config",
+                          "--without-harfbuzz"
     system "make"
     system "make", "install"
 

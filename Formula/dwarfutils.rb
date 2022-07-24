@@ -1,41 +1,45 @@
 class Dwarfutils < Formula
   desc "Dump and produce DWARF debug information in ELF objects"
   homepage "https://www.prevanders.net/dwarf.html"
-  url "https://www.prevanders.net/libdwarf-20180129.tar.gz"
-  sha256 "8bd91b57064b0c14ade5a009d3a1ce819f1b6ec0e189fc876eb8f42a8720d8a6"
+  url "https://www.prevanders.net/libdwarf-0.4.1.tar.xz"
+  sha256 "34277b969d30be3cc4c6fbce6926dd3e6f9ea9a27b01951c6753b479aadfd5ef"
+  license all_of: ["BSD-2-Clause", "LGPL-2.1-or-later", "GPL-2.0-or-later"]
+  version_scheme 1
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "1f818559afe85bd41eb7e96c273b3e8f4d68afa4aea28ad9c28a9461595eb077" => :high_sierra
-    sha256 "092c2d5cb68c6644d312e7b7b365e926e9353dfd196d7680fdf5cbadb1406f9e" => :sierra
-    sha256 "0769a3da91dead3364d833cb9caa602f36bfc4b2b5ed8e0c9fb7d7ef93fb52a2" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(%r{href=(?:["']?|.*?/)libdwarf[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
-  option "with-sanitize", "Use -fsanitize"
+  bottle do
+    sha256 arm64_monterey: "001bcb6d3d3e84fc305a3f80bde7d82538578aaffd07c14100f1bc3e5771865e"
+    sha256 arm64_big_sur:  "a70b0a46e9e130553760e78a71a125c1cd535bfcc17e32841bfac1f80288bff6"
+    sha256 monterey:       "955d6aa57869cff77956222b2556a00a6368dd160ca1c01655f0a4ccee2eb584"
+    sha256 big_sur:        "8cf0011b85ec960429bc3bb60fcd7eac9829f23f429d202a19a8f613b0844f4b"
+    sha256 catalina:       "eb7da561bb0026ea1e74d2851ed76d6cc772166309273b087087db7a60e2a152"
+    sha256 x86_64_linux:   "69ac85e10a2069b7f50cf14d280fc7d2c1437372107b21e6df64599a8cd2597a"
+  end
 
-  depends_on "libelf" => :build
-  depends_on "gcc" if build.with? "sanitize"
+  head do
+    url "https://github.com/davea42/libdwarf-code.git", branch: "master"
+
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+
+  depends_on "pkg-config" => :build
+
+  uses_from_macos "zlib"
 
   def install
-    args = ""
-
-    if build.with? "sanitize"
-      ENV["CC"] = "#{Formula["gcc"].bin}/gcc-6"
-      args << "--enable-sanitize"
-    end
-
-    system "./configure", args
-    system "make"
-
-    bin.install "dwarfdump/dwarfdump"
-    man1.install "dwarfdump/dwarfdump.1"
-    lib.install "libdwarf/libdwarf.a"
-    include.install "libdwarf/dwarf.h"
-    include.install "libdwarf/libdwarf.h"
+    system "sh", "autogen.sh" if build.head?
+    system "./configure", *std_configure_args, "--enable-shared"
+    system "make", "install"
   end
 
   test do
-    system "#{bin}/dwarfdump", "-V"
+    system bin/"dwarfdump", "-V"
 
     (testpath/"test.c").write <<~EOS
       #include <dwarf.h>
@@ -60,7 +64,7 @@ class Dwarfutils < Formula
         return 0;
       }
     EOS
-    system ENV.cc, "-L#{lib}", "-I#{include}", "-ldwarf", "test.c", "-o", "test"
+    system ENV.cc, "-I#{include}/libdwarf-0", "test.c", "-L#{lib}", "-ldwarf", "-o", "test"
     system "./test"
   end
 end

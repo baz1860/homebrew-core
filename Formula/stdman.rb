@@ -1,17 +1,27 @@
 class Stdman < Formula
-  desc "Formatted C++11/14/17 stdlib man pages from cppreference.com"
+  desc "Formatted C++ stdlib man pages from cppreference.com"
   homepage "https://github.com/jeaye/stdman"
-  url "https://github.com/jeaye/stdman/archive/2017.04.02.tar.gz"
-  sha256 "64f33e843c646de54745f234df7688df400a6f65f738408406cb48bcae2c852d"
+  url "https://github.com/jeaye/stdman/archive/2022.02.01.tar.gz"
+  sha256 "84d36791514f20a814f1530e9f4e6ff67e538e0c9b3ef25db4b007f9861c4890"
+  license "MIT"
   version_scheme 1
-  head "https://github.com/jeaye/stdman.git"
+  head "https://github.com/jeaye/stdman.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "b396f3795d2a23c268b96be6b54d96b3ebbcd31724fc9290cf4d207342ae3b3d" => :high_sierra
-    sha256 "e331f279e0e88fc136531b0a0bdece2dfee271c6ab96f2047e51a34651f37ac1" => :sierra
-    sha256 "8f40d671b1f63facc15c957ddb6eb1a58332bf13e68eef888175948017e79386" => :el_capitan
-    sha256 "2b137b92e15bf5941697df2f6fab98a8e030024bbbb0ddc5864f2bbb076f6223" => :yosemite
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "3a74e020e777587f893a2c62e7fda36ca37ba021206dbe0a57f29b9970ad6642"
+  end
+
+  on_linux do
+    depends_on "man-db" => :test
+  end
+
+  # Preserve timestamps when doing `make install`.
+  # This helps ensure uniform bottles across builds.
+  # https://github.com/jeaye/stdman/pull/49
+  patch do
+    url "https://github.com/jeaye/stdman/commit/862e5132c18275661c468083baeab42dc4c335f2.patch?full_index=1"
+    sha256 "8b2c785fc859e31fcb8c58884eff64c371bb9afd001979ad1158517c77ea1041"
   end
 
   def install
@@ -20,6 +30,7 @@ class Stdman < Formula
   end
 
   test do
-    system "man", "-w", "std::string"
+    man = OS.mac? ? "man" : "gman"
+    system man, "-w", "std::string"
   end
 end

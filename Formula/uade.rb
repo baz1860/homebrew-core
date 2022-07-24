@@ -1,62 +1,56 @@
 class Uade < Formula
   desc "Play Amiga tunes through UAE emulation"
-  homepage "http://zakalwe.fi/uade/"
-  head "git://zakalwe.fi/uade"
+  homepage "https://zakalwe.fi/uade/"
+  license "GPL-2.0-only"
 
   stable do
-    url "http://zakalwe.fi/uade/uade2/uade-2.13.tar.bz2"
-    sha256 "3b194e5aebbfa99d3708d5a0b5e6bd7dc5d1caaecf4ae9b52f8ff87e222dd612"
+    url "https://zakalwe.fi/uade/uade3/uade-3.02.tar.bz2"
+    sha256 "2aa317525402e479ae8863222e3c341d135670fcb23a2853ac93075ac428f35b"
 
-    # Upstream patch to fix compiler detection under superenv
-    patch :DATA
+    resource "bencode-tools" do
+      url "https://gitlab.com/heikkiorsila/bencodetools.git", revision: "5a1ccf65393ee50af3a029d0632f29567467873c"
+    end
   end
+
+  livecheck do
+    url "https://zakalwe.fi/uade/download.html"
+    regex(/href=.*?uade[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+
   bottle do
-    sha256 "226dc1fbb9535b64f19e04310db19fb9a760024fc0b0c73e3c68cf7c72e508d9" => :high_sierra
-    sha256 "432a5f95b33416c9bfc29ef4d81ea6d4fab2a568c71c00a9bda034985ed1276b" => :sierra
-    sha256 "59ddaa5a6d841f436a5d297330ff62b613e446785ad17666c8fb4157d3a7c8db" => :el_capitan
-    sha256 "454945f35580b0b2bc8f0c7ddeecfae091634f54ee3a367eb14acce7251e5779" => :yosemite
-    sha256 "807b7f5cb5a83348c778003d781d715cec73d37da537e0b11b8138c93aad4938" => :mavericks
+    sha256 arm64_monterey: "1fa83a9d0afe0133189cc075e9eb0e8822e21baa01d0e568e768f65949cfd567"
+    sha256 arm64_big_sur:  "9e2786bddc15f0864674e26e53032af89c07490f7aca0aff307186cdd0eef283"
+    sha256 monterey:       "d58fbf04c9fcb13f046a76110aeebf25cb93c3d812ed2a5ec04f3d93cc82424e"
+    sha256 big_sur:        "42cef81cd6f1792dc53c8e14a8fc416dadac072bf08a8bbf568838c9ae758ea1"
+    sha256 catalina:       "923523028dcc4fd1e98df962874d7385bfbc658c894216ff64dac85ab13616fd"
+    sha256 x86_64_linux:   "b570d5bee780acb48d04b1915026fbbbea8bf38ec3f217e24129bd4904470174"
+  end
+
+  head do
+    url "https://gitlab.com/uade-music-player/uade.git", branch: "master"
+
+    resource "bencode-tools" do
+      url "https://gitlab.com/heikkiorsila/bencodetools.git", branch: "master"
+    end
   end
 
   depends_on "pkg-config" => :build
   depends_on "libao"
 
-  resource "bencode-tools" do
-    url "https://github.com/heikkiorsila/bencode-tools.git"
-  end
-
   def install
-    if build.head?
-      resource("bencode-tools").stage do
-        system "./configure", "--prefix=#{prefix}", "--without-python"
-        system "make"
-        system "make", "install"
-      end
+    resource("bencode-tools").stage do
+      system "./configure", "--prefix=#{prefix}", "--without-python"
+      system "make"
+      system "make", "install"
     end
 
-    system "./configure", "--prefix=#{prefix}"
+    system "./configure", "--prefix=#{prefix}",
+           "--without-write-audio"
     system "make", "install"
   end
-end
 
-__END__
-diff --git a/configure b/configure
-index 05bfa9b..a73608e 100755
---- a/configure
-+++ b/configure
-@@ -399,13 +399,13 @@ if test -n "$sharedir"; then
-     uadedatadir="$sharedir"
- fi
- 
--$NATIVECC -v 2>/dev/null >/dev/null
-+$NATIVECC --version 2>/dev/null >/dev/null
- if test "$?" != "0"; then
-     echo Native CC "$NATIVECC" not found, please install a C compiler
-     exit 1
- fi
- 
--$TARGETCC -v 2>/dev/null >/dev/null
-+$TARGETCC --version 2>/dev/null >/dev/null
- if test "$?" != "0"; then
-     echo Target CC "$TARGETCC" not found, please install a C compiler
-     exit 1
+  test do
+    output = shell_output("#{bin}/uade123 --get-info #{test_fixtures("test.mp3")} 2>&1", 1).chomp
+    assert_equal "Unknown format: #{test_fixtures("test.mp3")}", output
+  end
+end

@@ -1,25 +1,47 @@
 class Tcpreplay < Formula
   desc "Replay saved tcpdump files at arbitrary speeds"
   homepage "https://tcpreplay.appneta.com/"
-  url "https://github.com/appneta/tcpreplay/releases/download/v4.2.6/tcpreplay-4.2.6.tar.gz"
-  sha256 "043756c532dab93e2be33a517ef46b1341f7239278a1045ae670041dd8a4531d"
+  url "https://github.com/appneta/tcpreplay/releases/download/v4.4.1/tcpreplay-4.4.1.tar.gz"
+  sha256 "cb67b6491a618867fc4f9848f586019f1bb2ebd149f393afac5544ee55e4544f"
+  license all_of: ["BSD-2-Clause", "BSD-3-Clause", "BSD-4-Clause", "GPL-3.0-or-later", "ISC"]
 
   bottle do
-    cellar :any
-    sha256 "9be61ec3aeeac7be8cd51225d5914a7ba7ee8f0c9fbd4393e452f6b9447a53c7" => :high_sierra
-    sha256 "569bdb4ac12e4ff62c723b1fdabad4b037c54423a70742306ba852f9bc43e25d" => :sierra
-    sha256 "b5ba1668dddf52946866c866bc1ba2ab2983b67d99c69b6c41fabe91e816139a" => :el_capitan
-    sha256 "3eaba6e1af68c8af3f7d1d0a15c2563b178368a74a760e3fafa5b3c4774f9129" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "246a822476aafe55e646650027017108c6c262498b7570458237d9dc1c66e139"
+    sha256 cellar: :any,                 arm64_big_sur:  "8f57fe87399c72f9179e651910e513c2238b0d04dc717358a37115aa6c1d8b0a"
+    sha256 cellar: :any,                 monterey:       "a1b2bb76d38e74c2eb3fbdc23ddab71e76f993a254199f73a21ddc8eb63d97b4"
+    sha256 cellar: :any,                 big_sur:        "d4ad05fa1d80f60b347813c1c300745c1cac288c428acbae2eae782fff538b86"
+    sha256 cellar: :any,                 catalina:       "b650d22c9a17d3e137a7e1f118d72d8ea4d57d8c4e33d7a3ae1165534df4e390"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "648a5148de83dea2991519c912f86c7c41a144392294f418e7db95cb8f09f560"
   end
 
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
   depends_on "libdnet"
 
+  uses_from_macos "libpcap"
+
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--enable-dynamic-link"
+    args = %W[
+      --disable-debug
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --enable-dynamic-link
+      --with-libdnet=#{Formula["libdnet"].opt_prefix}
+    ]
+
+    args << if OS.mac?
+      ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+
+      "--with-macosx-sdk=#{MacOS.version}"
+    else
+      "--with-libpcap=#{Formula["libpcap"].opt_prefix}"
+    end
+
+    system "./autogen.sh"
+    system "./configure", *args
+
     system "make", "install"
   end
 

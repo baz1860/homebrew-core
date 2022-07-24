@@ -1,60 +1,56 @@
 class AprUtil < Formula
   desc "Companion library to apr, the Apache Portable Runtime library"
   homepage "https://apr.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=apr/apr-util-1.6.1.tar.bz2"
+  url "https://www.apache.org/dyn/closer.lua?path=apr/apr-util-1.6.1.tar.bz2"
+  mirror "https://archive.apache.org/dist/apr/apr-util-1.6.1.tar.bz2"
   sha256 "d3e12f7b6ad12687572a3a39475545a072608f4ba03a6ce8a3778f607dd0035b"
-  revision 1
+  license "Apache-2.0"
+  revision 4
 
   bottle do
-    sha256 "1bdf0cda4f0015318994a162971505f9807cb0589a4b0cbc7828531e19b6f739" => :high_sierra
-    sha256 "75c244c3a34abab343f0db7652aeb2c2ba472e7ad91f13af5524d17bba3001f2" => :sierra
-    sha256 "bae285ada445a2b5cc8b43cb8c61a75e177056c6176d0622f6f87b1b17a8502f" => :el_capitan
+    sha256 arm64_monterey: "3fbbe5ef907dc7f8b259f49c0891987f088ecaa0ad0fd75d47345804ec5d2976"
+    sha256 arm64_big_sur:  "72585edce1997ea0ac5be884f0fbed79f2746d3252e035ed63b1bd04ad501d94"
+    sha256 monterey:       "7695efa17e538d71459020c3838081629629c3c1169bd9ac166865d2bdacb213"
+    sha256 big_sur:        "94a9d60abb422a135295ac6c8425af4c72a0f49f46323aa19abd4b358c03270e"
+    sha256 catalina:       "8e62fdfe79eaa75a700fb97ea3264aa5bcd77dabcf526240d35537325387c353"
+    sha256 x86_64_linux:   "588c3c2c34bd3078f4b181da19d07e4bb509c7cb8afbf5ab6a5d707a730dce20"
   end
 
-  keg_only :provided_by_macos, "Apple's CLT package contains apr"
+  keg_only :shadowed_by_macos, "Apple's CLT provides apr (but not apr-util)"
 
   depends_on "apr"
-  depends_on "openssl"
-  depends_on "postgresql" => :optional
-  depends_on "mysql" => :optional
-  depends_on "freetds" => :optional
-  depends_on "unixodbc" => :optional
-  depends_on "sqlite" => :optional
-  depends_on "openldap" => :optional
+  depends_on "openssl@1.1"
+
+  uses_from_macos "expat"
+  uses_from_macos "libxcrypt"
+  uses_from_macos "sqlite"
+
+  on_linux do
+    depends_on "mawk"
+    depends_on "unixodbc"
+  end
 
   def install
-    # Stick it in libexec otherwise it pollutes lib with a .exp file.
-    args = %W[
-      --prefix=#{libexec}
-      --with-apr=#{Formula["apr"].opt_prefix}
-      --with-openssl=#{Formula["openssl"].opt_prefix}
-      --with-crypto
-    ]
+    system "./configure", *std_configure_args,
+                          "--with-apr=#{Formula["apr"].opt_prefix}",
+                          "--with-crypto",
+                          "--with-openssl=#{Formula["openssl@1.1"].opt_prefix}",
+                          "--without-pgsql"
 
-    args << "--with-pgsql=#{Formula["postgresql"].opt_prefix}" if build.with? "postgresql"
-    args << "--with-mysql=#{Formula["mysql"].opt_prefix}" if build.with? "mysql"
-    args << "--with-freetds=#{Formula["freetds"].opt_prefix}" if build.with? "freetds"
-    args << "--with-odbc=#{Formula["unixodbc"].opt_prefix}" if build.with? "unixodbc"
-
-    if build.with? "openldap"
-      args << "--with-ldap"
-      args << "--with-ldap-lib=#{Formula["openldap"].opt_lib}"
-      args << "--with-ldap-include=#{Formula["openldap"].opt_include}"
-    end
-
-    system "./configure", *args
     system "make"
     system "make", "install"
-    bin.install_symlink Dir["#{libexec}/bin/*"]
 
-    rm Dir[libexec/"lib/*.la"]
-    rm Dir[libexec/"lib/apr-util-1/*.la"]
+    # Install symlinks so that linkage doesn't break for reverse dependencies.
+    # This should be removed on the next ABI breaking update.
+    (libexec/"lib").install_symlink Dir["#{lib}/#{shared_library("*")}"]
+
+    rm Dir[lib/"**/*.{la,exp}"]
 
     # No need for this to point to the versioned path.
-    inreplace libexec/"bin/apu-1-config", libexec, opt_libexec
+    inreplace bin/"apu-#{version.major}-config", prefix, opt_prefix
   end
 
   test do
-    assert_match opt_libexec.to_s, shell_output("#{bin}/apu-1-config --prefix")
+    assert_match opt_prefix.to_s, shell_output("#{bin}/apu-#{version.major}-config --prefix")
   end
 end

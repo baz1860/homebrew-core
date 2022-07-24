@@ -1,23 +1,28 @@
 class Bowtie2 < Formula
   desc "Fast and sensitive gapped read aligner"
-  homepage "https://bowtie-bio.sourceforge.io/"
-  url "https://github.com/BenLangmead/bowtie2/archive/v2.3.4.1.tar.gz"
-  sha256 "872f2580221dcc9bb4a8e3d04e032c168883c4c529d0733e3d94fe693f7732b2"
+  homepage "https://bowtie-bio.sourceforge.io/bowtie2/"
+  url "https://github.com/BenLangmead/bowtie2/archive/v2.4.5.tar.gz"
+  sha256 "db101391b54a5e0eeed7469b05aee55ee6299558b38607f592f6b35a7d41dcb6"
+  license "GPL-3.0-or-later"
+  revision 1
 
   bottle do
-    cellar :any
-    sha256 "a6351c8bd99daf742dbe510df03219b47a90e142d2d8612d64d112a5c62820aa" => :high_sierra
-    sha256 "e454334bb9c1526fbc153f8f98392424942b86d82fe7c90b108578896839fcd2" => :sierra
-    sha256 "b6a3b49b0464d36330ff470ee0b4a4b10afbc763a8751804365b7d782cd23c22" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "495bc223b670a7e029315ce992dcc0811dc3f63e714c656b6cb84c2f789aa439"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "cf63043431156ed49e8034700900c508f32e02cd1830a8f815ed83735544dd5b"
+    sha256 cellar: :any_skip_relocation, monterey:       "bd2176ef8b56c77260602d72566a6ad85240f8c7def21317b31913995e0789d4"
+    sha256 cellar: :any_skip_relocation, big_sur:        "6f1d5777e5ec4d9aa9ffe38f18278f1a0aba3679d19d5a57a30343074ba25866"
+    sha256 cellar: :any_skip_relocation, catalina:       "03cd26ce1b340a37c66c1097c426a9e423d6f57bf809558bad577fb827e271d2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "46f6e5aa64fd0f9564d15f21aa0ac84d9960fb79424539599c284d0f7724e096"
   end
 
+  depends_on "simde"
   depends_on "tbb"
 
-  def install
-    tbb = Formula["tbb"]
-    system "make", "install", "WITH_TBB=1", "prefix=#{prefix}",
-           "EXTRA_FLAGS=-L #{tbb.opt_lib}", "INC=-I #{tbb.opt_include}"
+  uses_from_macos "python"
+  uses_from_macos "zlib"
 
+  def install
+    system "make", "install", "PREFIX=#{prefix}"
     pkgshare.install "example", "scripts"
   end
 

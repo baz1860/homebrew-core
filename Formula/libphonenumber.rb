@@ -1,37 +1,52 @@
 class Libphonenumber < Formula
   desc "C++ Phone Number library by Google"
-  homepage "https://github.com/googlei18n/libphonenumber"
-  url "https://github.com/googlei18n/libphonenumber/archive/v8.9.0.tar.gz"
-  sha256 "15a09cfe903e43ef2da903503bbd9bafeb06ae19b1eeaf81e3cfbaa69c103c56"
+  homepage "https://github.com/google/libphonenumber"
+  url "https://github.com/google/libphonenumber/archive/v8.12.51.tar.gz"
+  sha256 "a375c51a2eefb041fb1135bcbd6ddf6ff2c9a031d098393630665f5ec7b10257"
+  license "Apache-2.0"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "e2416ad3812380317b1c2ffe560e1376bf7f6ac396214f820199a8ea5a29ea6b" => :high_sierra
-    sha256 "a2a701ccf61e3663f1d95dea1463c67ff00b89f6af5423d3c8ca2ef84ffdeecb" => :sierra
-    sha256 "011ce29734512dca4f14e4e52f43d5454eca2b70f117505e9d6b9160cc4d448f" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "1ce4141e66cdcbbc3e97675b5e32653e204384a17d9118850a69be6ef538c90b"
+    sha256 cellar: :any,                 arm64_big_sur:  "857b2413748a9676476e7a6fe69abe0930094cd1ef3e05296a10b23ffb9a0e64"
+    sha256 cellar: :any,                 monterey:       "0c256d3e8c26c3afd44cab11f9b0935ef9512a647d0a78670df90af6ba740cd4"
+    sha256 cellar: :any,                 big_sur:        "0db7d2cddce579173da90574e35f819b2a7a0c29432472e745508a66e10b906a"
+    sha256 cellar: :any,                 catalina:       "aa3d3c42f8379280a62c29947e053070b367ccb16cf9eef94dd278b0e7d523b8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "722eabd8a331f17a54e4ee03ec7a398f76a01b43007a96ef238685293614d05f"
   end
 
   depends_on "cmake" => :build
-  depends_on :java => "1.7+"
+  depends_on "googletest" => :build
+  depends_on "abseil"
+  depends_on "boost"
   depends_on "icu4c"
   depends_on "protobuf"
-  depends_on "boost"
   depends_on "re2"
 
-  resource "gtest" do
-    url "https://github.com/google/googletest/archive/release-1.8.0.tar.gz"
-    sha256 "58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8"
+  on_linux do
+    depends_on "gcc"
   end
 
-  needs :cxx11
+  fails_with gcc: "5" # For abseil and C++17
+
+  # Use Homebrew abseil.
+  # https://github.com/google/libphonenumber/pull/2791
+  patch do
+    url "https://github.com/google/libphonenumber/commit/035901b78dbe5a6fddc9e758f0069c310750db72.patch?full_index=1"
+    sha256 "006843f29cb42e0d8ef820ccc7a90fffd139fe7666c1357a1504a8795f0c5db6"
+  end
 
   def install
-    ENV.cxx11
-    (buildpath/"gtest").install resource("gtest")
-    system "cmake", "cpp", "-DGTEST_SOURCE_DIR=gtest/googletest",
-                           "-DGTEST_INCLUDE_DIR=gtest/googletest/include",
-                           *std_cmake_args
-    system "make", "install"
+    system "cmake", "-S", "cpp", "-B", "build",
+                    "-DCMAKE_CXX_STANDARD=17", # keep in sync with C++ standard in abseil.rb
+                    "-DGTEST_INCLUDE_DIR=#{Formula["googletest"].opt_include}",
+                      *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
@@ -57,7 +72,7 @@ class Libphonenumber < Formula
         }
       }
     EOS
-    system ENV.cxx, "test.cpp", "-L#{lib}", "-lphonenumber", "-o", "test"
+    system ENV.cxx, "-std=c++17", "test.cpp", "-L#{lib}", "-lphonenumber", "-o", "test"
     system "./test"
   end
 end

@@ -1,29 +1,42 @@
 class MongoCxxDriver < Formula
   desc "C++ driver for MongoDB"
   homepage "https://github.com/mongodb/mongo-cxx-driver"
-  url "https://github.com/mongodb/mongo-cxx-driver/archive/r3.1.3.tar.gz"
-  sha256 "cb1b371eb34e991b8bfac65146f862cd379aa8f7270c430e5f3d71d843245ed9"
-  head "https://github.com/mongodb/mongo-cxx-driver.git"
+  url "https://github.com/mongodb/mongo-cxx-driver/archive/r3.6.7.tar.gz"
+  sha256 "a9244d3117d4029a2f039dece242eef10e34502e4600e2afa968ab53589e6de7"
+  license "Apache-2.0"
+  head "https://github.com/mongodb/mongo-cxx-driver.git", branch: "master"
 
-  bottle do
-    sha256 "b12a8b6566b88131477f79a84bd75a2145ac8545da8262966b2d2df6e750c76e" => :high_sierra
-    sha256 "7ad27f3653c9918154c096f0c00c0e0d70289817a81ad11c84f17850ea0f774b" => :sierra
-    sha256 "96e2986f43166c5f54ef62a7dc36dc007a5e5a63057b9bc05d23b2e4ff53e2f0" => :el_capitan
-    sha256 "514fbb37aee0e2cb3d72c8a31e984e8be6bd5308081c1051598f9e7efea543c9" => :yosemite
+  livecheck do
+    url :stable
+    regex(/^[rv]?(\d+(?:\.\d+)+)$/i)
   end
 
-  needs :cxx11
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "e953ef9f1244187c03e35b5c63cc56fe78a346b6961375883bfdb20882389ff3"
+    sha256 cellar: :any,                 arm64_big_sur:  "fe2c413af917d8fbc92cf070ac83de24056be996536f548a15e68378016da14a"
+    sha256 cellar: :any,                 monterey:       "58f58441db39bc316d2ff5cfedcdb4d3318c0319b90e8aeb415e72c0e4236fe0"
+    sha256 cellar: :any,                 big_sur:        "ae970fe199ed4e7231b1fa8415837b0ccb410773b553d6874d6fe678e1c889b5"
+    sha256 cellar: :any,                 catalina:       "89bfe3a25e19f9f35547b5c97f69d012d4bffa8a2197f309f64ba0f3f7cf5832"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ad20629b2d1cfc86305d17e7932e326bbfd8db3cec28c5a1fc676169cb785c28"
+  end
 
   depends_on "cmake" => :build
   depends_on "mongo-c-driver"
 
   def install
+    # We want to avoid shims referencing in examples,
+    # but we need to have examples/CMakeLists.txt file to make cmake happy
+    pkgshare.install "examples"
+    (buildpath / "examples/CMakeLists.txt").write ""
+
     mongo_c_prefix = Formula["mongo-c-driver"].opt_prefix
     system "cmake", ".", *std_cmake_args,
-      "-DLIBBSON_DIR=#{mongo_c_prefix}", "-DLIBMONGOC_DIR=#{mongo_c_prefix}"
+                        "-DBUILD_VERSION=#{version}",
+                        "-DLIBBSON_DIR=#{mongo_c_prefix}",
+                        "-DLIBMONGOC_DIR=#{mongo_c_prefix}",
+                        "-DCMAKE_INSTALL_RPATH=#{rpath}"
     system "make"
     system "make", "install"
-    pkgshare.install "examples"
   end
 
   test do

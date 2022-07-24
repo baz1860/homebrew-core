@@ -1,18 +1,43 @@
 class FreeradiusServer < Formula
   desc "High-performance and highly configurable RADIUS server"
   homepage "https://freeradius.org/"
-  url "ftp://ftp.freeradius.org/pub/freeradius/freeradius-server-3.0.16.tar.bz2"
-  sha256 "120cb1b75b434f8a2a9f9813da6df99ab92b8e6e24980353f314b04f517e0d84"
-  head "https://github.com/FreeRADIUS/freeradius-server.git"
+  license all_of: ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+  head "https://github.com/FreeRADIUS/freeradius-server.git", branch: "master"
 
-  bottle do
-    sha256 "ab26718f1e43040d1434b3e8b4d3a853a5a7188bf0b1fe243116a5b508656493" => :high_sierra
-    sha256 "9006602a414819b26e61825fc58b612b573a89752ca917e29a612ca6c8499807" => :sierra
-    sha256 "63b13e5024c636646078d5a6719996ce753e11b69e41751354db7e3068e1a132" => :el_capitan
+  stable do
+    url "https://github.com/FreeRADIUS/freeradius-server/archive/refs/tags/release_3_2_0.tar.gz"
+    sha256 "2b8817472847e0b49395facd670be97071133730ffa825bb56386c89c18174f5"
+
+    # Fix -flat_namespace being used
+    patch do
+      url "https://github.com/FreeRADIUS/freeradius-server/commit/6c1cdb0e75ce36f6fadb8ade1a69ba5e16283689.patch?full_index=1"
+      sha256 "7e7d055d72736880ca8e1be70b81271dd02f2467156404280a117cb5dc8dccdc"
+    end
   end
 
-  depends_on "openssl"
+  livecheck do
+    url :stable
+    regex(/^release[._-](\d+(?:[._]\d+)+)$/i)
+  end
+
+  bottle do
+    sha256 arm64_monterey: "2e379d98dca5701d1378fde394f170eb7e8e9ce8b0e03354a2f0f8ebbf85c6a7"
+    sha256 arm64_big_sur:  "995d7ba020eb495a11ff6017580375564425f2b057f676b8be207d3be5e7559e"
+    sha256 monterey:       "9234f76e27239a02cddd360c6952189c78ce9b5af621022da09ec2cd213eaaa0"
+    sha256 big_sur:        "5c2c7208fbedddbc04b2af8eec2ed5e94bcd7faeb6e3bfde3b6816809c7e9993"
+    sha256 catalina:       "be1b8a1d78e7cc9bccb2a6439408297a05a8af2adfef352cc84428c95e3715d6"
+    sha256 x86_64_linux:   "768b37acaefc41960a324a7bf1f1ca41459c44c90a45e4bbd9a05f6bfdf571ca"
+  end
+
+  depends_on "openssl@1.1"
   depends_on "talloc"
+
+  uses_from_macos "perl"
+  uses_from_macos "sqlite"
+
+  on_linux do
+    depends_on "readline"
+  end
 
   def install
     ENV.deparallelize
@@ -21,8 +46,8 @@ class FreeradiusServer < Formula
       --prefix=#{prefix}
       --sbindir=#{bin}
       --localstatedir=#{var}
-      --with-openssl-includes=#{Formula["openssl"].opt_include}
-      --with-openssl-libraries=#{Formula["openssl"].opt_lib}
+      --with-openssl-includes=#{Formula["openssl@1.1"].opt_include}
+      --with-openssl-libraries=#{Formula["openssl@1.1"].opt_lib}
       --with-talloc-lib-dir=#{Formula["talloc"].opt_lib}
       --with-talloc-include-dir=#{Formula["talloc"].opt_include}
     ]

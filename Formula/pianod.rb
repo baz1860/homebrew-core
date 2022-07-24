@@ -1,29 +1,48 @@
 class Pianod < Formula
   desc "Pandora client with multiple control interfaces"
   homepage "https://deviousfish.com/pianod/"
-  url "https://deviousfish.com/Downloads/pianod/pianod-176.tar.gz"
-  sha256 "4f3be12daef1adb3bcbbcf8ec529abf0ac018e03140be9c5b0f1203d6e1b9bf0"
+  url "https://deviousfish.com/Downloads/pianod2/pianod2-392.tar.gz"
+  sha256 "d3e24ec34677bb17307e61e79f42ae2b22441228db7a31cf056d452a92447cec"
+  license "MIT"
+
+  livecheck do
+    url "https://deviousfish.com/Downloads/pianod2/"
+    regex(/href=.*?pianod2[._-]v?(\d+(?:\.\d+)*)\.t/i)
+  end
 
   bottle do
-    sha256 "e5a1241330f79eb7563193c1f07ecddef1768e03e9b267a551f2d55e2e18dc1f" => :high_sierra
-    sha256 "2414a7a28c854c54a905e0f00d67e7a23bff75aba25484acab508359fb1a88a2" => :sierra
-    sha256 "51a34cb2a818ee303a9c785d2b4a25abdc5355fd7c2c4812eee4f831e55a46d2" => :el_capitan
+    sha256 arm64_monterey: "e0f97c293764bc1d6ec7e9e9e2d18d554b39ad95071e295592e33e4087376064"
+    sha256 arm64_big_sur:  "f2fa087fb17f1e2cfc9aa1fb33a2a2c8438a024e06d510c43f2c15c9bf0cc2b8"
+    sha256 monterey:       "b9aa59f530b8a6663a6483ef9e5dc18d28f024aaada85113b5ddcca42481b3d0"
+    sha256 big_sur:        "4f100221aa096f62ff4accc0e2797781c4df7c4dbc4496668f6e2615fbc084fa"
+    sha256 catalina:       "ca896c858edd71e8ec1545c4f8c5a107a40bfafa23304b521d1a5ee1c5861d01"
+    sha256 x86_64_linux:   "f00f9a7fbdb2e6483a1ffa15b5d6841d312e742b8907b60321ebdb9fce067210"
   end
 
   depends_on "pkg-config" => :build
-
+  depends_on "json-c"
   depends_on "libao"
   depends_on "libgcrypt"
-  depends_on "gnutls"
-  depends_on "json-c"
-  depends_on "faad2" => :recommended
-  depends_on "mad" => :recommended
+
+  uses_from_macos "libxcrypt"
+
+  on_macos do
+    depends_on "ncurses"
+  end
+
+  on_linux do
+    # pianod uses avfoundation on macOS, ffmpeg on Linux
+    depends_on "ffmpeg@4"
+    depends_on "gcc"
+    depends_on "gnutls"
+    depends_on "libbsd"
+  end
+
+  fails_with gcc: "5"
 
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+    ENV["OBJCXXFLAGS"] = "-std=c++14"
+    system "./configure", *std_configure_args, "--disable-silent-rules"
     system "make", "install"
   end
 

@@ -1,57 +1,83 @@
 class Gtkx3 < Formula
   desc "Toolkit for creating graphical user interfaces"
   homepage "https://gtk.org/"
-  url "https://download.gnome.org/sources/gtk+/3.22/gtk+-3.22.28.tar.xz"
-  sha256 "d299612b018cfed7b2c689168ab52b668023708e17c335eb592260d186f15e1f"
+  url "https://download.gnome.org/sources/gtk+/3.24/gtk+-3.24.34.tar.xz"
+  sha256 "dbc69f90ddc821b8d1441f00374dc1da4323a2eafa9078e61edbe5eeefa852ec"
+  license "LGPL-2.0-or-later"
 
-  bottle do
-    sha256 "58867309a23a6bf9d2d73e1fdb16393b7f6670260a5e4318ac66ee603bc85a32" => :high_sierra
-    sha256 "9138b9852ee2d1a465d1c90981fd889f53dc6b6ee8f1edda1322b6b9ccdb83dd" => :sierra
-    sha256 "6833044f8a039c85eb220143bc1a1953ddcc36c2c4648ca91d991b36c7b454b3" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/gtk\+[._-](3\.([0-8]\d*?)?[02468](?:\.\d+)*?)\.t/i)
   end
 
-  option "with-quartz-relocation", "Build with quartz relocation support"
+  bottle do
+    sha256 arm64_monterey: "433f1b8aa72afcaf5784b099c40373e60da5a5782dddbe867bd315b6dfa9466f"
+    sha256 arm64_big_sur:  "f033af2b4714244846c3eabf558626d356e0cdcff6e5b8a1302e6d7a8b21a0e7"
+    sha256 monterey:       "309a7ff2894c4290d18a52f83c36ba9f9b8d156492d8034f7b39fe7771127a47"
+    sha256 big_sur:        "6b502ca8e38cfc2bbf63e4d72609cb70a829381240ebd1965412ec0d80013dc9"
+    sha256 catalina:       "2b3df91ceb20e12404020549f3cf94710c99379b9090dd327ec29a00f5bb1105"
+    sha256 x86_64_linux:   "9319cbd1929a839be964268450d593b3630ab749dc906a2f6ee643beb47e538b"
+  end
 
+  depends_on "docbook" => :build
+  depends_on "docbook-xsl" => :build
+  depends_on "glib-utils" => :build
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "gdk-pixbuf"
   depends_on "atk"
-  depends_on "gobject-introspection"
+  depends_on "gdk-pixbuf"
+  depends_on "glib"
+  depends_on "gsettings-desktop-schemas"
+  depends_on "hicolor-icon-theme"
   depends_on "libepoxy"
   depends_on "pango"
-  depends_on "glib"
-  depends_on "hicolor-icon-theme"
-  depends_on "gsettings-desktop-schemas" => :recommended
-  depends_on "jasper" => :optional
 
-  # patch taken from https://gitlab.gnome.org/GNOME/gtk/issues/32
-  # should be removed in next update
-  patch :DATA
+  uses_from_macos "libxslt" => :build # for xsltproc
+
+  on_linux do
+    depends_on "cmake" => :build
+    depends_on "at-spi2-atk"
+    depends_on "cairo"
+    depends_on "iso-codes"
+    depends_on "libxkbcommon"
+    depends_on "xorgproto"
+    depends_on "wayland-protocols"
+  end
 
   def install
-    args = %W[
-      --enable-debug=minimal
-      --disable-dependency-tracking
-      --prefix=#{prefix}
-      --disable-glibtest
-      --enable-introspection=yes
-      --disable-schemas-compile
-      --enable-quartz-backend
-      --disable-x11-backend
+    args = std_meson_args + %w[
+      -Dgtk_doc=false
+      -Dman=true
+      -Dintrospection=true
     ]
 
-    args << "--enable-quartz-relocation" if build.with?("quartz-relocation")
+    if OS.mac?
+      args << "-Dquartz_backend=true"
+      args << "-Dx11_backend=false"
+    end
 
-    system "./configure", *args
-    # necessary to avoid gtk-update-icon-cache not being found during make install
-    bin.mkpath
-    ENV.prepend_path "PATH", bin
-    system "make", "install"
+    # ensure that we don't run the meson post install script
+    ENV["DESTDIR"] = "/"
+
+    # Find our docbook catalog
+    ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
+
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
+
     # Prevent a conflict between this and Gtk+2
     mv bin/"gtk-update-icon-cache", bin/"gtk3-update-icon-cache"
   end
 
   def post_install
     system "#{Formula["glib"].opt_bin}/glib-compile-schemas", "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
+    system bin/"gtk3-update-icon-cache", "-f", "-t", "#{HOMEBREW_PREFIX}/share/icons/hicolor"
+    system "#{bin}/gtk-query-immodules-3.0 > #{HOMEBREW_PREFIX}/lib/gtk-3.0/3.0.0/immodules.cache"
   end
 
   test do
@@ -70,6 +96,7 @@ class Gtkx3 < Formula
     gdk_pixbuf = Formula["gdk-pixbuf"]
     gettext = Formula["gettext"]
     glib = Formula["glib"]
+    harfbuzz = Formula["harfbuzz"]
     libepoxy = Formula["libepoxy"]
     libpng = Formula["libpng"]
     pango = Formula["pango"]
@@ -84,6 +111,7 @@ class Gtkx3 < Formula
       -I#{glib.opt_include}/gio-unix-2.0/
       -I#{glib.opt_include}/glib-2.0
       -I#{glib.opt_lib}/glib-2.0/include
+      -I#{harfbuzz.opt_include}/harfbuzz
       -I#{include}
       -I#{include}/gtk-3.0
       -I#{libepoxy.opt_include}
@@ -107,30 +135,13 @@ class Gtkx3 < Formula
       -lglib-2.0
       -lgobject-2.0
       -lgtk-3
-      -lintl
       -lpango-1.0
       -lpangocairo-1.0
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
+    # include a version check for the pkg-config files
+    assert_match version.to_s, shell_output("cat #{lib}/pkgconfig/gtk+-3.0.pc").strip
   end
 end
-
-__END__
-diff --git a/gdk/quartz/gdkquartz.h b/gdk/quartz/gdkquartz.h
-index be2cb3c..24555d4 100644
---- a/gdk/quartz/gdkquartz.h
-+++ b/gdk/quartz/gdkquartz.h
-@@ -60,8 +60,11 @@ typedef enum
- GDK_AVAILABLE_IN_ALL
- GdkOSXVersion gdk_quartz_osx_version (void);
-
-+GDK_AVAILABLE_IN_ALL
- GdkAtom   gdk_quartz_pasteboard_type_to_atom_libgtk_only        (NSString       *type);
-+GDK_AVAILABLE_IN_ALL
- NSString *gdk_quartz_target_to_pasteboard_type_libgtk_only      (const gchar    *target);
-+GDK_AVAILABLE_IN_ALL
- NSString *gdk_quartz_atom_to_pasteboard_type_libgtk_only        (GdkAtom         atom);
-
- G_END_DECLS
-

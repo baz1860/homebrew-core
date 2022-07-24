@@ -1,14 +1,17 @@
 class Libmtp < Formula
   desc "Implementation of Microsoft's Media Transfer Protocol (MTP)"
   homepage "https://libmtp.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/libmtp/libmtp/1.1.14/libmtp-1.1.14.tar.gz"
-  sha256 "3817d3e296be8f1bc527385585780e70984e8e0d6a0d00349240d67e3df412e8"
+  url "https://downloads.sourceforge.net/project/libmtp/libmtp/1.1.20/libmtp-1.1.20.tar.gz"
+  sha256 "c9191dac2f5744cf402e08641610b271f73ac21a3c802734ec2cedb2c6bc56d0"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any
-    sha256 "ea1c31e565d1a64901bb1fd11ad57ed76e3572d2fae6db9d77a348ca628dee2f" => :high_sierra
-    sha256 "6f4b2c6338e83015c19e23d15380fed863cb9e56f11933c2239ec05c25582847" => :sierra
-    sha256 "3b2aca5b7b96638ce196396686b9ba4fe89199759f4ba88e780da5cde726c0cf" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "5f786718e8113e58a7f194e32748f3bd6b07899514e7e2190d8262c0843ca3ce"
+    sha256 cellar: :any,                 arm64_big_sur:  "c4b3e59f86dae97b5fc0774e384ad4ad5e6f13fab5e9b03ab586b0de8774e0ad"
+    sha256 cellar: :any,                 monterey:       "822134a5c60cfcfd2781d2c897b06b790aec731c996ba081d032477008ab793c"
+    sha256 cellar: :any,                 big_sur:        "97fa5291b656454e4ac9c174fc08e93045ecd33f8d02a69d103c33a6e1e4a669"
+    sha256 cellar: :any,                 catalina:       "76e0242398cee340b4d1d693ddf2d855bb6e4dfa04e5f8d7f420cac8ccf54ccc"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2d96f04445b409a18583b8ad5bd316a36d38c7904eda472a2d0a038071ac058f"
   end
 
   depends_on "pkg-config" => :build
@@ -17,7 +20,8 @@ class Libmtp < Formula
   def install
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
-                          "--disable-mtpz"
+                          "--disable-mtpz",
+                          "--with-udev=#{lib}/udev"
     system "make", "install"
   end
 

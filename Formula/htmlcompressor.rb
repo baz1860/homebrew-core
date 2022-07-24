@@ -4,29 +4,16 @@ class Htmlcompressor < Formula
   url "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/htmlcompressor/htmlcompressor-1.5.3.jar"
   sha256 "88894e330cdb0e418e805136d424f4c262236b1aa3683e51037cdb66310cb0f9"
 
-  bottle :unneeded
+  bottle do
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "2db5110c6d610644c27557492055c3d56573908b50877e2ddd7e6dad556376d7"
+  end
 
-  option "with-yuicompressor", "Use YUICompressor for JS/CSS compression"
-  option "with-closure-compiler", "Use Closure Compiler for JS optimization"
-
-  deprecated_option "yuicompressor" => "with-yuicompressor"
-  deprecated_option "closure-compiler" => "with-closure-compiler"
-
-  depends_on "yuicompressor" => :optional
-  depends_on "closure-compiler" => :optional
+  depends_on "openjdk"
 
   def install
     libexec.install "htmlcompressor-#{version}.jar"
     bin.write_jar_script libexec/"htmlcompressor-#{version}.jar", "htmlcompressor"
-
-    if build.with? "yuicompressor"
-      yui = Formula["yuicompressor"]
-      libexec.install_symlink yui.opt_libexec/"yuicompressor-#{yui.version}.jar"
-    end
-
-    if build.with? "closure-compiler"
-      libexec.install_symlink Formula["closure-compiler"].opt_libexec/"build/compiler.jar"
-    end
   end
 
   test do

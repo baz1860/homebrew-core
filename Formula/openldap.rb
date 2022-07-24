@@ -1,23 +1,39 @@
 class Openldap < Formula
   desc "Open source suite of directory software"
   homepage "https://www.openldap.org/software/"
-  url "https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.4.45.tgz"
-  mirror "https://gpl.savoirfairelinux.net/pub/mirrors/openldap/openldap-release/openldap-2.4.45.tgz"
-  sha256 "cdd6cffdebcd95161a73305ec13fc7a78e9707b46ca9f84fb897cd5626df3824"
+  url "https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.3.tgz"
+  mirror "http://fresh-center.net/linux/misc/openldap-2.6.3.tgz"
+  mirror "http://fresh-center.net/linux/misc/legacy/openldap-2.6.3.tgz"
+  sha256 "d2a2a1d71df3d77396b1c16ad7502e674df446e06072b0e5a4e941c3d06c0d46"
+  license "OLDAP-2.8"
+
+  livecheck do
+    url "https://www.openldap.org/software/download/OpenLDAP/openldap-release/"
+    regex(/href=.*?openldap[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "de441b2b17c16c76cc8883b4d3222f79985dc60013729a679a6917ce857a2682" => :high_sierra
-    sha256 "809a58277010241b76cb9474b303d55540ae71c59ef401ece495f6b5ab57949c" => :sierra
-    sha256 "645727db7cc901fa3493c66c06e55ecce778846961874deff6b1a4687aa04b35" => :el_capitan
-    sha256 "ea5d0a84b570b85c6711a5c99dd12f2ba6811c7b3515ddd1b1d1761490a8fa81" => :yosemite
+    sha256 arm64_monterey: "d3f0bdb0fdab90601339ec57ad4291aa08907733d40162a7450f3bafd3768e8a"
+    sha256 arm64_big_sur:  "9f347097480480f7df1519279a588cd68bf98e7befa11971c803a858843ebc6a"
+    sha256 monterey:       "107f7937af3e60ecf4262b4f60b7da74c38ef55c07c735c3f906f2bdb0067934"
+    sha256 big_sur:        "5881d9b771d9296d464a8d2f8e00908e76b31076df50d2c86225a9151ec64a85"
+    sha256 catalina:       "542b132bd0ae22ad6ffe2bb2f25f17c1933943ead28791bcf7e53888b48f5de1"
+    sha256 x86_64_linux:   "236b263f5d84e1c580380289599cad1719cc8c8b2bb1c78b48578aa139dc1095"
   end
 
   keg_only :provided_by_macos
 
-  option "with-sssvlv", "Enable server side sorting and virtual list view"
+  depends_on "openssl@1.1"
 
-  depends_on "berkeley-db@4" => :optional
-  depends_on "openssl"
+  on_linux do
+    depends_on "util-linux"
+  end
+
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
+  end
 
   def install
     args = %W[
@@ -27,11 +43,13 @@ class Openldap < Formula
       --localstatedir=#{var}
       --enable-accesslog
       --enable-auditlog
+      --enable-bdb=no
       --enable-constraint
       --enable-dds
       --enable-deref
       --enable-dyngroup
       --enable-dynlist
+      --enable-hdb=no
       --enable-memberof
       --enable-ppolicy
       --enable-proxycache
@@ -43,12 +61,19 @@ class Openldap < Formula
       --enable-valsort
     ]
 
-    args << "--enable-bdb=no" << "--enable-hdb=no" if build.without? "berkeley-db@4"
-    args << "--enable-sssvlv=yes" if build.with? "sssvlv"
+    if OS.linux?
+      args << "--without-systemd"
+
+      # Disable manpage generation, because it requires groff which has a huge
+      # dependency tree on Linux
+      inreplace "Makefile.in" do |s|
+        s.change_make_var! "SUBDIRS", "include libraries clients servers"
+      end
+    end
 
     system "./configure", *args
     system "make", "install"
-    (var+"run").mkpath
+    (var/"run").mkpath
 
     # https://github.com/Homebrew/homebrew-dupes/pull/452
     chmod 0755, Dir[etc/"openldap/*"]

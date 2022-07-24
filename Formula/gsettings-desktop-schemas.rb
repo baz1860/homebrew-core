@@ -1,32 +1,35 @@
 class GsettingsDesktopSchemas < Formula
   desc "GSettings schemas for desktop components"
   homepage "https://download.gnome.org/sources/gsettings-desktop-schemas/"
-  url "https://download.gnome.org/sources/gsettings-desktop-schemas/3.24/gsettings-desktop-schemas-3.24.1.tar.xz"
-  sha256 "76a3fa309f9de6074d66848987214f0b128124ba7184c958c15ac78a8ac7eea7"
+  url "https://download.gnome.org/sources/gsettings-desktop-schemas/42/gsettings-desktop-schemas-42.0.tar.xz"
+  sha256 "6686335a9ed623f7ae2276fefa50a410d4e71d4231880824714070cb317323d2"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "6852bd372272eb28017382189011107af8563211a86ef4e8f9b686cef440fc66" => :high_sierra
-    sha256 "e4f5ab8d16e84e09cf10439b7f827d80b403efe598e3b05d593b745d1d5675fa" => :sierra
-    sha256 "e4f5ab8d16e84e09cf10439b7f827d80b403efe598e3b05d593b745d1d5675fa" => :el_capitan
-    sha256 "e4f5ab8d16e84e09cf10439b7f827d80b403efe598e3b05d593b745d1d5675fa" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "20d3476344356c605545eb88740d06692e630cb59c90561a43ec15e8cc775ec9"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "20d3476344356c605545eb88740d06692e630cb59c90561a43ec15e8cc775ec9"
+    sha256 cellar: :any_skip_relocation, monterey:       "20d3476344356c605545eb88740d06692e630cb59c90561a43ec15e8cc775ec9"
+    sha256 cellar: :any_skip_relocation, big_sur:        "20d3476344356c605545eb88740d06692e630cb59c90561a43ec15e8cc775ec9"
+    sha256 cellar: :any_skip_relocation, catalina:       "20d3476344356c605545eb88740d06692e630cb59c90561a43ec15e8cc775ec9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ff08511c0988eec4bbe0c5a37bbbcbc7070ead8581d9e7ffa49fbe842d6bd562"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
   depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
   depends_on "glib"
-  depends_on "gettext"
-  depends_on "libffi"
-  depends_on "python" if MacOS.version <= :mavericks
+
+  uses_from_macos "expat"
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--disable-schemas-compile",
-                          "--enable-introspection=yes"
-    system "make", "install"
+    ENV["DESTDIR"] = "/"
+
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   def post_install

@@ -1,29 +1,31 @@
 class Modd < Formula
   desc "Flexible tool for responding to filesystem changes"
   homepage "https://github.com/cortesi/modd"
-  url "https://github.com/cortesi/modd/archive/v0.5.tar.gz"
-  sha256 "784e8d542f0266a68d32e920b18e2d690402cf31305314b967186e12ce12099a"
-  head "https://github.com/cortesi/modd.git"
+  url "https://github.com/cortesi/modd/archive/v0.8.tar.gz"
+  sha256 "04e9bacf5a73cddea9455f591700f452d2465001ccc0c8e6f37d27b8b376b6e0"
+  license "MIT"
+  head "https://github.com/cortesi/modd.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "1cd86784da139889806ebc29923105067386636a1724599c6ebe91a7bf468e8e" => :high_sierra
-    sha256 "bc0db4fed7c8bcbcd453a1aad44dc2086e1e78dbebf3605783ba1ca21882fa29" => :sierra
-    sha256 "e9cc57f8ad0c8c8d442d9f4b4508cacca5b2500b0861542c18e0b757ca2b8335" => :el_capitan
+    rebuild 2
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "b1ec2df2d4eacfc45017a547d95f0201a605b65843379b8dfa1772e329a86f19"
+    sha256 cellar: :any_skip_relocation, big_sur:       "468d421ccb60b0e236dd15299fd6c09f8dfca1dc67ee73bf17b60d07410417ff"
+    sha256 cellar: :any_skip_relocation, catalina:      "d4e92bca2fb812429c92ae88e8e04ef11de28f00eaad8bb42a736965666ff02c"
+    sha256 cellar: :any_skip_relocation, mojave:        "a2422e6f5c756a3202b47d58ca88eb6011361445b0ace2198c6f7aaa01eebf6f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "16c3ed52b7621ce7aeedb09e6265b8e1ea699cf5d4607a2e01fb15835f6ee206"
   end
 
-  depends_on "go" => :build
+  # https://github.com/cortesi/modd/issues/96
+  deprecate! date: "2021-08-27", because: :unmaintained
+
+  depends_on "go@1.16" => :build
 
   def install
-    ENV["GOOS"] = "darwin"
-    ENV["GOARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
     ENV["GOPATH"] = buildpath
-    ENV["GOBIN"] = bin
+    ENV["GO111MODULE"] = "auto"
     (buildpath/"src/github.com/cortesi/modd").install buildpath.children
     cd "src/github.com/cortesi/modd" do
-      system "go", "install", ".../cmd/modd"
-      prefix.install_metafiles
+      system "go", "build", *std_go_args, "./cmd/modd"
     end
   end
 

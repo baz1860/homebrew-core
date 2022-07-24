@@ -1,31 +1,38 @@
 class Opencc < Formula
   desc "Simplified-traditional Chinese conversion tool"
   homepage "https://github.com/BYVoid/OpenCC"
-  url "https://dl.bintray.com/byvoid/opencc/opencc-1.0.4.tar.gz"
-  sha256 "34e728ba9819477e8f8e12726867965e6aa55e7f3390225b2c031f9138b404cb"
+  url "https://github.com/BYVoid/OpenCC/archive/ver.1.1.4.tar.gz"
+  sha256 "ca33cf2a2bf691ee44f53397c319bb50c6d6c4eff1931a259fd11533ba26c1e9"
+  license "Apache-2.0"
 
   bottle do
-    sha256 "9a4d1024105557dbb8caad9548473bbbc384b4178e880a996d1b843eeaac5df1" => :high_sierra
-    sha256 "3c228bd803e8914ee9ca3ed00eb67fa9dfcacd8f1a99c5532962d5c4a87acb57" => :sierra
-    sha256 "9ddf2bdf0563a14a3e1bff8e5a067c605ac59b9f1611c69640035cdb7df6ddfd" => :el_capitan
-    sha256 "add47f6baf00f83d3ca00d7da59e35f18506f7858e1e6aede4f04660411f2e06" => :yosemite
-    sha256 "88192e5f330e185f4f18fbd3b6f8e7e5cac7a0f22d88059471ef3fad25a85c77" => :mavericks
+    sha256 arm64_monterey: "b3b6c98505d778bffac40244ff3550082c67043700c11f8b4c2dc470bd708adb"
+    sha256 arm64_big_sur:  "79dbf338581ae748fcbd116e8c6ec45c57a74fc950205c11e05aa586b6601bc6"
+    sha256 monterey:       "abb5f38218d666e864435b8fdcc8dc83e5a9d74f6d5b72d13dddc518e2d068b2"
+    sha256 big_sur:        "04e1e578598037552c24853cf84d2ed66da5d23f517612ea8e793e5ba44cc0c7"
+    sha256 catalina:       "4dcee8df044e226db8af14ecee5ae84785b799a648c421e6d2f00768df9b30be"
+    sha256 x86_64_linux:   "3e911567c4bed3312fcb55d777f00383b91e4d847633afe9d4b3f0af9c59d802"
   end
 
   depends_on "cmake" => :build
-
-  needs :cxx11
+  uses_from_macos "python" => :build
 
   def install
     ENV.cxx11
-    system "cmake", ".", "-DBUILD_DOCUMENTATION:BOOL=OFF", *std_cmake_args
-    system "make"
-    system "make", "install"
+    args = std_cmake_args + %W[
+      -DCMAKE_INSTALL_RPATH=#{rpath}
+      -DPYTHON_EXECUTABLE=#{which("python3")}
+    ]
+    mkdir "build" do
+      system "cmake", "..", *args
+      system "make"
+      system "make", "install"
+    end
   end
 
   test do
     input = "中国鼠标软件打印机"
-    output = shell_output("echo #{input} | #{bin}/opencc")
+    output = pipe_output("#{bin}/opencc", input)
     output = output.force_encoding("UTF-8") if output.respond_to?(:force_encoding)
     assert_match "中國鼠標軟件打印機", output
   end

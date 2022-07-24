@@ -1,40 +1,41 @@
 class DockerCompose < Formula
-  include Language::Python::Virtualenv
-
   desc "Isolated development environments using Docker"
   homepage "https://docs.docker.com/compose/"
-  url "https://github.com/docker/compose/archive/1.19.0.tar.gz"
-  sha256 "2f8eb50a1e71a9eed773456267d511cd77a463809e746d02d9366888ff30d8a2"
-  head "https://github.com/docker/compose.git"
+  url "https://github.com/docker/compose/archive/v2.7.0.tar.gz"
+  sha256 "bc3e4c0aadfd3c87e8ebcd89d5236977ba8234a8211fea63351bb752d28883ae"
+  license "Apache-2.0"
+  head "https://github.com/docker/compose.git", branch: "v2"
 
   bottle do
-    cellar :any
-    sha256 "1b882b7dcf3172146abf3d0c9dde1c76d884da295f730477611ca63f0e118789" => :high_sierra
-    sha256 "879edea4c8eb407033c1644ef66701ab780d5f1f2f5d4e9ee3b069257834e769" => :sierra
-    sha256 "61b27a9bbed711d265f8eb3d598bf25c4b86bfbff8aab4fe02d0c0039904e97a" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "240d89351ba2606c6601adb0107c31d334c4d0bacb3f66d4bc1175ba4151237f"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "240d89351ba2606c6601adb0107c31d334c4d0bacb3f66d4bc1175ba4151237f"
+    sha256 cellar: :any_skip_relocation, monterey:       "35420139da3e16fa506424dc85904f1d74bc505bce16b8071dd09e570f9d4e15"
+    sha256 cellar: :any_skip_relocation, big_sur:        "35420139da3e16fa506424dc85904f1d74bc505bce16b8071dd09e570f9d4e15"
+    sha256 cellar: :any_skip_relocation, catalina:       "35420139da3e16fa506424dc85904f1d74bc505bce16b8071dd09e570f9d4e15"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "200527462b65098b9d315094e5a0de424914818eadc8b2ac7b2e38fa1132f0d5"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
-  depends_on "libyaml"
-
-  # It's possible that the user wants to manually install Docker and Machine,
-  # for example, they want to compile Docker manually
-  depends_on "docker" => :recommended
-  depends_on "docker-machine" => :recommended
+  depends_on "go" => :build
 
   def install
-    system "./script/build/write-git-sha" if build.head?
-    venv = virtualenv_create(libexec)
-    system libexec/"bin/pip", "install", "-v", "--no-binary", ":all:",
-                              "--ignore-installed", buildpath
-    system libexec/"bin/pip", "uninstall", "-y", "docker-compose"
-    venv.pip_install_and_link buildpath
+    ENV["CGO_ENABLED"] = "0"
+    ldflags = %W[
+      -s -w
+      -X github.com/docker/compose/v2/internal.Version=#{version}
+    ]
+    system "go", "build", *std_go_args(ldflags: ldflags), "./cmd"
+  end
 
-    bash_completion.install "contrib/completion/bash/docker-compose"
-    zsh_completion.install "contrib/completion/zsh/_docker-compose"
+  def caveats
+    <<~EOS
+      Compose is now a Docker plugin. For Docker to find this plugin, symlink it:
+        mkdir -p ~/.docker/cli-plugins
+        ln -sfn #{opt_bin}/docker-compose ~/.docker/cli-plugins/docker-compose
+    EOS
   end
 
   test do
-    system bin/"docker-compose", "--help"
+    output = shell_output(bin/"docker-compose up 2>&1", 14)
+    assert_match "no configuration file provided", output
   end
 end

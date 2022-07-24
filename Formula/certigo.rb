@@ -1,15 +1,23 @@
 class Certigo < Formula
   desc "Utility to examine and validate certificates in a variety of formats"
   homepage "https://github.com/square/certigo"
-  url "https://github.com/square/certigo/archive/v1.9.2.tar.gz"
-  sha256 "e1f2d673a686767176a3d634ab2c8cc360f0b48727175fb2a5123d416bdbe689"
-  head "https://github.com/square/certigo.git"
+  url "https://github.com/square/certigo/archive/v1.16.0.tar.gz"
+  sha256 "a6ce89964ca2fbe7d45d2e2019b06a21984f133c4f1f110eee12a67dd60c4145"
+  license "Apache-2.0"
+  head "https://github.com/square/certigo.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "ce4aee69ddab21eea2dc30c49911e60752b83bd6f311b9df32a1253c23d0a01a" => :high_sierra
-    sha256 "f217275b6e97200423a283ff79b15236b27dbca6dcda86f42111b626e64618a2" => :sierra
-    sha256 "cc687e18364d3985df8df95684b703fefcd3fecec1bbbdc0efca40b9d3e225c9" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a663a86882876335dfd364332494270957a0b6778975aa0f9e8ba2fd83f8aa52"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "8c632fa6622d2cd6f5899c3f1682f6646803e9d33efb56b4bc39417d09b55a72"
+    sha256 cellar: :any_skip_relocation, monterey:       "f923b26c0f5b4115434a770994e0c791d192a482121840bf82323ae14b1627d5"
+    sha256 cellar: :any_skip_relocation, big_sur:        "a69ecd639ae8ae13f627bfb182a1fc29467b6ca58b917863d5d01d09731f98ff"
+    sha256 cellar: :any_skip_relocation, catalina:       "e3f412c147bc0a3b42167d3b0c349b4d6bd175bb4a89fe4603cb68400630c471"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "10522c5a7fcd8524a1a0ce6755c2ffba1a6e76e63249f77d24326400c9ddc243"
   end
 
   depends_on "go" => :build
@@ -17,6 +25,14 @@ class Certigo < Formula
   def install
     system "./build"
     bin.install "bin/certigo"
+
+    # Install bash completion
+    output = Utils.safe_popen_read("#{bin}/certigo", "--completion-script-bash")
+    (bash_completion/"certigo").write output
+
+    # Install zsh completion
+    output = Utils.safe_popen_read("#{bin}/certigo", "--completion-script-zsh")
+    (zsh_completion/"_certigo").write output
   end
 
   test do

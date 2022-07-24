@@ -1,59 +1,81 @@
 class Simutrans < Formula
   desc "Transport simulator"
   homepage "https://www.simutrans.com/"
-  head "https://github.com/aburch/simutrans.git"
+  url "svn://servers.simutrans.org/simutrans/trunk/", revision: "10421"
+  version "123.0.1"
+  license "Artistic-1.0"
+  head "https://github.com/aburch/simutrans.git", branch: "master"
 
-  stable do
-    url "https://downloads.sourceforge.net/project/simutrans/simutrans/120-1-3/simutrans-src-120-1-3.zip"
-    version "120.1.3"
-    sha256 "2d29b849fc39d25a0580091e1377270bddb2cae36c0fc32bd7c2d0f1d7ccfb84"
-
-    # Port Mac audio code from QTKit to AVFoundation
-    # Required since 10.12 SDK no longer includes QTKit.
-    # Submitted upstream: https://forum.simutrans.com/index.php?topic=16675.0
-    patch do
-      url "https://raw.githubusercontent.com/Homebrew/formula-patches/bea80842a6ccc5639341add0d8abbca2d49b04c2/simutrans/avfoundation.patch"
-      sha256 "9b9c9e6d89de49f152faaf584fcbbeec628bb07315b7c767e1f8b6791ad1e3ee"
-    end
+  livecheck do
+    url "https://sourceforge.net/projects/simutrans/files/simutrans/"
+    regex(%r{href=.*?/files/simutrans/(\d+(?:[.-]\d+)+)/}i)
+    strategy :page_match
   end
 
   bottle do
-    cellar :any
-    sha256 "d07c63fcaa13fa5c670f27603cc0609a46da912374e30bd1e785329db26e7651" => :sierra
-    sha256 "36961b1c305e6c2081447e54a274d0e118df63eb771626be1dc511b9c34811ed" => :el_capitan
-    sha256 "200ce8fa5e825a6f49ac4f6d87a014bad0d6a4a16a7640a71261ac7680472ab1" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "89c68007e13410b6d7fc4d675f0eabc4487393ad4d4768d2e0830a206ae5dae7"
+    sha256 cellar: :any,                 arm64_big_sur:  "aa8073c151259b074563854c6ea63ffaab8a41b268b150e24d3dab93ab75231e"
+    sha256 cellar: :any,                 monterey:       "339ac25e7eb60cbe2158c59feece111a66bdb587e23f4104c5045b820c861031"
+    sha256 cellar: :any,                 big_sur:        "076b15195eb642b6e97eef391580c62d9333a52c68f8551aeb1812736e9967d1"
+    sha256 cellar: :any,                 catalina:       "e618f3935018b641b10d70286fe3d60e366cfcd914125a634d6c51c8e33fad79"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2c2eb82d4b879f59e2201b78d11cea24a8f8f3fc7ba2859d5c6c3aa41a830355"
   end
 
-  depends_on :macos => :lion
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "pkg-config" => :build
+  depends_on "freetype"
   depends_on "libpng"
   depends_on "sdl2"
 
-  resource "pak64" do
-    url "https://downloads.sourceforge.net/project/simutrans/pak64/120-1/simupak64-120-1-2.zip"
-    sha256 "125fa5c13a51bb0630ca651fddb8af06a823e8c4d4638bfa1bb2d89e92cc1d54"
+  uses_from_macos "curl"
+  uses_from_macos "unzip"
+
+  on_linux do
+    depends_on "gcc"
   end
 
-  resource "text" do
-    url "https://simutrans-germany.com/translator/data/tab/language_pack-Base+texts.zip"
-    sha256 "202816f67750cfb9decdfca3bacfebbc5bfc3474c8703239418edc093ce3774d"
+  fails_with gcc: "5"
+
+  resource "pak64" do
+    url "https://downloads.sourceforge.net/project/simutrans/pak64/123-0/simupak64-123-0.zip"
+    sha256 "b8a0a37c682d8f62a3b715c24c49bc738f91d6e1e4600a180bb4d2e9f85b86c1"
   end
 
   def install
+    # These translations are dynamically generated.
+    system "./get_lang_files.sh"
+
     args = %w[
       BACKEND=sdl2
-      COLOUR_DEPTH=16
-      OSTYPE=mac
+      MULTI_THREAD=1
+      OPTIMISE=1
+      USE_FREETYPE=1
+      USE_UPNP=0
+      USE_ZSTD=0
     ]
-    system "make", *args
-    libexec.install "build/default/sim" => "simutrans"
+    if OS.mac?
+      args << "AV_FOUNDATION=1" if MacOS.version >= :sierra
+      args << "OSTYPE=mac"
+    elsif OS.linux?
+      args << "OSTYPE=linux"
+    end
+
+    system "autoreconf", "-ivf"
+    system "./configure", "--prefix=#{prefix}", "CC=#{ENV.cc}"
+    system "make", "all", *args
+    cd "themes.src" do
+      ln_s "../makeobj/makeobj", "makeobj"
+      system "./build_themes.sh"
+    end
+
+    libexec.install "sim" => "simutrans"
     libexec.install Dir["simutrans/*"]
     bin.write_exec_script libexec/"simutrans"
+    bin.install "makeobj/makeobj"
+    bin.install "nettools/nettool"
 
     libexec.install resource("pak64")
-    (libexec/"text").install resource("text")
-
-    system "make", "makeobj", *args
-    bin.install "build/default/makeobj/makeobj"
   end
 
   test do

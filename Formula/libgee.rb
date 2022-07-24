@@ -1,19 +1,23 @@
 class Libgee < Formula
   desc "Collection library providing GObject-based interfaces"
   homepage "https://wiki.gnome.org/Projects/Libgee"
-  url "https://download.gnome.org/sources/libgee/0.20/libgee-0.20.1.tar.xz"
-  sha256 "bb2802d29a518e8c6d2992884691f06ccfcc25792a5686178575c7111fea4630"
+  url "https://download.gnome.org/sources/libgee/0.20/libgee-0.20.5.tar.xz"
+  sha256 "31863a8957d5a727f9067495cabf0a0889fa5d3d44626e54094331188d5c1518"
+  license "LGPL-2.1"
 
   bottle do
-    cellar :any
-    sha256 "ccf7c9df7b20315d949fdf91addc28944f0460033938b36e975070461a5bbf67" => :high_sierra
-    sha256 "873c75b548cd0fca3d09019618dd90e402aa86671006d5852931d8906644ce23" => :sierra
-    sha256 "c03c87fb2bd8aafdd2e5f8fd1c3a655ced1730c0d525a4fd369b063e2a29821c" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b4c0eb232ec495a1133db8cd3f639658033a25ce178ec00b858e8a33957d4221"
+    sha256 cellar: :any,                 arm64_big_sur:  "7595f10a228290c80b8059dff874470cfb76840b443096a3b97bfe6e27390a6b"
+    sha256 cellar: :any,                 monterey:       "8136138b5bbaeec36919d40184697874f473a5bf5e0a552cbec4d86e85273072"
+    sha256 cellar: :any,                 big_sur:        "1be6807d7a7b14d96503e8bf534c0535b83defe13eb467c478d729eb5ddd9d9c"
+    sha256 cellar: :any,                 catalina:       "7e72f9c9158e3ff6364672a300728bdfb4394a5d73dd39a2ae53da96ce456ca9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "6746f72a5fc51d595da9fe6854598c74228caeabbc0a5a061bd78bf44c72d424"
   end
 
+  depends_on "gobject-introspection" => :build
   depends_on "pkg-config" => :build
   depends_on "vala" => :build
-  depends_on "gobject-introspection"
+  depends_on "glib"
 
   def install
     # ensures that the gobject-introspection files remain within the keg
@@ -51,8 +55,8 @@ class Libgee < Formula
       -lgee-0.8
       -lglib-2.0
       -lgobject-2.0
-      -lintl
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

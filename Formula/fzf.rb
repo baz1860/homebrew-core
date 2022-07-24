@@ -1,27 +1,26 @@
 class Fzf < Formula
   desc "Command-line fuzzy finder written in Go"
   homepage "https://github.com/junegunn/fzf"
-  url "https://github.com/junegunn/fzf/archive/0.17.3.tar.gz"
-  sha256 "e843904417adf926613431e4403fded24fade56269446e92aac6ff1db86af81e"
-  head "https://github.com/junegunn/fzf.git"
+  url "https://github.com/junegunn/fzf/archive/0.31.0.tar.gz"
+  sha256 "df4edee32cb214018ed40160ced968d4cc3b63bba5b0571487011ee7099faa76"
+  license "MIT"
+  head "https://github.com/junegunn/fzf.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "81658f0f3113ff48873fe7bbc79338f1f50284c5a2f2da456047670d4350221b" => :high_sierra
-    sha256 "f430afe26c931e0d5b210793cd2daa98a24551868fc16501c67209042535c5c2" => :sierra
-    sha256 "c32dd7988d5c606fb790f59fe57f9cca9c40eddf8c187ff7a95c56f81b1c02f8" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "325e796e003bf8eb0f42ab443b7851c41a2cb8d97aaeae6fce9e7fdd8348fae6"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "325e796e003bf8eb0f42ab443b7851c41a2cb8d97aaeae6fce9e7fdd8348fae6"
+    sha256 cellar: :any_skip_relocation, monterey:       "243e95d4e15d0c9dbfd2dfb8d183cafcbd9f4eaf4fd197660f86b79f7e817ef8"
+    sha256 cellar: :any_skip_relocation, big_sur:        "243e95d4e15d0c9dbfd2dfb8d183cafcbd9f4eaf4fd197660f86b79f7e817ef8"
+    sha256 cellar: :any_skip_relocation, catalina:       "243e95d4e15d0c9dbfd2dfb8d183cafcbd9f4eaf4fd197660f86b79f7e817ef8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ab5ada0c11372a8cc6c3ac4be814b9764275cbda578df96c0bff3f1ea69e3768"
   end
 
-  depends_on "glide" => :build
   depends_on "go" => :build
 
+  uses_from_macos "ncurses"
+
   def install
-    ENV["GLIDE_HOME"] = buildpath/"glide_home"
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/junegunn").mkpath
-    ln_s buildpath, buildpath/"src/github.com/junegunn/fzf"
-    system "glide", "install"
-    system "go", "build", "-o", bin/"fzf", "-ldflags", "-X main.revision=brew"
+    system "go", "build", *std_go_args(ldflags: "-s -w -X main.version=#{version} -X main.revision=brew")
 
     prefix.install "install", "uninstall"
     (prefix/"shell").install %w[bash zsh fish].map { |s| "shell/key-bindings.#{s}" }
@@ -31,17 +30,18 @@ class Fzf < Formula
     bin.install "bin/fzf-tmux"
   end
 
-  def caveats; <<~EOS
-    To install useful keybindings and fuzzy completion:
-      #{opt_prefix}/install
+  def caveats
+    <<~EOS
+      To install useful keybindings and fuzzy completion:
+        #{opt_prefix}/install
 
-    To use fzf in Vim, add the following line to your .vimrc:
-      set rtp+=#{opt_prefix}
+      To use fzf in Vim, add the following line to your .vimrc:
+        set rtp+=#{opt_prefix}
     EOS
   end
 
   test do
     (testpath/"list").write %w[hello world].join($INPUT_RECORD_SEPARATOR)
-    assert_equal "world", shell_output("cat #{testpath}/list | #{bin}/fzf -f wld").chomp
+    assert_equal "world", pipe_output("#{bin}/fzf -f wld", (testpath/"list").read).chomp
   end
 end

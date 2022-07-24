@@ -1,56 +1,56 @@
 class Exiv2 < Formula
   desc "EXIF and IPTC metadata manipulation library and tools"
-  homepage "http://www.exiv2.org/"
-  url "http://www.exiv2.org/builds/exiv2-0.26-trunk.tar.gz"
-  sha256 "c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb"
+  homepage "https://exiv2.org/"
+  url "https://github.com/Exiv2/exiv2/releases/download/v0.27.5/exiv2-0.27.5-Source.tar.gz"
+  sha256 "35a58618ab236a901ca4928b0ad8b31007ebdc0386d904409d825024e45ea6e2"
+  license "GPL-2.0-or-later"
+  revision 1
+  head "https://github.com/Exiv2/exiv2.git", branch: "main"
+
+  livecheck do
+    url "https://exiv2.org/download.html"
+    regex(/href=.*?exiv2[._-]v?(\d+(?:\.\d+)+)-Source\.t/i)
+  end
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "5b7833350aac57127e8cb770b3c310503d43f03f4ecccdbdfda17132dbd201d1" => :high_sierra
-    sha256 "c651fe47fec9f541d47d2dd769cf94d4063baeff2b08be2b8c1056d6609499fc" => :sierra
-    sha256 "9f5f339b761aca8910ee859e6630e9eb3f84a7298c029b98baf801f36075ab51" => :el_capitan
-    sha256 "1d14797afa32ff75b50ff2737baa8ac27ab7bf90da38359a9721f7e15c398481" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "df5a064e5e5828cab5d4dace6d467c0880168f2cfe4eff96d95805f4ec0a1090"
+    sha256 cellar: :any,                 arm64_big_sur:  "3de53aea67fdf1b2e0db0d360d4d594c84cfa6e602207764cf69587bbb08ab98"
+    sha256 cellar: :any,                 monterey:       "bc67f1f00301efd37e9c4b69fc174260c95016d751757f099426a33515a85a73"
+    sha256 cellar: :any,                 big_sur:        "3577a686dde0a3441b0aa655dc176cefd3d6897dfb790458c86ba00f5ed12cb9"
+    sha256 cellar: :any,                 catalina:       "78976c980580a1286b077679225902a444dff19a17e392a7d5e2f609f8619f2b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d0e727a5c7cac7fcd2238ab707976c8e049394d166dd2e382898a7bd94d66523"
   end
 
-  head do
-    url "https://github.com/Exiv2/exiv2.git"
-    depends_on "cmake" => :build
-    depends_on "gettext" => :build
-    depends_on "libssh"
-  end
+  depends_on "cmake" => :build
+  depends_on "gettext"
+  depends_on "libssh"
+
+  uses_from_macos "curl"
+  uses_from_macos "expat"
+  uses_from_macos "zlib"
 
   def install
-    if build.head?
-      args = std_cmake_args
-      args += %W[
-        -DEXIV2_ENABLE_SHARED=ON
-        -DEXIV2_ENABLE_XMP=ON
-        -DEXIV2_ENABLE_LIBXMP=ON
-        -DEXIV2_ENABLE_VIDEO=ON
-        -DEXIV2_ENABLE_PNG=ON
-        -DEXIV2_ENABLE_NLS=ON
-        -DEXIV2_ENABLE_PRINTUCS2=ON
-        -DEXIV2_ENABLE_LENSDATA=ON
-        -DEXIV2_ENABLE_COMMERCIAL=OFF
-        -DEXIV2_ENABLE_BUILD_SAMPLES=ON
-        -DEXIV2_ENABLE_BUILD_PO=ON
-        -DEXIV2_ENABLE_VIDEO=ON
-        -DEXIV2_ENABLE_WEBREADY=ON
-        -DEXIV2_ENABLE_CURL=ON
-        -DEXIV2_ENABLE_SSH=ON
-        -DSSH_LIBRARY=#{Formula["libssh"].opt_lib}/libssh.dylib
-        -DSSH_INCLUDE_DIR=#{Formula["libssh"].opt_include}
-        ..
-      ]
-      mkdir "build.cmake" do
-        system "cmake", "-G", "Unix Makefiles", ".", *args
-        system "make", "install"
-        # `-DCMAKE_INSTALL_MANDIR=#{man}` doesn't work
-        mv prefix/"man", man
-      end
-    else
-      system "./configure", "--prefix=#{prefix}", "--disable-dependency-tracking"
+    args = std_cmake_args
+    args += %W[
+      -DEXIV2_ENABLE_XMP=ON
+      -DEXIV2_ENABLE_VIDEO=ON
+      -DEXIV2_ENABLE_PNG=ON
+      -DEXIV2_ENABLE_NLS=ON
+      -DEXIV2_ENABLE_PRINTUCS2=ON
+      -DEXIV2_ENABLE_LENSDATA=ON
+      -DEXIV2_ENABLE_VIDEO=ON
+      -DEXIV2_ENABLE_WEBREADY=ON
+      -DEXIV2_ENABLE_CURL=ON
+      -DEXIV2_ENABLE_SSH=ON
+      -DEXIV2_ENABLE_BMFF=ON
+      -DEXIV2_BUILD_SAMPLES=OFF
+      -DSSH_LIBRARY=#{Formula["libssh"].opt_lib}/#{shared_library("libssh")}
+      -DSSH_INCLUDE_DIR=#{Formula["libssh"].opt_include}
+      -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib}
+      ..
+    ]
+    mkdir "build.cmake" do
+      system "cmake", "-G", "Unix Makefiles", ".", *args
       system "make", "install"
     end
   end

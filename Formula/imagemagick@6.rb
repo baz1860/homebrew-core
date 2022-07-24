@@ -1,123 +1,69 @@
 class ImagemagickAT6 < Formula
   desc "Tools and libraries to manipulate images in many formats"
-  homepage "https://www.imagemagick.org/"
-  # Please always keep the Homebrew mirror as the primary URL as the
-  # ImageMagick site removes tarballs regularly which means we get issues
-  # unnecessarily and older versions of the formula are broken.
-  url "https://dl.bintray.com/homebrew/mirror/imagemagick%406-6.9.9-36.tar.xz"
-  mirror "https://www.imagemagick.org/download/ImageMagick-6.9.9-36.tar.xz"
-  sha256 "a86dc03ef8981e2dec83657fce3b4976347a537d785cc8e08af85af22a1b1bda"
-  head "https://github.com/imagemagick/imagemagick.git", :branch => "ImageMagick-6"
+  homepage "https://legacy.imagemagick.org/"
+  url "https://imagemagick.org/archive/releases/ImageMagick-6.9.12-58.tar.xz"
+  sha256 "249a2bdc3d2f579c2b81fd2d4d3d30b8ce9de8d2bdf7ebb6d95c486d90454c0e"
+  license "ImageMagick"
+  head "https://github.com/imagemagick/imagemagick6.git", branch: "main"
+
+  livecheck do
+    url "https://imagemagick.org/archive/"
+    regex(/href=.*?ImageMagick[._-]v?(6(?:[.-]\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "98e9f6a500241a0754bcfb779d57a9c7897775c8e1ba62fba3ac83b3d80a9202" => :high_sierra
-    sha256 "15ff82d415ff8488b48a785fad80d38afa5a1bd34812a548a04e597ed6b0782a" => :sierra
-    sha256 "3136799e655855749c4416c937e937a294369bf1e15d2357a5d5693215dd417a" => :el_capitan
+    sha256 arm64_monterey: "4ba0e35dd1796ae1c5e0cc23eeaf7a3a4201a0a0e7ca1e0233fbf4e6f8b4ed97"
+    sha256 arm64_big_sur:  "0d5b0d002efd3fded46e19300f65dcb95874c009ab7332962fc8ae062064e800"
+    sha256 monterey:       "1db1e2c650fd3ea06874d8e227dba7315a4f612f08356b38c7b9094c3d400868"
+    sha256 big_sur:        "ab7bcd7e867ec7b092e820c2519fde81413b4d285472b4a05b46182120bb943b"
+    sha256 catalina:       "8bde490e2b672d213d544abe38f356fc8f362e934e4eb1397061231c60e4fb5c"
+    sha256 x86_64_linux:   "bbbd18c470aef0de6c72b0d2b88400a570ddea0fec2b1d4164424c2ef4c94031"
   end
 
   keg_only :versioned_formula
 
-  option "with-fftw", "Compile with FFTW support"
-  option "with-hdri", "Compile with HDRI support"
-  option "with-opencl", "Compile with OpenCL support"
-  option "with-openmp", "Compile with OpenMP support"
-  option "with-perl", "Compile with PerlMagick"
-  option "without-magick-plus-plus", "disable build/install of Magick++"
-  option "without-modules", "Disable support for dynamically loadable modules"
-  option "without-threads", "Disable threads support"
-  option "with-zero-configuration", "Disables depending on XML configuration files"
-
-  deprecated_option "enable-hdri" => "with-hdri"
-  deprecated_option "with-gcc" => "with-openmp"
-  deprecated_option "with-jp2" => "with-openjpeg"
-
   depends_on "pkg-config" => :build
-  depends_on "libtool" => :run
+
+  depends_on "freetype"
+  depends_on "ghostscript"
+  depends_on "jpeg"
+  depends_on "libpng"
+  depends_on "libtiff"
+  depends_on "libtool"
+  depends_on "little-cms2"
+  depends_on "openjpeg"
+  depends_on "webp"
   depends_on "xz"
-
-  depends_on "jpeg" => :recommended
-  depends_on "libpng" => :recommended
-  depends_on "libtiff" => :recommended
-  depends_on "freetype" => :recommended
-
-  depends_on "fontconfig" => :optional
-  depends_on "little-cms" => :optional
-  depends_on "little-cms2" => :optional
-  depends_on "libwmf" => :optional
-  depends_on "librsvg" => :optional
-  depends_on "liblqr" => :optional
-  depends_on "openexr" => :optional
-  depends_on "ghostscript" => :optional
-  depends_on "webp" => :optional
-  depends_on "openjpeg" => :optional
-  depends_on "fftw" => :optional
-  depends_on "pango" => :optional
-  depends_on "perl" => :optional
-
-  if build.with? "openmp"
-    depends_on "gcc"
-    fails_with :clang
-  end
 
   skip_clean :la
 
   def install
+    # Avoid references to shim
+    inreplace Dir["**/*-config.in"], "@PKG_CONFIG@", Formula["pkg-config"].opt_bin/"pkg-config"
+
     args = %W[
-      --disable-osx-universal-binary
+      --enable-osx-universal-binary=no
       --prefix=#{prefix}
       --disable-dependency-tracking
       --disable-silent-rules
+      --disable-opencl
+      --disable-openmp
       --enable-shared
       --enable-static
+      --with-freetype=yes
+      --with-modules
+      --with-webp=yes
+      --with-openjp2
+      --with-gslib
+      --with-gs-font-dir=#{HOMEBREW_PREFIX}/share/ghostscript/fonts
+      --without-fftw
+      --without-pango
+      --without-x
+      --without-wmf
     ]
 
-    if build.without? "modules"
-      args << "--without-modules"
-    else
-      args << "--with-modules"
-    end
-
-    if build.with? "opencl"
-      args << "--enable-opencl"
-    else
-      args << "--disable-opencl"
-    end
-
-    if build.with? "openmp"
-      args << "--enable-openmp"
-    else
-      args << "--disable-openmp"
-    end
-
-    if build.with? "webp"
-      args << "--with-webp=yes"
-    else
-      args << "--without-webp"
-    end
-
-    if build.with? "openjpeg"
-      args << "--with-openjp2"
-    else
-      args << "--without-openjp2"
-    end
-
-    args << "--without-gslib" if build.without? "ghostscript"
-    args << "--with-perl" << "--with-perl-options='PREFIX=#{prefix}'" if build.with? "perl"
-    args << "--with-gs-font-dir=#{HOMEBREW_PREFIX}/share/ghostscript/fonts" if build.without? "ghostscript"
-    args << "--without-magick-plus-plus" if build.without? "magick-plus-plus"
-    args << "--enable-hdri=yes" if build.with? "hdri"
-    args << "--without-fftw" if build.without? "fftw"
-    args << "--without-pango" if build.without? "pango"
-    args << "--without-threads" if build.without? "threads"
-    args << "--with-rsvg" if build.with? "librsvg"
-    args << "--without-x" if build.without? "x11"
-    args << "--with-fontconfig=yes" if build.with? "fontconfig"
-    args << "--with-freetype=yes" if build.with? "freetype"
-    args << "--enable-zero-configuration" if build.with? "zero-configuration"
-    args << "--without-wmf" if build.without? "libwmf"
-
     # versioned stuff in main tree is pointless for us
-    inreplace "configure", "${PACKAGE_NAME}-${PACKAGE_VERSION}", "${PACKAGE_NAME}"
+    inreplace "configure", "${PACKAGE_NAME}-${PACKAGE_BASE_VERSION}", "${PACKAGE_NAME}"
     system "./configure", *args
     system "make", "install"
   end

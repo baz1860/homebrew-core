@@ -1,30 +1,34 @@
 class Libosmium < Formula
   desc "Fast and flexible C++ library for working with OpenStreetMap data"
-  homepage "http://osmcode.org/libosmium/"
-  url "https://github.com/osmcode/libosmium/archive/v2.13.1.tar.gz"
-  sha256 "a73cd56838a7438bd9ed208c9ce6794e2d55a1854039c4277a0c160d5071b909"
+  homepage "https://osmcode.org/libosmium/"
+  url "https://github.com/osmcode/libosmium/archive/v2.18.0.tar.gz"
+  sha256 "c05a3e95c9c811521ebad8637e90f43ab8fb053b310875acce741cc4c17d6f59"
+  license "BSL-1.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "2310327bcf2f8e1cc4937da5a7cd7ba526fb8e73435febcb7b5c3e6d879b8ef4" => :high_sierra
-    sha256 "e63f94d42eaf9143c6a8641e365a0fd0ca99281995e647c4964660ef40fb72eb" => :sierra
-    sha256 "e63f94d42eaf9143c6a8641e365a0fd0ca99281995e647c4964660ef40fb72eb" => :el_capitan
-    sha256 "e63f94d42eaf9143c6a8641e365a0fd0ca99281995e647c4964660ef40fb72eb" => :yosemite
+    sha256 cellar: :any_skip_relocation, all: "629bd00d6aa05b58f2b937560b5edff6dbc1b47e53714ab7d005d9d54eb952fe"
   end
 
-  depends_on "cmake" => :build
   depends_on "boost" => :build
-  depends_on "google-sparsehash" => :optional
-  depends_on "expat" => :optional
-  depends_on "gdal" => :optional
-  depends_on "proj" => :optional
-  depends_on "doxygen" => :optional
+  depends_on "cmake" => :build
+  depends_on "lz4"
+
+  uses_from_macos "bzip2"
+  uses_from_macos "expat"
+  uses_from_macos "zlib"
+
+  resource "protozero" do
+    url "https://github.com/mapbox/protozero/archive/v1.7.1.tar.gz"
+    sha256 "27e0017d5b3ba06d646a3ec6391d5ccc8500db821be480aefd2e4ddc3de5ff99"
+  end
 
   def install
-    mkdir "build" do
-      system "cmake", *std_cmake_args, "-DINSTALL_GDALCPP=ON", "-DINSTALL_PROTOZERO=ON", "-DINSTALL_UTFCPP=ON", ".."
-      system "make", "install"
-    end
+    resource("protozero").stage { libexec.install "include" }
+    system "cmake", ".", "-DINSTALL_GDALCPP=ON",
+                         "-DINSTALL_UTFCPP=ON",
+                         "-DPROTOZERO_INCLUDE_DIR=#{libexec}/include",
+                         *std_cmake_args
+    system "make", "install"
   end
 
   test do
@@ -58,7 +62,7 @@ class Libosmium < Formula
       }
     EOS
 
-    system ENV.cxx, "-std=c++11", "-stdlib=libc++", "-lexpat", "-o", "libosmium_read", "test.cpp"
+    system ENV.cxx, "test.cpp", "-std=c++11", "-lexpat", "-o", "libosmium_read", "-pthread"
     system "./libosmium_read", "test.osm"
   end
 end

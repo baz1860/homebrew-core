@@ -1,40 +1,36 @@
 class Gom < Formula
   desc "GObject wrapper around SQLite"
   homepage "https://wiki.gnome.org/Projects/Gom"
-  url "https://download.gnome.org/sources/gom/0.3/gom-0.3.3.tar.xz"
-  sha256 "ac57e34b5fe273ed306efaeabb346712c264e341502913044a782cdf8c1036d8"
-  revision 1
+  url "https://download.gnome.org/sources/gom/0.4/gom-0.4.tar.xz"
+  sha256 "68d08006aaa3b58169ce7cf1839498f45686fba8115f09acecb89d77e1018a9d"
+  revision 3
 
   bottle do
-    cellar :any
-    sha256 "6f7a96ec76e481f0e6af7954ee498d011f4cadb8e476be85f551104d9d8df0ca" => :high_sierra
-    sha256 "882d4995285571d08bc7a1579edc1d4b5407c6b14b3e7bd7066f6a9fc16f2f82" => :sierra
-    sha256 "fcc8ee964d6e9ba4df256f6375c0ff868cf6c67171cc5dfc2080662bc77cbbb0" => :el_capitan
+    sha256 cellar: :any, arm64_monterey: "e73d7d2ba1908611f61a85f17abe510321743ca824007765d0cb4c6ec9a6bf30"
+    sha256 cellar: :any, arm64_big_sur:  "ac5b11b07edb669242f21ccb6101e2799221d1b27835b162332669ee0a2e485e"
+    sha256 cellar: :any, monterey:       "87d77af0920b14f4e1d0971559eb317237b2d09b3d2fc35819bbc0bcb474f3f7"
+    sha256 cellar: :any, big_sur:        "59e6101c892e9c91e17867e3f8d638be067b4b19e0160acc16126cc2a6dd32cc"
+    sha256 cellar: :any, catalina:       "fcdaca6fc63c78e7cef569c0ea13f72df16c31cfc8f04f3e3a04e8f64e578fe5"
+    sha256               x86_64_linux:   "4294c303be4c1644f12200a4760e57585a0d6186d4e42031b9d7e6e376f771e4"
   end
 
+  depends_on "gobject-introspection" => :build
   depends_on "meson" => :build
   depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
+  depends_on "python@3.9" => :build
   depends_on "gdk-pixbuf"
   depends_on "gettext"
   depends_on "glib"
-  depends_on "gobject-introspection"
-  depends_on "py3cairo"
-  depends_on "pygobject3" => "with-python3"
-  depends_on "python3"
-  depends_on "sqlite"
+
+  uses_from_macos "sqlite"
 
   def install
-    ENV.refurbish_args
-
-    pyver = Language::Python.major_minor_version "python3"
-
-    # prevent sandbox violation
-    inreplace "bindings/python/meson.build",
-              "install_dir: pygobject_override_dir",
-              "install_dir: '#{lib}/python#{pyver}/site-packages'"
+    pyver = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
 
     mkdir "build" do
-      system "meson", "--prefix=#{prefix}", ".."
+      system "meson", *std_meson_args, "-Dpygobject-override-dir=#{lib}/python#{pyver}/site-packages", ".."
+      system "ninja"
       system "ninja", "install"
     end
   end
@@ -61,8 +57,8 @@ class Gom < Formula
       -lglib-2.0
       -lgobject-2.0
       -lgom-1.0
-      -lintl
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

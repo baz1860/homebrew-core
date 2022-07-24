@@ -1,23 +1,25 @@
 class Abcmidi < Formula
   desc "Converts abc music notation files to MIDI files"
-  homepage "https://www.ifdo.ca/~seymour/runabc/top.html"
-  url "https://www.ifdo.ca/~seymour/runabc/abcMIDI-2018.02.22.zip"
-  version "2018-02-22"
-  sha256 "aba5bc82a80f8947a810dcfe88fa0457fc94b8377c266baf4987ebe33bfaef41"
+  homepage "https://ifdo.ca/~seymour/runabc/top.html"
+  url "https://ifdo.ca/~seymour/runabc/abcMIDI-2022.06.14.zip"
+  sha256 "844e6d64956c15297115b95b90d2a3588f7272ce7a333ad28a164eb5561478ba"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?abcMIDI[._-]v?(\d{4}(?:\.\d+)+)\.zip/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "3fc55c91a5b50bf5c37426076c3459cf552da05a0ce77315cdc37caf58e3be8f" => :high_sierra
-    sha256 "7a753955772635ccecef0cc48b3a3e8633c951700516ef4df8c5c38ffed24892" => :sierra
-    sha256 "4b2ccf407b498e3f8dc66eb8be1c4210634685ced9f4cecd7264219210270de1" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "51212712afe576fabc8a73030b3cd44c0b4600726416ef4bd6a7f82abcbdd467"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "4aa1b1b394297f5e302d4c6920cbd28bdfffe4449517ac348d5d505b25984961"
+    sha256 cellar: :any_skip_relocation, monterey:       "916c20d77d2426b1d7e596b2f63e8ac07ec00ec5c18539ce8a22d6f260599f6e"
+    sha256 cellar: :any_skip_relocation, big_sur:        "9bb4bd08715090183d80acff85831333bf8a44ec42dfe7ca233468ec59bb0f16"
+    sha256 cellar: :any_skip_relocation, catalina:       "55d5bbf9d9764f2a6741b8be69baa6d6f50c58f2726ddb5a9d3fedcc6f0620d1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "56da92aebeda24d056a5311b4e2b40c4f3873bb59666cb9399e643da811ac83e"
   end
 
   def install
-    # configure creates a "Makefile" file. A "makefile" file already exist in
-    # the tarball. On case-sensitive file-systems, the "makefile" file won't
-    # be overridden and will be chosen over the "Makefile" file.
-    rm "makefile"
-
     system "./configure", "--disable-debug",
                           "--prefix=#{prefix}",
                           "--mandir=#{man}"

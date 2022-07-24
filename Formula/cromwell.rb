@@ -1,37 +1,40 @@
 class Cromwell < Formula
   desc "Workflow Execution Engine using Workflow Description Language"
   homepage "https://github.com/broadinstitute/cromwell"
-  url "https://github.com/broadinstitute/cromwell/releases/download/30.2/cromwell-30.2.jar"
-  sha256 "dfdc60966807899f6a1d82c6929e26f66aecfdce0f556b8f1918a58f8e523299"
+  url "https://github.com/broadinstitute/cromwell/releases/download/82/cromwell-82.jar"
+  sha256 "9127b49e50770184d517aa9bdbb109f16b9dd545e91a2aa194be31bb093d6876"
+  license "BSD-3-Clause"
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "c9e5a2c482b5a68e206e4dc6e187d0c60a0ee1e47308615ba30542cfdff11935"
+  end
 
   head do
-    url "https://github.com/broadinstitute/cromwell.git"
+    url "https://github.com/broadinstitute/cromwell.git", branch: "develop"
     depends_on "sbt" => :build
   end
 
-  bottle :unneeded
-
-  depends_on :java => "1.8+"
-  depends_on "akka"
+  depends_on "openjdk"
 
   resource "womtool" do
-    url "https://github.com/broadinstitute/cromwell/releases/download/30.2/womtool-30.2.jar"
-    sha256 "c2dc455a50585a17318ca5b818015f7b2cf9ef99961555650dd7844a928dffc2"
+    url "https://github.com/broadinstitute/cromwell/releases/download/82/womtool-82.jar"
+    sha256 "a87adc2eb2c907093eebb8313051ec07164ed14dfd5d39c02ce4e84ee26e2643"
   end
 
   def install
     if build.head?
       system "sbt", "assembly"
-      libexec.install Dir["target/scala-*/cromwell-*.jar"][0]
-      libexec.install Dir["womtool/target/scala-2.12/womtool-*.jar"][0]
+      libexec.install Dir["server/target/scala-*/cromwell-*.jar"][0] => "cromwell.jar"
+      libexec.install Dir["womtool/target/scala-*/womtool-*.jar"][0] => "womtool.jar"
     else
-      libexec.install Dir["cromwell-*.jar"][0]
+      libexec.install "cromwell-#{version}.jar" => "cromwell.jar"
       resource("womtool").stage do
-        libexec.install Dir["womtool-*.jar"][0]
+        libexec.install "womtool-#{version}.jar" => "womtool.jar"
       end
     end
-    bin.write_jar_script Dir[libexec/"cromwell-*.jar"][0], "cromwell", "$JAVA_OPTS"
-    bin.write_jar_script Dir[libexec/"womtool-*.jar"][0], "womtool"
+
+    bin.write_jar_script libexec/"cromwell.jar", "cromwell", "$JAVA_OPTS"
+    bin.write_jar_script libexec/"womtool.jar", "womtool"
   end
 
   test do

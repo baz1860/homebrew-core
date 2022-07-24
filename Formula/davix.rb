@@ -1,32 +1,44 @@
 class Davix < Formula
   desc "Library and tools for advanced file I/O with HTTP-based protocols"
-  homepage "https://dmc.web.cern.ch/projects/davix/home"
-  url "https://github.com/cern-it-sdc-id/davix.git",
-      :tag => "R_0_6_7",
-      :revision => "4425c4498655f11401c7909dfe241b406487f043"
-  version "0.6.7"
-  head "https://github.com/cern-it-sdc-id/davix.git"
+  homepage "https://github.com/cern-fts/davix"
+  url "https://github.com/cern-fts/davix/releases/download/R_0_8_2/davix-0.8.2.tar.gz"
+  sha256 "8817a24c23f1309b9de233b9a882455f457c42edc2a649dc70fe2524cf76d94c"
+  license "LGPL-2.1-or-later"
+  head "https://github.com/cern-fts/davix.git", branch: "devel"
 
   bottle do
-    cellar :any
-    sha256 "3fa224f7f2099030860ea04b5a06ef0cab8eb1e1e3ad53f765274c31eec8626c" => :high_sierra
-    sha256 "8ed83d7e8367d1156fff19940f2ce360b9d069cf99f4b367f979b5f756d60963" => :sierra
-    sha256 "66bbeb6fa8cd77823581a15337da9e9446d5cd1126e8d6986d77735c112f1185" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b3fd12cecd1b960af4fe7c80b9e0156ed3a4dd5108bac3dcc1ed9dab36ba86b3"
+    sha256 cellar: :any,                 arm64_big_sur:  "52c5577ca06e32e59d20bb237fff2e79c908114e7742126ba3f7e471b395c288"
+    sha256 cellar: :any,                 monterey:       "1ce55fe29cb8731fb72628d8814f4ddca26020b7e28e97839ff7b9d27a73dd8d"
+    sha256 cellar: :any,                 big_sur:        "85241ccaba4ad6a5e118dc385444a93e86b48410f1fe1522003e133d15c01af6"
+    sha256 cellar: :any,                 catalina:       "b50ca24dc6bf232d18a0f32463064107005f462bb5242555158ac5c385fa7a24"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "63f6b0cb5a38765039975cc57a1726fa7561cc1c2f937ac58f095de781e08bcb"
   end
 
   depends_on "cmake" => :build
   depends_on "doxygen" => :build
-  depends_on "openssl"
-  depends_on "ossp-uuid"
+  depends_on "openssl@1.1"
+
+  uses_from_macos "python" => :build
+  uses_from_macos "curl", since: :monterey # needs CURLE_AUTH_ERROR, available since curl 7.66.0
+  uses_from_macos "libxml2"
+
+  on_linux do
+    depends_on "util-linux"
+  end
 
   def install
-    ENV.libcxx
+    args = std_cmake_args + %W[
+      -DEMBEDDED_LIBCURL=FALSE
+      -DCMAKE_INSTALL_RPATH=#{rpath}
+    ]
 
-    system "cmake", ".", *std_cmake_args
-    system "make", "install"
+    system "cmake", "-S", ".", "-B", "build", *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
-    system "#{bin}/davix-get", "https://www.google.com"
+    system "#{bin}/davix-get", "https://brew.sh"
   end
 end

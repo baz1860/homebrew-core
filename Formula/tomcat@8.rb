@@ -1,23 +1,22 @@
 class TomcatAT8 < Formula
   desc "Implementation of Java Servlet and JavaServer Pages"
   homepage "https://tomcat.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-8/v8.5.28/bin/apache-tomcat-8.5.28.tar.gz"
-  mirror "https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.28/bin/apache-tomcat-8.5.28.tar.gz"
-  sha256 "f2da60969b942ef60d12bda2fab6580be18895e34e3dce0ddd70f0fdaaed1a07"
+  url "https://www.apache.org/dyn/closer.lua?path=tomcat/tomcat-8/v8.5.81/bin/apache-tomcat-8.5.81.tar.gz"
+  mirror "https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.81/bin/apache-tomcat-8.5.81.tar.gz"
+  sha256 "b91d6f6e5febde99cfe0e71aa0dc069940c64e944409d7aa4e39eb2887f36618"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  livecheck do
+    url :stable
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "1056ec5b1f13427c3cdbbbd679a350d26c46ff86b4d73e33c31547f6fad4d7eb"
+  end
 
   keg_only :versioned_formula
 
-  option "with-fulldocs", "Install full documentation locally"
-
-  depends_on :java => "1.7+"
-
-  resource "fulldocs" do
-    url "https://www.apache.org/dyn/closer.cgi?path=/tomcat/tomcat-8/v8.5.28/bin/apache-tomcat-8.5.28-fulldocs.tar.gz"
-    mirror "https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.28/bin/apache-tomcat-8.5.28-fulldocs.tar.gz"
-    sha256 "4ca9a62864a1d423b349947c2403dc3951aefb5404010484a0af6345bcdaf100"
-  end
+  depends_on "openjdk"
 
   def install
     # Remove Windows scripts
@@ -25,33 +24,24 @@ class TomcatAT8 < Formula
 
     # Install files
     prefix.install %w[NOTICE LICENSE RELEASE-NOTES RUNNING.txt]
-    libexec.install Dir["*"]
-    bin.install_symlink "#{libexec}/bin/catalina.sh" => "catalina"
 
-    (pkgshare/"fulldocs").install resource("fulldocs") if build.with? "fulldocs"
+    pkgetc.install Dir["conf/*"]
+    (buildpath/"conf").rmdir
+    libexec.install_symlink pkgetc => "conf"
+
+    libexec.install Dir["*"]
+    (bin/"catalina").write_env_script "#{libexec}/bin/catalina.sh", JAVA_HOME: Formula["openjdk"].opt_prefix
   end
 
-  plist_options :manual => "catalina run"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Disabled</key>
-        <false/>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/catalina</string>
-          <string>run</string>
-        </array>
-        <key>KeepAlive</key>
-        <true/>
-      </dict>
-    </plist>
+  def caveats
+    <<~EOS
+      Configuration files: #{pkgetc}
     EOS
+  end
+
+  service do
+    run [opt_bin/"catalina", "run"]
+    keep_alive true
   end
 
   test do

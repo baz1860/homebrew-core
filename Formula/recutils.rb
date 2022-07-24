@@ -1,23 +1,28 @@
 class Recutils < Formula
   desc "Tools to work with human-editable, plain text data files"
   homepage "https://www.gnu.org/software/recutils/"
-  url "https://ftp.gnu.org/gnu/recutils/recutils-1.7.tar.gz"
-  mirror "https://ftpmirror.gnu.org/recutils/recutils-1.7.tar.gz"
-  sha256 "233dc6dedb1916b887de293454da7e36a74bed9ebea364f7e97e74920051bc31"
-  revision 1
+  url "https://ftp.gnu.org/gnu/recutils/recutils-1.9.tar.gz"
+  mirror "https://ftpmirror.gnu.org/gnu/recutils/recutils-1.9.tar.gz"
+  sha256 "6301592b0020c14b456757ef5d434d49f6027b8e5f3a499d13362f205c486e0e"
+  license "GPL-3.0-or-later"
 
   bottle do
-    cellar :any
-    sha256 "577f81582b338d44b2b231ab7a353ceaa0b01cf899b9a5042924568d95b20ec5" => :high_sierra
-    sha256 "13ded271da7be4d07cce7f454d5c6ad871151c08b319f5a1670bdefd882a62da" => :sierra
-    sha256 "e11f1ef2e988f963ddf52088c8d50626c4179b4065b19e254315ae75486439c1" => :el_capitan
+    sha256 cellar: :any, arm64_monterey: "09a875626acf4c73036fc8048bf3e0e5bb7beff7fd60e1e96faa1b1d92888638"
+    sha256 cellar: :any, arm64_big_sur:  "c2da94eb14db7fdd4f6376cd3d6546ff8cebddd64f4290fe265161f21d3fdff8"
+    sha256 cellar: :any, monterey:       "feac0920394addceefb8a23fc38a7406fed04b71bde433d14dfa703b852c5089"
+    sha256 cellar: :any, big_sur:        "8bd10813a8870b76fdac43c99062d3449bd4275ae54af0410c85c69ba3f9ab08"
+    sha256 cellar: :any, catalina:       "d92195d721c086a0f14fa0dcdd8014869af600d43e31749a8b8af580f49fafba"
+    sha256               x86_64_linux:   "09224d89dd80efca59a618cb2b966ad1a2a1847d992bc27c014fe997db0148af"
   end
 
-  if MacOS.version >= :high_sierra
-    patch :p0 do
-      url "https://raw.githubusercontent.com/macports/macports-ports/b76d1e48dac/editors/nano/files/secure_snprintf.patch"
-      sha256 "57f972940a10d448efbd3d5ba46e65979ae4eea93681a85e1d998060b356e0d2"
-    end
+  on_linux do
+    depends_on "libgcrypt"
+  end
+
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
   end
 
   def install

@@ -1,13 +1,23 @@
 class Mpg123 < Formula
   desc "MP3 player for Linux and UNIX"
   homepage "https://www.mpg123.de/"
-  url "https://downloads.sourceforge.net/project/mpg123/mpg123/1.25.8/mpg123-1.25.8.tar.bz2"
-  sha256 "79da51efae011814491f07c95cb5e46de0476aca7a0bf240ba61cfc27af8499b"
+  url "https://www.mpg123.de/download/mpg123-1.30.1.tar.bz2"
+  mirror "https://downloads.sourceforge.net/project/mpg123/mpg123/1.30.1/mpg123-1.30.1.tar.bz2"
+  sha256 "1b20c9c751bea9be556749bd7f97cf580f52ed11f2540756e9af26ae036e4c59"
+  license "LGPL-2.1-only"
+
+  livecheck do
+    url "https://www.mpg123.de/download/"
+    regex(/href=.*?mpg123[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "504fd8cf5e425bdc7844e3bb6b2422ca92cf8cda6de499950e98ab4efd83a38a" => :high_sierra
-    sha256 "f7cef09669aebedec24cdd11bc9462b43a9375b4bfdbf94e4cdaf3bb096b756f" => :sierra
-    sha256 "35a5a21e1e77e166a8bbdda086d42655412f6bb94bb25c365ff4f519780bb187" => :el_capitan
+    sha256 arm64_monterey: "4b591ea40988ad60cec49f545d8d16ca5d293bde798eaeeda05293c7538a9a2f"
+    sha256 arm64_big_sur:  "807d6194b9a03cf521a000e934d4ad7755b1ff0762a441761c01714d38aeb70d"
+    sha256 monterey:       "359d0ef12c2877f61dca8be72cb8abe681fcd0c03ba45091ae065ddef48dc9c7"
+    sha256 big_sur:        "cde0f7e476f0b96b343e929ea62c4b45b4290990ad3bae4b25006b67edbd9e07"
+    sha256 catalina:       "19bd71f268ede8d39635f9fe7f0a1636965a214c509370b4034a52210aa86f71"
+    sha256 x86_64_linux:   "c94544bc4a74b0feac3dc8e087cb43cfaf6573b32581972ecc7877e39694a5aa"
   end
 
   def install
@@ -15,14 +25,16 @@ class Mpg123 < Formula
       --disable-debug
       --disable-dependency-tracking
       --prefix=#{prefix}
-      --with-default-audio=coreaudio
       --with-module-suffix=.so
+      --enable-static
     ]
 
-    if MacOS.prefer_64_bit?
-      args << "--with-cpu=x86-64"
+    args << "--with-default-audio=coreaudio" if OS.mac?
+
+    args << if Hardware::CPU.arm?
+      "--with-cpu=aarch64"
     else
-      args << "--with-cpu=sse_alone"
+      "--with-cpu=x86-64"
     end
 
     system "./configure", *args

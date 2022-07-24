@@ -1,20 +1,41 @@
 class Libscrypt < Formula
   desc "Library for scrypt"
-  homepage "https://lolware.net/libscrypt.html"
-  url "https://github.com/technion/libscrypt/archive/v1.21.tar.gz"
-  sha256 "68e377e79745c10d489b759b970e52d819dbb80dd8ca61f8c975185df3f457d3"
+  homepage "https://github.com/technion/libscrypt"
+  url "https://github.com/technion/libscrypt/archive/v1.22.tar.gz"
+  sha256 "a2d30ea16e6d288772791de68be56153965fe4fd4bcd787777618b8048708936"
+  license "BSD-2-Clause"
 
   bottle do
-    cellar :any
-    sha256 "46cf17f2a05e5e418822a306899de14be3fbdfe71fc017f6eb1169fc3ad1de3a" => :high_sierra
-    sha256 "3adc43863f9b966dcecd89f507a4706891f94129dd88ba810ed0269278e931cf" => :sierra
-    sha256 "bc2c8318384a72f82802937f7e6dd8017ec44fb6fc94583e5f0c38056e1a660c" => :el_capitan
-    sha256 "0e870b01dbbfc49432cc8ea81c90ee6d8732b6d8adc4665368844536d5c6e092" => :yosemite
-    sha256 "fe3bc1ca8b19e7c86e103f1345cb9294da01cc15b950302ad5486ef49b2b212d" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "df9e62c90fb8530ad765f2128a892ba91904901167bb5dcb7f0e1a199b43f59f"
+    sha256 cellar: :any,                 arm64_big_sur:  "6b39d428937056b1a25080c87d9af446ae1397f824d362ca6a791e683a997ed2"
+    sha256 cellar: :any,                 monterey:       "d8e0b6fe9b5e2f14fc281fa859fb3339eb98610863cb0b39652f5cb6522205ad"
+    sha256 cellar: :any,                 big_sur:        "836c0ae075b9e3b580eea4d3c1b554f861166f74657303103bb0415c34650fb8"
+    sha256 cellar: :any,                 catalina:       "d53d94bee86fdb65f96abdb62f07f5f2867773fd0719562a21ad320465ebd686"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "62ae9fdeea1cbe282839585250e2adacea715d313975bf6eb863a579aa669a21"
   end
 
   def install
-    system "make", "install-osx", "PREFIX=#{prefix}", "LDFLAGS=", "CFLAGS_EXTRA="
-    system "make", "check", "LDFLAGS=", "CFLAGS_EXTRA="
+    if OS.mac?
+      system "make", "install-osx", "PREFIX=#{prefix}", "LDFLAGS=", "LDFLAGS_EXTRA=", "CFLAGS_EXTRA="
+      system "make", "check", "LDFLAGS=", "LDFLAGS_EXTRA=", "CFLAGS_EXTRA="
+    else
+      system "make"
+      system "make", "check"
+      lib.install "libscrypt.a", "libscrypt.so", "libscrypt.so.0"
+      include.install "libscrypt.h"
+      prefix.install "libscrypt.version"
+    end
+  end
+
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <libscrypt.h>
+      int main(void) {
+        char buf[SCRYPT_MCF_LEN];
+        libscrypt_hash(buf, "Hello, Homebrew!", SCRYPT_N, SCRYPT_r, SCRYPT_p);
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-lscrypt", "-o", "test"
+    system "./test"
   end
 end

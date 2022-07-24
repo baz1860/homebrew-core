@@ -1,39 +1,31 @@
 class RabbitmqC < Formula
-  desc "RabbitMQ C client"
+  desc "C AMQP client library for RabbitMQ"
   homepage "https://github.com/alanxz/rabbitmq-c"
-  url "https://github.com/alanxz/rabbitmq-c/archive/v0.8.0.tar.gz"
-  sha256 "d8ed9dcb49903d83d79d7b227da35ef68c60e5e0b08d0fc1fb4e4dc577b8802b"
-  head "https://github.com/alanxz/rabbitmq-c.git"
+  url "https://github.com/alanxz/rabbitmq-c/archive/v0.11.0.tar.gz"
+  sha256 "437d45e0e35c18cf3e59bcfe5dfe37566547eb121e69fca64b98f5d2c1c2d424"
+  license "MIT"
+  head "https://github.com/alanxz/rabbitmq-c.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "fe5c4ef74c41a2361ad4d3496fbc33a1deb84048ce0bc9ba552a3dc533d59638" => :high_sierra
-    sha256 "12a6f5822603bec5de04cbc2dae324bbd1cc48f81d641d3403143bcfad680915" => :sierra
-    sha256 "eb9a25f5371072c0f4833c7f4554f2b5e53b7e2b5ea10e33230cad8b6c9affe4" => :el_capitan
-    sha256 "c0775f463db385d302b4d73d6403842ce16654c2f7a2618e6c0d1aa7c0590a14" => :yosemite
-    sha256 "f4e4d641af6559ee49beec28a7620af68e643ac26429c5f031953e8d79c8b0b6" => :mavericks
+    rebuild 1
+    sha256 cellar: :any,                 arm64_monterey: "5ef6efee964e2f6006a1cd1606cfc8ea9611b74d94bc3649cf701cc0cb545a18"
+    sha256 cellar: :any,                 arm64_big_sur:  "d060c016414d8d55afa295308d1582fee4db9f36cc43770600fa8bc480e42511"
+    sha256 cellar: :any,                 monterey:       "d6171b1b0042e0d02f941da67cb6c57ae56ea50e76b8798e5073880af7da13b6"
+    sha256 cellar: :any,                 big_sur:        "efe8285e7bdfc661fa5cfede54785b44e817b38fa800e64f75dec2755ae69a7a"
+    sha256 cellar: :any,                 catalina:       "1ae238a471c056d01372fed68b25dbcfe5a29a88f144b9cf09b859a4f287af98"
+    sha256 cellar: :any,                 mojave:         "80ecbc2444e12039a77f178dbd7557bcda2795ea182bc7fd788f16e7f5e48e4c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a34fc2c4bd5afb8f42933b4533892385aa479637101a6e48b01312830ed850ad"
   end
 
-  option "without-tools", "Build without command-line tools"
-
-  depends_on "pkg-config" => :build
   depends_on "cmake" => :build
-  depends_on "popt" if build.with? "tools"
-  depends_on "openssl"
+  depends_on "pkg-config" => :build
+  depends_on "openssl@1.1"
+  depends_on "popt"
 
   def install
-    args = std_cmake_args
-    args << "-DBUILD_EXAMPLES=OFF"
-    args << "-DBUILD_TESTS=OFF"
-    args << "-DBUILD_API_DOCS=OFF"
-
-    if build.with? "tools"
-      args << "-DBUILD_TOOLS=ON"
-    else
-      args << "-DBUILD_TOOLS=OFF"
-    end
-
-    system "cmake", ".", *args
+    system "cmake", ".", *std_cmake_args, "-DBUILD_EXAMPLES=OFF",
+                         "-DBUILD_TESTS=OFF", "-DBUILD_API_DOCS=OFF",
+                         "-DBUILD_TOOLS=ON", "-DCMAKE_INSTALL_RPATH=#{rpath}"
     system "make", "install"
   end
 

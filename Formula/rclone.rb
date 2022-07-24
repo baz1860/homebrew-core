@@ -1,34 +1,44 @@
 class Rclone < Formula
   desc "Rsync for cloud storage"
   homepage "https://rclone.org/"
-  url "https://github.com/ncw/rclone/archive/v1.39.tar.gz"
-  sha256 "1b87291aef395209dec01084f44790d216fcd0440c5d8a9ac19668704f05ece9"
-  head "https://github.com/ncw/rclone.git"
+  url "https://github.com/rclone/rclone/archive/v1.59.0.tar.gz"
+  sha256 "01b2aa4f6dfafcda11026a5aa024dd86ae6bd337fa54269dfac97c80fe280d7a"
+  license "MIT"
+  head "https://github.com/rclone/rclone.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "00ce6a86c1735b9cdc22934cd8a06c24ccd1f07a979dfc0287962eb7acba84d3" => :high_sierra
-    sha256 "f65be58ac9e4434eff6d3f9dc4d5f3d0332168e9228207ce973837b650daeb62" => :sierra
-    sha256 "849f2a9a623e1ada277e448975cdac3d988dd077c0d5636f3eda999b875e3762" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "0a51b5633a609e4a679bef1180c896f5d25a65232fc0a4eba49e02e07e6de15b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "b0725e1a3a7408045af86aea6962f04cec1777cf650d5cf0537635a3d813d164"
+    sha256 cellar: :any_skip_relocation, monterey:       "c599947795261d542244fa45a9783bfac5d3544b8325a26eeb81a5f5629eb461"
+    sha256 cellar: :any_skip_relocation, big_sur:        "bf34f1f0dd6d24f2acb4bcfbf4e8bd16febc0e2eaf2640fa2475059f886c9896"
+    sha256 cellar: :any_skip_relocation, catalina:       "29c69345db1a8ee0b1baf8e5fa82e8ab7f6af6839a0e7058012fbf3f80d231cb"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "161212a74e1dadf859584797f739ef3af838c48ec3a07e1e6cebe1d9befbb4ff"
   end
 
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    mkdir_p buildpath/"src/github.com/ncw/"
-    ln_s buildpath, buildpath/"src/github.com/ncw/rclone"
-    system "go", "build", "-o", bin/"rclone"
+    args = *std_go_args(ldflags: "-s -w -X github.com/rclone/rclone/fs.Version=v#{version}")
+    args += ["-tags", "brew"] if OS.mac?
+    system "go", "build", *args
     man1.install "rclone.1"
     system bin/"rclone", "genautocomplete", "bash", "rclone.bash"
     system bin/"rclone", "genautocomplete", "zsh", "_rclone"
+    system bin/"rclone", "genautocomplete", "fish", "rclone.fish"
     bash_completion.install "rclone.bash" => "rclone"
     zsh_completion.install "_rclone"
+    fish_completion.install "rclone.fish"
+  end
+
+  def caveats
+    <<~EOS
+      Homebrew's installation does not include the `mount` subcommand on MacOS.
+    EOS
   end
 
   test do
     (testpath/"file1.txt").write "Test!"
-    system "#{bin}/rclone", "copy", testpath/"file1.txt", testpath/"dist"
+    system bin/"rclone", "copy", testpath/"file1.txt", testpath/"dist"
     assert_match File.read(testpath/"file1.txt"), File.read(testpath/"dist/file1.txt")
   end
 end

@@ -1,19 +1,29 @@
 class Minizinc < Formula
   desc "Medium-level constraint modeling language"
-  homepage "http://www.minizinc.org"
-  url "https://github.com/MiniZinc/libminizinc/archive/2.1.7.tar.gz"
-  sha256 "e59075bbdcc36821d757b3b3fff288f341a0d30ce63dc253cc26ade55292657d"
-  head "https://github.com/MiniZinc/libminizinc.git", :branch => "develop"
+  homepage "https://www.minizinc.org/"
+  url "https://github.com/MiniZinc/libminizinc/archive/2.6.4.tar.gz"
+  sha256 "f1f5adba23c749ddfdb2420e797d7ff46e72b843850529978f867583dbc599ca"
+  license "MPL-2.0"
+  head "https://github.com/MiniZinc/libminizinc.git", branch: "develop"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "970176e584ec4e246b2e2435e14f95037a2a3d9f607c6ff29d6e024ba5371e8a" => :high_sierra
-    sha256 "d4d6ce59e834a8c3429ae4d1ce46063148d7c07b9fc02aa30d4cb8b27d2cf469" => :sierra
-    sha256 "d76a0ec9eac191b1aee519540dcff60a40400099f5c1a3b0fbf5880340c5bc5e" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b0a513043c90cdaf37886e77e7e8fd5d26b669ae17a97285709ac2354a0f2412"
+    sha256 cellar: :any,                 arm64_big_sur:  "d4848cac56d6ed4199cc562e8cb7d9f03b592481c49ebd7800d865a0c552db39"
+    sha256 cellar: :any,                 monterey:       "aa9431c2cecc4b689aa2340fc55049ab389fbd3c3addc37f926c1a928e6068f6"
+    sha256 cellar: :any,                 big_sur:        "040a9ba684acb1661952ec2742146d67c92d423a2628e9d19256c57353a62ab9"
+    sha256 cellar: :any,                 catalina:       "e1330a26f4fe8c2b8615c7358d99a7f9a7b61abd86575012e51007c7b2a6569a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f01136a668aae3151fc5f25bab6f8d3e64c974abf59b57d4628c75834d3f49b0"
   end
 
-  depends_on :arch => :x86_64
   depends_on "cmake" => :build
+  depends_on "cbc"
+  depends_on "gecode"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     mkdir "build" do
@@ -23,6 +33,18 @@ class Minizinc < Formula
   end
 
   test do
-    system bin/"mzn2doc", share/"examples/functions/warehouses.mzn"
+    (testpath/"satisfy.mzn").write <<~EOS
+      array[1..2] of var bool: x;
+      constraint x[1] xor x[2];
+      solve satisfy;
+    EOS
+    assert_match "----------", shell_output("#{bin}/minizinc --solver gecode_presolver satisfy.mzn").strip
+
+    (testpath/"optimise.mzn").write <<~EOS
+      array[1..2] of var 1..3: x;
+      constraint x[1] < x[2];
+      solve maximize sum(x);
+    EOS
+    assert_match "==========", shell_output("#{bin}/minizinc --solver cbc optimise.mzn").strip
   end
 end

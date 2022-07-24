@@ -1,62 +1,30 @@
 class BashSnippets < Formula
   desc "Collection of small bash scripts for heavy terminal users"
   homepage "https://github.com/alexanderepstein/Bash-Snippets"
-  url "https://github.com/alexanderepstein/Bash-Snippets/archive/v1.22.0.tar.gz"
-  sha256 "4e08e9a884db6794967518b70cd0b052ea4098c84d4e6bfa1d7d6d8dcda40f62"
+  url "https://github.com/alexanderepstein/Bash-Snippets/archive/v1.23.0.tar.gz"
+  sha256 "59b784e714ba34a847b6a6844ae1703f46db6f0a804c3e5f2de994bbe8ebe146"
+  license "MIT"
 
-  bottle :unneeded
-
-  option "with-bash-snippets", "Install bash-snippets gui"
-  option "with-cheat", "Install cheat"
-  option "with-cloudup", "Install cloudup"
-  option "with-crypt", "Install crypt"
-  option "with-cryptocurrency", "Install cryptocurrency"
-  option "with-currency", "Install currency"
-  option "with-geo", "Install geo"
-  option "with-lyrics", "Install lyrics"
-  option "with-meme", "Install meme"
-  option "with-movies", "Install movies"
-  option "with-newton", "Install newton"
-  option "with-pwned", "Install pwned"
-  option "with-qrify", "Install qrify"
-  option "with-short", "Install short"
-  option "with-siteciphers", "Install siteciphers"
-  option "with-stocks", "Install stocks"
-  option "with-taste", "Install taste"
-  option "with-todo", "Install todo"
-  option "with-transfer", "Install transfer"
-  option "with-weather", "Install weather"
-  option "with-ytview", "Install ytview"
-  option "without-all-tools", "Do not install all available snippets"
-
-  if build.with?("all-tools") || build.with?("cheat")
-    conflicts_with "cheat", :because => "Both install a `cheat` executable"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "8e38f6d39c157dcf604f1ac774a16afe66472de96ebf612a7f409689a7074282"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "8e38f6d39c157dcf604f1ac774a16afe66472de96ebf612a7f409689a7074282"
+    sha256 cellar: :any_skip_relocation, monterey:       "c2a441dc6d5b21408f49f4869b00919354392682b3ef7eef2f908ab2f638dd8a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "c2a441dc6d5b21408f49f4869b00919354392682b3ef7eef2f908ab2f638dd8a"
+    sha256 cellar: :any_skip_relocation, catalina:       "c2a441dc6d5b21408f49f4869b00919354392682b3ef7eef2f908ab2f638dd8a"
+    sha256 cellar: :any_skip_relocation, mojave:         "c2a441dc6d5b21408f49f4869b00919354392682b3ef7eef2f908ab2f638dd8a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8e38f6d39c157dcf604f1ac774a16afe66472de96ebf612a7f409689a7074282"
   end
 
+  conflicts_with "cheat", because: "both install a `cheat` executable"
+
   def install
-    if build.with? "all-tools"
-      system "./install.sh", "--prefix=#{prefix}", "all"
-    else
-      args = []
-      %w[bash-snippets cheat cloudup crypt cryptocurrency currency geo lyrics movies newton qrify
-         short siteciphers stocks taste todo transfer weather ytview].each do |tool|
-        args << tool if build.with? tool
-      end
-      system "./install.sh", "--prefix=#{prefix}", *args
-    end
+    system "./install.sh", "--prefix=#{prefix}", "all"
   end
 
   test do
-    if build.with?("all-tools") || build.with?("weather")
-      output = shell_output("#{bin}/weather Paramus").lines.first
-      assert_equal "Weather report: Paramus, United States of America", output.chomp
-    end
-    if build.with?("all-tools") || build.with?("qrify")
-      output = shell_output("#{bin}/qrify This is a test")
-      assert_match "████ ▄▄▄▄▄ █▀ █▀▄█ ▄▄▄▄▄ ████", output
-    end
-    if build.with?("all-tools") || build.with?("stocks")
-      assert_match "AAPL stock info", shell_output("#{bin}/stocks Apple")
-    end
+    output = shell_output("#{bin}/weather Paramus").lines.first.chomp
+    assert_equal "Weather report: Paramus", output
+    output = shell_output("#{bin}/qrify This is a test")
+    assert_match "████ ▄▄▄▄▄ █▀ █▀▄█ ▄▄▄▄▄ ████", output
   end
 end

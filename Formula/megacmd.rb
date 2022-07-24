@@ -1,27 +1,26 @@
 class Megacmd < Formula
   desc "Command-line client for mega.co.nz storage service"
   homepage "https://github.com/t3rm1n4l/megacmd"
-  url "https://github.com/t3rm1n4l/megacmd/archive/0.013.tar.gz"
-  sha256 "f76e14678f2da8547545c2702406e27983e0a72263ef629b3ee4db226b94f6ae"
-  head "https://github.com/t3rm1n4l/megacmd.git"
+  url "https://github.com/t3rm1n4l/megacmd/archive/0.016.tar.gz"
+  sha256 "def4cda692860c85529c8de9b0bdb8624a30f57d265f7e70994fc212e5da7e40"
+  license "MIT"
+  head "https://github.com/t3rm1n4l/megacmd.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
     rebuild 1
-    sha256 "ba3d3ef2da44dfae8f4c332873a3326b63ce4e6ea888d67603c61f3250fb5f42" => :high_sierra
-    sha256 "b0f70b42422e2afe1f29b7384f915dce7a20abc0f22954e6f51c4afd8eeac614" => :sierra
-    sha256 "28f5287ae40edf0e2694d881476abe4a7967b0a9f2e6a3299be49bec6b25f471" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "f392f9d6d1ba3acece2b86882a1ae6f5f396e37b814460764655d89704e9d5b3"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "b0cc423d7d44f74416233d1890e003d8d1a92b32c4f281885e89dbda52031218"
+    sha256 cellar: :any_skip_relocation, monterey:       "82090686813f52e06f2a9f93c79ea0fc856963575da7d912513a1679ae0b425a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "005012522f9d83387047d28fc1f4870b27090496d333a5ace382fd3b2b380850"
+    sha256 cellar: :any_skip_relocation, catalina:       "5e3e9a0dcacef7fcac245b621b8eee36cc9dc974b46ba1006769f1dbf781b01c"
+    sha256 cellar: :any_skip_relocation, mojave:         "a24988b1613d43a55748a6516f3d0ac15b13a533b92c201200d0c0998c4dbeb1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9158470703a89b5a963775d8a0470dd3a9e934e8815c1ec171f9574d77fb3c32"
   end
 
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/t3rm1n4l/megacmd").install buildpath.children
-    cd "src/github.com/t3rm1n4l/megacmd" do
-      system "go", "build", "-o", bin/"megacmd"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args(ldflags: "-s -w")
   end
 
   test do

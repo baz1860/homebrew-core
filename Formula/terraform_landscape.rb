@@ -1,18 +1,20 @@
 class TerraformLandscape < Formula
   desc "Improve Terraform's plan output"
   homepage "https://github.com/coinbase/terraform-landscape"
-  url "https://github.com/coinbase/terraform-landscape/archive/v0.1.17.tar.gz"
-  sha256 "ffc89c435d673de353db17f9e9796de95c55e1236071178dc35102a99917fd45"
-  revision 3
+  url "https://github.com/coinbase/terraform-landscape/archive/v0.3.4.tar.gz"
+  sha256 "9e9b8e00aacf821fd07c9e3194e1e9f5824032dad4b12995649bcd9c59731ee1"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "1359014f1c085eab4504073128620a0f7d15110e5bd486237102a8625795ec8d" => :high_sierra
-    sha256 "7591a60f166b102d15c8498e84215f09f3977bd4bfbd0b6142bf3f1af547fad0" => :sierra
-    sha256 "b505ec407bdca7dfd380007edc3f97216401a400ff4510cc8033e978f2aae642" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "6bddaa5d9648cc10f137bbdbf0e05d10239f49dde7c6fed01c887e52b0ba5725"
+    sha256 cellar: :any_skip_relocation, big_sur:       "1bcd487a444cb78b3afdd394442ae24c4c1fa1fad393d76451a64c33b539b10f"
+    sha256 cellar: :any_skip_relocation, catalina:      "af2918fc17765a6cbabaa0aae039afe3c5aa00821581570901a89e0edc850285"
+    sha256 cellar: :any_skip_relocation, mojave:        "5afa045cd1b2974f6247f3a31ae1e0141e5e9091b4c81a2a4660d5d06c90ca20"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "4df8fb485f198c90e494bbc1b19d5c18f48c436e505f85de202cd1cc46f0c316"
+    sha256 cellar: :any_skip_relocation, all:           "4df8fb485f198c90e494bbc1b19d5c18f48c436e505f85de202cd1cc46f0c316"
   end
 
-  depends_on "ruby" if MacOS.version <= :mountain_lion
+  depends_on "ruby"
 
   resource "colorize" do
     url "https://rubygems.org/gems/colorize-0.8.1.gem"
@@ -20,18 +22,18 @@ class TerraformLandscape < Formula
   end
 
   resource "commander" do
-    url "https://rubygems.org/gems/commander-4.4.3.gem"
-    sha256 "aedf4af6fdf8f05489001bcd70af87d83afec6896a3a2dfd9b49ec02bc391d07"
+    url "https://rubygems.org/gems/commander-4.5.2.gem"
+    sha256 "2c0746b01be9cfbbbf929d154a9bae0a224954c98b8e2b2f35b51984a6258f8c"
   end
 
   resource "diffy" do
-    url "https://rubygems.org/gems/diffy-3.2.0.gem"
-    sha256 "8124e5b1d9c0086994b6484d26f37476b79253309ccaebea201247a67eb2b604"
+    url "https://rubygems.org/gems/diffy-3.4.0.gem"
+    sha256 "340cc7e53db308b305a7c9eed37655d347a78b72422a2df60b9699ffee3c2f5b"
   end
 
   resource "highline" do
-    url "https://rubygems.org/gems/highline-1.7.8.gem"
-    sha256 "795274094fd385bfe45a2ac7b68462b6ba43e21bf311dbdca5225a63dba3c5d9"
+    url "https://rubygems.org/gems/highline-2.0.3.gem"
+    sha256 "2ddd5c127d4692721486f91737307236fe005352d12a4202e26c48614f719479"
   end
 
   resource "polyglot" do
@@ -40,21 +42,21 @@ class TerraformLandscape < Formula
   end
 
   resource "treetop" do
-    url "https://rubygems.org/gems/treetop-1.6.8.gem"
-    sha256 "385cbbf3827a0a8559e4c79db0f0f88993dca5e8ce46cf08f1baccb61ac6a3cf"
+    url "https://rubygems.org/gems/treetop-1.6.11.gem"
+    sha256 "102e13adf065fc916eae60b9539a76101902a56e4283c847468eaea9c2c72719"
   end
 
   def install
     ENV["GEM_HOME"] = libexec
     resources.each do |r|
-      r.verify_download_integrity(r.fetch)
+      r.fetch
       system "gem", "install", r.cached_download, "--no-document",
-                    "--install-dir", libexec
+                    "--ignore-dependencies", "--install-dir", libexec
     end
     system "gem", "build", "terraform_landscape.gemspec"
     system "gem", "install", "--ignore-dependencies", "terraform_landscape-#{version}.gem"
     bin.install libexec/"bin/landscape"
-    bin.env_script_all_files(libexec/"bin", :GEM_HOME => ENV["GEM_HOME"])
+    bin.env_script_all_files(libexec/"bin", GEM_HOME: ENV["GEM_HOME"])
   end
 
   test do

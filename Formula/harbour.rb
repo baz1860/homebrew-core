@@ -1,34 +1,88 @@
 class Harbour < Formula
   desc "Portable, xBase-compatible programming language and environment"
   homepage "https://harbour.github.io"
-
-  head "https://github.com/harbour/core.git"
+  license "GPL-2.0"
+  revision 1
+  head "https://github.com/harbour/core.git", branch: "master"
 
   # Missing a header that was deprecated by libcurl @ version 7.12.0 and
   # deleted sometime after Harbour 3.0.0 release.
   stable do
     patch :DATA
-    url "https://downloads.sourceforge.net/harbour-project/source/3.0.0/harbour-3.0.0.tar.bz2"
+    url "https://downloads.sourceforge.net/project/harbour-project/source/3.0.0/harbour-3.0.0.tar.bz2"
     sha256 "4e99c0c96c681b40c7e586be18523e33db24baea68eb4e394989a3b7a6b5eaad"
   end
 
-  bottle do
-    cellar :any
-    rebuild 1
-    sha256 "3b7edfe9c3878bbfe632cca9abc40a4b109b420b7ab856b90ce44fbc05624f85" => :high_sierra
-    sha256 "815dacae2d2ac3d7e9c16d158a42e3bc500758f6d30fc5d0eedec8ae88b1bf26" => :sierra
-    sha256 "21c3269b41d9b8ea334949334febed047c7ffd4fc9ca7e0686ba6a472929a2b8" => :el_capitan
-    sha256 "5677878ce808eb51cf130212724d1959def64d45c6812cb99ec0ceef100ea4f8" => :yosemite
-    sha256 "ed55f20628aa2c34adccb0530a9b8f477572bc8acc0d9ff3d5374fe68384c753" => :mavericks
-    sha256 "8b6384af586eeec66714a8c55e5e6efb26909053958897b64c7cdad2459965e0" => :mountain_lion
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/harbour[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
+  bottle do
+    sha256 cellar: :any,                 monterey:     "2c9986d437787a68730f663836f5d38ecc1003aa46db0bb8d5d4acb5348e5a20"
+    sha256 cellar: :any,                 big_sur:      "5828169bfbec03a59c9f5ea87c8783d3408d5ebe62516900f859095ea295ae52"
+    sha256 cellar: :any,                 catalina:     "b54c72219d366319ce929e8dea8c22b9a36feb331a3e196007f73c88bbd33638"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "2330a003c48032b3504fc358a704cccc0e3d8b02e2c10abc79d4481413bf1204"
+  end
+
+  depends_on "jpeg"
+  depends_on "libharu"
+  depends_on "libpng"
+  depends_on "libxdiff"
+  depends_on "minizip"
   depends_on "pcre"
-  depends_on :x11 => :optional
+
+  uses_from_macos "bzip2"
+  uses_from_macos "curl"
+  uses_from_macos "expat"
+  uses_from_macos "sqlite"
+  uses_from_macos "zlib"
 
   def install
+    # Delete files that cause vendored libraries for minizip and expat to be built.
+    rm "contrib/hbmzip/3rd/minizip/minizip.hbp"
+    rm "contrib/hbexpat/3rd/expat/expat.hbp"
+
+    # Fix flat namespace usage.
+    # Upstreamed here: https://github.com/harbour/core/pull/263.
+    inreplace "config/darwin/clang.mk", "-flat_namespace -undefined warning", "-undefined dynamic_lookup"
+
+    # The following optional dependencies are not being used at this time:
+    # allegro, cairo, cups, freeimage, gd, ghostscript, libmagic, mysql, postgresql, qt@5, unixodbc
+    # openssl can not included because the hbssl extension does not support OpenSSL 1.1.
+
+    # The below dependencies are included because they will be built as vendored libraries by default.
+    # The vendored version of liblzf is used instead of the Homebrew one because the Homebrew version
+    # is missing header files and the extension will not build
+    # The vendored version of libmxml is used because it needs config.h, which is not included in
+    # the Homebrew version of libmxml.
+    # The vendored version of minilzo is used because the Homebrew version of lzo does not include minilzo.
     ENV["HB_INSTALL_PREFIX"] = prefix
-    ENV["HB_WITH_X11"] = "no" if build.without? "x11"
+    ENV["HB_WITH_X11"] = "no"
+    ENV["HB_WITH_JPEG"] = Formula["jpeg"].opt_include
+    ENV["HB_WITH_LIBHARU"] = Formula["libharu"].opt_include
+    ENV["HB_WITH_MINIZIP"] = Formula["minizip"].opt_include/"minizip"
+    ENV["HB_WITH_PCRE"] = Formula["pcre"].opt_include
+    ENV["HB_WITH_PNG"] = Formula["libpng"].opt_include
+    ENV["HB_WITH_XDIFF"] = Formula["libxdiff"].opt_include
+
+    if OS.mac?
+      ENV["HB_COMPILER"] = ENV.cc
+      ENV["HB_USER_DFLAGS"] = "-L#{MacOS.sdk_path}/usr/lib"
+      ENV["HB_WITH_BZIP2"] = MacOS.sdk_path/"usr/include"
+      ENV["HB_WITH_CURL"] = MacOS.sdk_path/"usr/include"
+      ENV["HB_WITH_CURSES"] = MacOS.sdk_path/"usr/include"
+      ENV["HB_WITH_EXPAT"] = MacOS.sdk_path/"usr/include"
+      ENV["HB_WITH_SQLITE3"] = MacOS.sdk_path/"usr/include"
+      ENV["HB_WITH_ZLIB"] = MacOS.sdk_path/"usr/include"
+    else
+      ENV["HB_WITH_BZIP2"] = Formula["bzip2"].opt_include
+      ENV["HB_WITH_CURL"] = Formula["curl"].opt_include
+      ENV["HB_WITH_CURSES"] = Formula["ncurses"].opt_include
+      ENV["HB_WITH_EXPAT"] = Formula["expat"].opt_include
+      ENV["HB_WITH_SQLITE3"] = Formula["sqlite"].opt_include
+      ENV["HB_WITH_ZLIB"] = Formula["zlib"].opt_include
+    end
 
     ENV.deparallelize
 
@@ -49,7 +103,7 @@ class Harbour < Formula
          return
     EOS
 
-    assert_match /Hello, world!/, shell_output("#{bin}/hbmk2 hello.prg -run")
+    assert_match "Hello, world!", shell_output("#{bin}/hbmk2 hello.prg -run")
   end
 end
 

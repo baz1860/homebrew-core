@@ -1,27 +1,34 @@
 class Povray < Formula
   desc "Persistence Of Vision RAYtracer (POVRAY)"
-  homepage "http://www.povray.org/"
-  url "https://github.com/POV-Ray/povray/archive/v3.7.0.7.tar.gz"
-  sha256 "085746e891edbb2cfda22bb2a8b86043bd680a68ad9121bc568118c730ace7b9"
+  homepage "https://www.povray.org/"
+  url "https://github.com/POV-Ray/povray/archive/v3.7.0.10.tar.gz"
+  sha256 "7bee83d9296b98b7956eb94210cf30aa5c1bbeada8ef6b93bb52228bbc83abff"
+  license "AGPL-3.0-or-later"
+  revision 2
+  head "https://github.com/POV-Ray/povray.git", branch: "master"
 
-  bottle do
-    sha256 "35f5427c7f206b4964e0d0fbf76bd03f3796b0afc8622790f962c318c92fb298" => :high_sierra
-    sha256 "c0ceb17e9bf1f3de0cc9d66ef5e1142fc725d1a09e415a13fdba8e06b428535f" => :sierra
-    sha256 "cb34de2b4310b67342fddf0aebfa48f03eadc5c7f4c653fa64139241fdf1da71" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+\.\d{1,4})$/i)
   end
 
-  depends_on :macos => :lion
+  bottle do
+    sha256 arm64_monterey: "50c1033aa599a0c313e1321ac13556c7010149e55ee8e250f6cd91bba1b90d11"
+    sha256 arm64_big_sur:  "b81e5f00128b2b215a73cd4dacd27829faadb4aea63c10139736e851f9858fe6"
+    sha256 monterey:       "91a6fa846d5220e1b2f7e20ece98f52cf9ee34d301c339cb07f90bc09c4dfd15"
+    sha256 big_sur:        "497cfaba5d266ce6e1d5906fa8724418817b5faff66f521bf434cf6fa33fa5b4"
+    sha256 catalina:       "82bf8090b26e6f470a6c7c76a050ca53ca5c2ae8c0445b172050f01a29cfc070"
+    sha256 x86_64_linux:   "8acd14c9e9e02e4965712979981063184361285aff59695b2a779dad49e022ea"
+  end
+
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "boost"
+  depends_on "imath"
   depends_on "jpeg"
   depends_on "libpng"
   depends_on "libtiff"
-  depends_on "openexr" => :optional
-
-  deprecated_option "use-openexr" => "with-openexr"
-
-  needs :cxx11
+  depends_on "openexr"
 
   def install
     ENV.cxx11
@@ -33,11 +40,10 @@ class Povray < Formula
       --prefix=#{prefix}
       --mandir=#{man}
       --with-boost=#{Formula["boost"].opt_prefix}
+      --with-openexr=#{Formula["openexr"].opt_prefix}
       --without-libsdl
       --without-x
     ]
-
-    args << "--with-openexr=#{Formula["openexr"].opt_prefix}" if build.with? "openexr"
 
     # Adjust some scripts to search for `etc` in HOMEBREW_PREFIX.
     %w[allanim allscene portfolio].each do |script|

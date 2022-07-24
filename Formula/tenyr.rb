@@ -1,50 +1,34 @@
 class Tenyr < Formula
   desc "32-bit computing environment (including simulated CPU)"
-  homepage "http://tenyr.info/"
-  url "https://github.com/kulp/tenyr/archive/v0.9.5.tar.gz"
-  sha256 "3fe066d0dd12b56d6febd2aeb86a141272d1fe3904cb6421933168e98e8ba6aa"
-  head "https://github.com/kulp/tenyr.git", :branch => "develop"
+  homepage "https://tenyr.info/"
+  url "https://github.com/kulp/tenyr/archive/v0.9.9.tar.gz"
+  sha256 "29010e3df8449e9210faf96ca5518d573af4ada4939fe1e7cfbc169fe9179224"
+  license "MIT"
+  head "https://github.com/kulp/tenyr.git", branch: "develop"
 
   bottle do
-    cellar :any
-    sha256 "8acd61335c5fa25698b1593649bb3102fb034b9d4f61826b91495877fcceb8ac" => :high_sierra
-    sha256 "d2f1bdbad0ab62d0bad8febca4de963414760ff4acd515974ae3e36067d77c5e" => :sierra
-    sha256 "45713c09432fd87341e37a8e4685364e5f8cb435919f6dd14d9e28165757cc75" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "7423a06a07cb6618597fb303682fcd78cd017265f221c41002bc334f180bc7c1"
+    sha256 cellar: :any,                 arm64_big_sur:  "7b8b35a252d9db09b9ab058ffde1bef392c747b7e2940e9f35c436bf8329e1e4"
+    sha256 cellar: :any,                 monterey:       "d7835b60738972c5deb0bac9cd4a2cf0b7a6cec663aeec0260a2024b25b5e476"
+    sha256 cellar: :any,                 big_sur:        "ba35781ed62b538a435c64602786456562d489eb4e9b70c6393e512cb2e86815"
+    sha256 cellar: :any,                 catalina:       "f98eebfa349c23b2ed1ee5cdd0bb7882fb7469e93ce5fd253fbdadb0cb96c4d8"
+    sha256 cellar: :any,                 mojave:         "725a4444c154dcbe5c2c835a82c246e044ab71d1769c240a0fc376af0c36a71c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "386367651c0bfc95ebe005843ccd093350a508b0c6e8a0f848c5c9e79dea68cf"
   end
 
-  depends_on "pkg-config" => :build
   depends_on "bison" => :build # tenyr requires bison >= 2.5
-  # sdl2_image implies sdl2. If we specify sdl2 separately, we create
-  # nonsensical possibilities like `--with-sdl2_image --without-sdl2`
-  # tenyr requires sdl2_image --with-png
-  depends_on "sdl2_image" => :recommended
+  depends_on "sdl2_image"
+
+  uses_from_macos "flex" => :build
 
   def install
-    bison = Formula["bison"].bin/"bison"
-
-    args = []
-
-    # specify our own bison, since we need bison >= 2.5
-    args << "BISON=" + bison
-
-    # JIT build is not available until we can pull in AsmJit somehow
-    # HEAD version can build with JIT enabled, using git submodule
-    # Right now there is no way for `build.with? "jit"` to be true
-    args << "JIT=0" if build.without? "jit"
-
-    # Use our own build directory (tenyr's default build directory encodes
-    # builder platform information in the path)
-    builddir = "build/homebrew"
-    args << "BUILDDIR=" + builddir
-
-    args << "SDL=0" if build.without?("sdl2_image")
-
-    system "make", *args
+    system "make", "BISON=#{Formula["bison"].opt_bin}/bison",
+                   "JIT=0", "BUILDDIR=build/homebrew"
 
     pkgshare.install "rsrc", "plugins"
-    cd builddir do
+    cd "build/homebrew" do
       bin.install "tsim", "tas", "tld"
-      lib.install Dir["*.dylib"]
+      lib.install Dir[shared_library("*")]
     end
   end
 

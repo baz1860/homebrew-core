@@ -1,15 +1,18 @@
 class Flatcc < Formula
   desc "FlatBuffers Compiler and Library in C for C"
   homepage "https://github.com/dvidelabs/flatcc"
-  url "https://github.com/dvidelabs/flatcc/archive/v0.5.1.tar.gz"
-  sha256 "8c4560ca32e3c555716d9363bed469e2c60e0f443ec32bc08e7abfe681e25ca9"
-  head "https://github.com/dvidelabs/flatcc.git"
+  url "https://github.com/dvidelabs/flatcc/archive/v0.6.1.tar.gz"
+  sha256 "2533c2f1061498499f15acc7e0937dcf35bc68e685d237325124ae0d6c600c2b"
+  license "Apache-2.0"
+  head "https://github.com/dvidelabs/flatcc.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "17b33c3326512047102e7055fa8d7d8b8b6781dde0ed65dd2c38525283f1ce5c" => :high_sierra
-    sha256 "972fd44d9828746a29c4eef6f64cfa5fa67508601384117b979d39837e2498d7" => :sierra
-    sha256 "ea29799a542aa866c8fe1e5f9416e7bd274edf74da7f400c1d63690c1acd5930" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "03e63b4e0e204f4cb7d8ff62a5020deca986b97321ad3059f11153ee6c70ac06"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ff1f00cc07f66e878fcb04c06c498eeb6b4f5c49d46ba40ba15461b8ca339974"
+    sha256 cellar: :any_skip_relocation, monterey:       "145f6bf5c92bdd8f374639bb559c7b3ed6a140248ace0b1d4671c4b73b90f70e"
+    sha256 cellar: :any_skip_relocation, big_sur:        "8e88a66053e439e9c48f7ef937d14ff27a94a20b58d41c706eed7122ca592aea"
+    sha256 cellar: :any_skip_relocation, catalina:       "09edd043ebbfe5f96f6ec1f972934daa5a85f425f2333c2914eaa45b20978b70"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "800852160e2675ab180b1183d205daf90646f9e92c5cf3a9cd8ceaaf24c1242f"
   end
 
   depends_on "cmake" => :build
@@ -52,7 +55,7 @@ class Flatcc < Formula
 
       root_type Monster;
 
-      EOS
+    EOS
 
     system bin/"flatcc", "-av", "--json", "test.fbs"
   end

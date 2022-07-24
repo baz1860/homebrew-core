@@ -1,48 +1,34 @@
 class Pstoedit < Formula
   desc "Convert PostScript and PDF files to editable vector graphics"
   homepage "http://www.pstoedit.net/"
-  url "https://downloads.sourceforge.net/project/pstoedit/pstoedit/3.70/pstoedit-3.70.tar.gz"
-  sha256 "06b86113f7847cbcfd4e0623921a8763143bbcaef9f9098e6def650d1ff8138c"
-  revision 2
+  url "https://downloads.sourceforge.net/project/pstoedit/pstoedit/3.78/pstoedit-3.78.tar.gz"
+  sha256 "8cc28e34bc7f88d913780f8074e813dd5aaa0ac2056a6b36d4bf004a0e90d801"
+  license "GPL-2.0-or-later"
 
   bottle do
-    sha256 "319234b9126aeb338850b4d9bb2db68da75bee8d2025894726897976b5e4633a" => :high_sierra
-    sha256 "085860d9480d7d9558697d403f6628466a8fdfe52f568f21793568d1c71747f2" => :sierra
-    sha256 "ee6634e964c7687c5614c9e4358737154ab6f29d53a104416bdc1509b33e6930" => :el_capitan
-    sha256 "6330be58259fcfa74062eb1ebfa5eced31aea86ae5f1ce6b2bf49e2f544b3d73" => :yosemite
+    sha256 arm64_monterey: "0f232079d87357a6a68542eb29625272b61826ab8d0e20620532751bfd080147"
+    sha256 arm64_big_sur:  "93f094bcabc8c0d24377e8cf6e6567cdb3b40f4e8eed2eb38961b28c44f15346"
+    sha256 monterey:       "3403d2caa0bba4718c2c7b26fc9e0449f9a962743d86e1db1d8b25023af1d21b"
+    sha256 big_sur:        "d0e97ac142787f5b0c16c0138675c476f747403e4b94b6c12dad23c70e05d268"
+    sha256 catalina:       "cdc3a9c75a626efd0562e786f08fd57dada5b764f9d39dec61c748eca707ccc9"
+    sha256 x86_64_linux:   "9b5b7269382d2ed28060b51eb8ab82339127121675df1a73de76aabedcb088ff"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "plotutils"
   depends_on "ghostscript"
   depends_on "imagemagick"
-  depends_on "xz" if MacOS.version < :mavericks
+  depends_on "plotutils"
 
-  # Fix for pstoedit search for plugins, thereby restoring formats that
-  # worked in 3.62 but now don't in 3.70, including PIC, DXF, FIG, and
-  # many others.
-  #
-  # This patch has been submitted upstream; see:
-  # https://sourceforge.net/p/pstoedit/bugs/19/
-  #
-  # Taken from:
-  # https://build.opensuse.org/package/view_file/openSUSE:Factory/pstoedit/pstoedit-pkglibdir.patch?expand=1
-  #
-  # This patch changes the behavior of "make install" so that:
-  # * If common/plugindir is defined, it checks only that directory.
-  # * It swaps the check order: First checks whether PSTOEDITLIBDIR exists. If
-  #   it exists, it skips blind attempts to find plugins.
-  # As PSTOEDITLIBDIR is always defined by makefile, the blind fallback will
-  # be attempted only in obscure environments.
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/fa1823b/pstoedit/3.70.patch"
-    sha256 "9af1bbc9db97f5d5dc92816e5c5fdd5f98904f64d1ab0dd6fcdcde1fd8606ce6"
+  on_linux do
+    depends_on "gcc"
   end
 
+  # "You need a C++ compiler, e.g., g++ (newer than 6.0) to compile pstoedit."
+  fails_with gcc: "5"
+
   def install
-    ENV.deparallelize
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
+    ENV.cxx11 if OS.mac?
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
     system "make", "install"
   end
 

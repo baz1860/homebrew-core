@@ -1,25 +1,43 @@
 class Py3cairo < Formula
   desc "Python 3 bindings for the Cairo graphics library"
   homepage "https://cairographics.org/pycairo/"
-  url "https://github.com/pygobject/pycairo/releases/download/v1.16.2/pycairo-1.16.2.tar.gz"
-  sha256 "49a3cf8737c009852e97289d43e952bf228d8df53a7ddb840d4deeb4d0cc1ea7"
+  url "https://github.com/pygobject/pycairo/releases/download/v1.21.0/pycairo-1.21.0.tar.gz"
+  sha256 "251907f18a552df938aa3386657ff4b5a4937dde70e11aa042bc297957f4b74b"
+  license any_of: ["LGPL-2.1-only", "MPL-1.1"]
+  revision 1
 
   bottle do
-    cellar :any
-    sha256 "8f0e738c337db39228c54613d92628f38f9ae484c44091b7009712db5c1c0976" => :high_sierra
-    sha256 "cd33e199107a61afb3602bce56a568b1a18178907387384967628097b0502a88" => :sierra
-    sha256 "0280c974f1035f80ba3dfe1ee41003f0be0fbfe63e1ec78bbd45a580254c9d7c" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "ff63b1420cb6450a4ad5d7099cfe3de573af17bff5a6eac905d1052ff8b1577f"
+    sha256 cellar: :any,                 arm64_big_sur:  "2483f93ce39583d9fde00e42c0081c86572ec15de319ff15d4ea705aefc7fda0"
+    sha256 cellar: :any,                 monterey:       "03e594802bce3f9c7e3cbcc55d0007330b0205d61c74e084a54e919eb9b69653"
+    sha256 cellar: :any,                 big_sur:        "de0509d506c8c4ecf70763da2ccb3215340e3cf448b7bb72d44fa4615e58c649"
+    sha256 cellar: :any,                 catalina:       "b280fe6a04a07bd23aa6f8e2c159cd33ee56927ef0fa26ed34a2cb61738c3efe"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c90aac79478bed8998388c08f53d765fbafb6d74babef7c71a79fbf77a73bc29"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "python@3.10" => [:build, :test]
+  depends_on "python@3.9" => [:build, :test]
   depends_on "cairo"
-  depends_on "python3"
+
+  def pythons
+    deps.map(&:to_formula)
+        .select { |f| f.name.match?(/python@\d\.\d+/) }
+        .map(&:opt_bin)
+        .map { |bin| bin/"python3" }
+  end
 
   def install
-    system "python3", *Language::Python.setup_install_args(prefix)
+    pythons.each do |python|
+      system python, *Language::Python.setup_install_args(prefix),
+                     "--install-lib=#{prefix/Language::Python.site_packages(python)}",
+                     "--install-data=#{prefix}"
+    end
   end
 
   test do
-    system "python3", "-c", "import cairo; print(cairo.version)"
+    pythons.each do |python|
+      system python, "-c", "import cairo; print(cairo.version)"
+    end
   end
 end

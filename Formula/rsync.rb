@@ -1,47 +1,79 @@
 class Rsync < Formula
   desc "Utility that provides fast incremental file transfer"
   homepage "https://rsync.samba.org/"
-  url "https://rsync.samba.org/ftp/rsync/rsync-3.1.3.tar.gz"
-  mirror "https://mirrors.kernel.org/gentoo/distfiles/rsync-3.1.3.tar.gz"
-  mirror "https://www.mirrorservice.org/sites/rsync.samba.org/rsync-3.1.3.tar.gz"
-  sha256 "55cc554efec5fdaad70de921cd5a5eeb6c29a95524c715f3bbf849235b0800c0"
+  url "https://rsync.samba.org/ftp/rsync/rsync-3.2.4.tar.gz"
+  mirror "https://mirrors.kernel.org/gentoo/distfiles/rsync-3.2.4.tar.gz"
+  mirror "https://www.mirrorservice.org/sites/rsync.samba.org/rsync-3.2.4.tar.gz"
+  sha256 "6f761838d08052b0b6579cf7f6737d93e47f01f4da04c5d24d3447b7f2a5fad1"
+  license "GPL-3.0-or-later"
   revision 1
 
+  livecheck do
+    url "https://rsync.samba.org/ftp/rsync/?C=M&O=D"
+    regex(/href=.*?rsync[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
+
   bottle do
-    sha256 "c79e5b808b6f3925cfb27d38f46b19b6c771646dad1ab8a1a3e905b42c7327e2" => :high_sierra
-    sha256 "c7dc08f7c2c06bebb0947a2f8182dbbc4dde562fa3ab054555cee2564f355395" => :sierra
-    sha256 "2a41527121c88e9c616346a866d587d2365d6f9cda8cb9018c4fb8209646f444" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "08fa9554d1b59cb8527e512fb229ce42601d667637b48632f8bbcae66e577431"
+    sha256 cellar: :any,                 arm64_big_sur:  "61dac9ffea0f0a40eaf9314c3b1ceba2fa8c8a9a87d0d5c0fd3a20799535a339"
+    sha256 cellar: :any,                 monterey:       "a2db12f600e356b534b4f474e80532b6c51bdf08143f955071e39151bb8c1ea0"
+    sha256 cellar: :any,                 big_sur:        "a159bf383a27f7457b2c33faac2ea59783e19d603e6536685ca003029b7d1de9"
+    sha256 cellar: :any,                 catalina:       "b33b761cc75d35245f73b3b5223629b92f37a23a6d42e460f94ec31581bad2a8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "6c03f0aac78c37c2b2d15dfd79208d23056143b936b2df867db7eee371e143ae"
   end
 
-  depends_on "autoconf" => :build
+  depends_on "lz4"
+  depends_on "openssl@1.1"
+  depends_on "popt"
+  depends_on "xxhash"
+  depends_on "zstd"
 
-  # hfs-compression.diff is marked by upstream as broken as of 3.1.3
-  patch do
-    url "https://download.samba.org/pub/rsync/src/rsync-patches-3.1.3.tar.gz"
-    mirror "https://www.mirrorservice.org/sites/rsync.samba.org/rsync-patches-3.1.3.tar.gz"
-    mirror "https://launchpad.net/rsync/main/3.1.2/+download/rsync-patches-3.1.3.tar.gz"
-    sha256 "0dc2848f20ca75c07a30c3237ccf8d61b61082ae7de94758a27dac350c99fb98"
-    apply "patches/fileflags.diff",
-          "patches/crtimes.diff"
-  end
+  uses_from_macos "zlib"
 
-  # Fix "error: too few arguments to function call, expected 4, have 2"
+  # hfs-compression.diff has been marked by upstream as broken since 3.1.3
+  # and has not been reported fixed as of 3.2.4
   patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/344bf3b/rsync/fix-crtimes-patch-3.1.3.diff"
-    sha256 "1a3c9043e19b55290bd6a6bc480544fe79a155c2c7ed003de185521f7516ecc3"
+    url "https://download.samba.org/pub/rsync/src/rsync-patches-3.2.4.tar.gz"
+    mirror "https://www.mirrorservice.org/sites/rsync.samba.org/rsync-patches-3.2.4.tar.gz"
+    sha256 "70a597590af6c61cf3d05d663429ff9f60ffe24e44f9c73a4cdc69ebdc1322a4"
+    apply "patches/fileflags.diff"
   end
 
   def install
-    system "./prepare-source"
-    system "./configure", "--disable-debug",
-                          "--prefix=#{prefix}",
-                          "--with-rsyncd-conf=#{etc}/rsyncd.conf",
-                          "--enable-ipv6"
+    args = %W[
+      --disable-debug
+      --prefix=#{prefix}
+      --with-rsyncd-conf=#{etc}/rsyncd.conf
+      --with-included-popt=no
+      --with-included-zlib=no
+      --enable-ipv6
+    ]
+
+    # SIMD code throws ICE or is outright unsupported due to lack of support for
+    # function multiversioning on older versions of macOS
+    args << "--disable-simd" if MacOS.version < :catalina
+
+    # Fixes https://github.com/WayneD/rsync/issues/317
+    # remove with the next release
+    args << "rsync_cv_SIGNED_CHAR_OK=yes" if Hardware::CPU.arm?
+
+    system "./configure", *args
     system "make"
     system "make", "install"
   end
 
   test do
-    system bin/"rsync", "--version"
+    mkdir "a"
+    mkdir "b"
+
+    ["foo\n", "bar\n", "baz\n"].map.with_index do |s, i|
+      (testpath/"a/#{i + 1}.txt").write s
+    end
+
+    system bin/"rsync", "-artv", testpath/"a/", testpath/"b/"
+
+    (1..3).each do |i|
+      assert_equal (testpath/"a/#{i}.txt").read, (testpath/"b/#{i}.txt").read
+    end
   end
 end

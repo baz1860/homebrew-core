@@ -1,176 +1,96 @@
 class Bind < Formula
   desc "Implementation of the DNS protocols"
-  homepage "https://www.isc.org/downloads/bind/"
-  url "https://ftp.isc.org/isc/bind9/9.12.0/bind-9.12.0.tar.gz"
-  mirror "https://fossies.org/linux/misc/dns/bind9/9.12.0/bind-9.12.0.tar.gz"
-  sha256 "29870e9bf9dcc31ead3793ca754a7b0236a0785a7a9dc0f859a0bc42e19b3c82"
-  head "https://source.isc.org/git/bind9.git"
+  homepage "https://www.isc.org/bind/"
 
-  bottle do
-    sha256 "2e9e7021db9b2481d21fedae0da783e8ce8851446cd9bf952cf2473bda000cee" => :high_sierra
-    sha256 "4ba3299e7d563a64f1b8b937b4c24859e8cbb2627cb5aacd43478a20f3384698" => :sierra
-    sha256 "2bf6150639acd3d541a83d2bd90a7618c03257204fe97aea287c3dfb7e430684" => :el_capitan
+  # BIND releases with even minor version numbers (9.14.x, 9.16.x, etc) are
+  # stable. Odd-numbered minor versions are for testing, and can be unstable
+  # or buggy. They are not suitable for general deployment. We have to use
+  # "version_scheme" because someone upgraded to 9.15.0, and required a
+  # downgrade.
+
+  url "https://downloads.isc.org/isc/bind9/9.18.5/bind-9.18.5.tar.xz"
+  sha256 "0cee078d74f0bdc4ec374435026b25de7892f26540a18b22a02ef728a11dcae7"
+  license "MPL-2.0"
+  version_scheme 1
+  head "https://gitlab.isc.org/isc-projects/bind9.git", branch: "main"
+
+  # BIND indicates stable releases with an even-numbered minor (e.g., x.2.x)
+  # and the regex below only matches these versions.
+  livecheck do
+    url "https://www.isc.org/download/"
+    regex(/href=.*?bind[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
-  depends_on "openssl"
-  depends_on "json-c" => :optional
+  bottle do
+    sha256 arm64_monterey: "d165eb76abb57579d31d961b6d9d76051f91f9c9c6c16d12c7d881e17c7b5b82"
+    sha256 arm64_big_sur:  "8f8f9e5226175b4fb654b2d10bf632aad11c7ef28aa289547a0b1d8269e7c20f"
+    sha256 monterey:       "2588513dd61f5689b71207eb029bda2db547da9b133edef253b5bd01be419ea9"
+    sha256 big_sur:        "0116fc960ffbe3f0e62abe8c4dcb940abd6094457d3e149e7ea4ed9b0056b28e"
+    sha256 catalina:       "827455fd194be4c5308e38c802bae04b30ae6ad5666b5260b0ab9187e3890707"
+    sha256 x86_64_linux:   "de2cc9fc567375ba9ec9358c6266fc778d8cf6ecd6c43b21221b293fc4a2c39e"
+  end
+
+  depends_on "pkg-config" => :build
+  depends_on "json-c"
+  depends_on "libidn2"
+  depends_on "libnghttp2"
+  depends_on "libuv"
+  depends_on "openssl@3"
 
   def install
-    # Fix "configure: error: xml2-config returns badness"
-    if MacOS.version == :sierra || MacOS.version == :el_capitan
-      ENV["SDKROOT"] = MacOS.sdk_path
-    end
+    args = [
+      "--prefix=#{prefix}",
+      "--sysconfdir=#{pkgetc}",
+      "--localstatedir=#{var}",
+      "--with-json-c",
+      "--with-libidn2=#{Formula["libidn2"].opt_prefix}",
+      "--with-openssl=#{Formula["openssl@3"].opt_prefix}",
+      "--without-lmdb",
+    ]
+    args << "--disable-linux-caps" if OS.linux?
+    system "./configure", *args
 
-    # enable DNSSEC signature chasing in dig
-    ENV["STD_CDEFINES"] = "-DDIG_SIGCHASE=1"
-
-    json = build.with?("json-c") ? "yes" : "no"
-    system "./configure", "--prefix=#{prefix}",
-                          "--enable-threads",
-                          "--enable-ipv6",
-                          "--with-openssl=#{Formula["openssl"].opt_prefix}",
-                          "--with-libjson=#{json}"
-
-    # From the bind9 README: "Do not use a parallel "make"."
-    ENV.deparallelize
     system "make"
     system "make", "install"
 
     (buildpath/"named.conf").write named_conf
     system "#{sbin}/rndc-confgen", "-a", "-c", "#{buildpath}/rndc.key"
-    etc.install "named.conf", "rndc.key"
+    pkgetc.install "named.conf", "rndc.key"
   end
 
   def post_install
     (var/"log/named").mkpath
-
-    # Create initial configuration/zone/ca files.
-    # (Mirrors Apple system install from 10.8)
-    unless (var/"named").exist?
-      (var/"named").mkpath
-      (var/"named/localhost.zone").write localhost_zone
-      (var/"named/named.local").write named_local
-    end
+    (var/"named").mkpath
   end
 
-  def named_conf; <<~EOS
-    //
-    // Include keys file
-    //
-    include "#{etc}/rndc.key";
+  def named_conf
+    <<~EOS
+      logging {
+          category default {
+              _default_log;
+          };
+          channel _default_log {
+              file "#{var}/log/named/named.log" versions 10 size 1m;
+              severity info;
+              print-time yes;
+          };
+      };
 
-    // Declares control channels to be used by the rndc utility.
-    //
-    // It is recommended that 127.0.0.1 be the only address used.
-    // This also allows non-privileged users on the local host to manage
-    // your name server.
-
-    //
-    // Default controls
-    //
-    controls {
-        inet 127.0.0.1 port 54 allow { any; }
-        keys { "rndc-key"; };
-    };
-
-    options {
-        directory "#{var}/named";
-        /*
-         * If there is a firewall between you and nameservers you want
-         * to talk to, you might need to uncomment the query-source
-         * directive below.  Previous versions of BIND always asked
-         * questions using port 53, but BIND 8.1 uses an unprivileged
-         * port by default.
-         */
-        // query-source address * port 53;
-    };
-    //
-    // a caching only nameserver config
-    //
-    zone "localhost" IN {
-        type master;
-        file "localhost.zone";
-        allow-update { none; };
-    };
-
-    zone "0.0.127.in-addr.arpa" IN {
-        type master;
-        file "named.local";
-        allow-update { none; };
-    };
-
-    logging {
-            category default {
-                    _default_log;
-            };
-
-            channel _default_log  {
-                    file "#{var}/log/named/named.log";
-                    severity info;
-                    print-time yes;
-            };
-    };
+      options {
+          directory "#{var}/named";
+      };
     EOS
   end
 
-  def localhost_zone; <<~EOS
-    $TTL    86400
-    $ORIGIN localhost.
-    @            1D IN SOA    @ root (
-                        42        ; serial (d. adams)
-                        3H        ; refresh
-                        15M        ; retry
-                        1W        ; expiry
-                        1D )        ; minimum
+  plist_options startup: true
 
-                1D IN NS    @
-                1D IN A        127.0.0.1
-    EOS
-  end
-
-  def named_local; <<~EOS
-    $TTL    86400
-    @       IN      SOA     localhost. root.localhost.  (
-                                          1997022700 ; Serial
-                                          28800      ; Refresh
-                                          14400      ; Retry
-                                          3600000    ; Expire
-                                          86400 )    ; Minimum
-                  IN      NS      localhost.
-
-    1       IN      PTR     localhost.
-    EOS
-  end
-
-  plist_options :startup => true
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>EnableTransactions</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_sbin}/named</string>
-        <string>-f</string>
-        <string>-c</string>
-        <string>#{etc}/named.conf</string>
-      </array>
-      <key>ServiceIPC</key>
-      <false/>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_sbin/"named", "-f", "-L", var/"log/named/named.log"]
   end
 
   test do
     system bin/"dig", "-v"
     system bin/"dig", "brew.sh"
+    system bin/"dig", "ü.cl"
   end
 end

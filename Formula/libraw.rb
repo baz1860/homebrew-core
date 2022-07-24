@@ -1,46 +1,56 @@
 class Libraw < Formula
   desc "Library for reading RAW files from digital photo cameras"
   homepage "https://www.libraw.org/"
-  url "https://www.libraw.org/data/LibRaw-0.18.8.tar.gz"
-  mirror "https://fossies.org/linux/privat/LibRaw-0.18.8.tar.gz"
-  sha256 "56aca4fd97038923d57d2d17d90aa11d827f1f3d3f1d97e9f5a0d52ff87420e2"
+  url "https://www.libraw.org/data/LibRaw-0.20.2.tar.gz"
+  sha256 "dc1b486c2003435733043e4e05273477326e51c3ea554c6864a4eafaff1004a6"
+  license any_of: ["LGPL-2.1-only", "CDDL-1.0"]
+  revision 2
 
-  bottle do
-    cellar :any
-    sha256 "78c084fc5afcd3ad27b4e3c2d204dccca0245bb7fe2ecb83e548da3029a72347" => :high_sierra
-    sha256 "d05775198333d419870e088f3a2dfa80561de9679ab8c40feb82cee947894fc9" => :sierra
-    sha256 "32ab54331d95ab449411a0cc92068885eaac78e5de0019c5e09cdad510671e0e" => :el_capitan
+  livecheck do
+    url "https://www.libraw.org/download/"
+    regex(/href=.*?LibRaw[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "18c36994429964daaa9946aa3850f94f9fd6ba7c75692d81f2a5de422c7d2f1e"
+    sha256 cellar: :any,                 arm64_big_sur:  "edce6b5fa1e302705761e0d9b851422a04a98fa9e4acfa855544d13ecfa18565"
+    sha256 cellar: :any,                 monterey:       "e5e88f0e87405beceb2f0e0dcb7f7f0621f43173cf93a4d0e543a94688daf062"
+    sha256 cellar: :any,                 big_sur:        "6e1dc8ff8d4a11db7aab2dad4a310050b50dceb853f0fb5a8f49644f748dc2d9"
+    sha256 cellar: :any,                 catalina:       "bed8bf5d99ea03bd19b8fe962824518d1ce5b1b1cc7292decad833556b7079c8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3bb0248790c8d19f90e486b5ffefe19499f443523a484ca74745a72efe5e16d6"
+  end
+
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
   depends_on "pkg-config" => :build
   depends_on "jasper"
   depends_on "jpeg"
   depends_on "little-cms2"
 
-  resource "librawtestfile" do
-    url "https://www.rawsamples.ch/raws/nikon/d1/RAW_NIKON_D1.NEF",
-      :using => :nounzip
+  uses_from_macos "zlib"
+
+  on_macos do
+    depends_on "libomp"
+  end
+
+  resource "homebrew-librawtestfile" do
+    url "https://www.rawsamples.ch/raws/nikon/d1/RAW_NIKON_D1.NEF"
     sha256 "7886d8b0e1257897faa7404b98fe1086ee2d95606531b6285aed83a0939b768f"
   end
 
-  resource "gpl2" do
-    url "https://www.libraw.org/data/LibRaw-demosaic-pack-GPL2-0.18.8.tar.gz"
-    mirror "https://ftp.osuosl.org/pub/gentoo/distfiles/LibRaw-demosaic-pack-GPL2-0.18.8.tar.gz"
-    sha256 "0b24bcf7bbb5d13fde58bb071f94dc9354be09bc44b2bba0698493065e99f8da"
-  end
-
-  resource "gpl3" do
-    url "https://www.libraw.org/data/LibRaw-demosaic-pack-GPL3-0.18.8.tar.gz"
-    mirror "https://ftp.osuosl.org/pub/gentoo/distfiles/LibRaw-demosaic-pack-GPL3-0.18.8.tar.gz"
-    sha256 "ffd6916cd66c8101e4e6b589799f256c897748d2fd2486aa34c3705146dbc701"
-  end
-
   def install
-    %w[gpl2 gpl3].each { |f| (buildpath/f).install resource(f) }
-    system "./configure", "--prefix=#{prefix}",
-                          "--disable-dependency-tracking",
-                          "--enable-demosaic-pack-gpl2=#{buildpath}/gpl2",
-                          "--enable-demosaic-pack-gpl3=#{buildpath}/gpl3"
+    args = []
+    if OS.mac?
+      # Work around "checking for OpenMP flag of C compiler... unknown"
+      args += [
+        "ac_cv_prog_c_openmp=-Xpreprocessor -fopenmp",
+        "ac_cv_prog_cxx_openmp=-Xpreprocessor -fopenmp",
+        "LDFLAGS=-lomp",
+      ]
+    end
+    system "autoreconf", "--force", "--install", "--verbose"
+    system "./configure", *std_configure_args, *args
     system "make"
     system "make", "install"
     doc.install Dir["doc/*"]
@@ -48,7 +58,7 @@ class Libraw < Formula
   end
 
   test do
-    resource("librawtestfile").stage do
+    resource("homebrew-librawtestfile").stage do
       filename = "RAW_NIKON_D1.NEF"
       system "#{bin}/raw-identify", "-u", filename
       system "#{bin}/simple_dcraw", "-v", "-T", filename

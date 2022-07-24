@@ -1,24 +1,26 @@
-require "language/haskell"
-
 class HopenpgpTools < Formula
-  include Language::Haskell::Cabal
-
   desc "Command-line tools for OpenPGP-related operations"
   homepage "https://hackage.haskell.org/package/hopenpgp-tools"
-  url "https://hackage.haskell.org/package/hopenpgp-tools/hopenpgp-tools-0.19.5.tar.gz"
-  sha256 "e0630a90c0565923b4244eb1df5ba034bcc8a7d092854d197cf47c783bd566f9"
-  head "https://anonscm.debian.org/git/users/clint/hopenpgp-tools.git"
+  url "https://hackage.haskell.org/package/hopenpgp-tools-0.23.7/hopenpgp-tools-0.23.7.tar.gz"
+  sha256 "b04137b315106f3f276509876acf396024fbb7152794e1e2a0ddd3afd740f857"
+  license "AGPL-3.0-or-later"
+  head "https://salsa.debian.org/clint/hOpenPGP.git", branch: "master"
 
   bottle do
-    sha256 "4a6735e79e482ba28deaf8b579029761bfd332e5bc3656dd3391eb8c546f96d3" => :high_sierra
-    sha256 "1ee1f29b5af38aaff4ffc5288bb7a23d78be4bf560d7f6456b915c8218ad6b2a" => :sierra
-    sha256 "2fd337bf48fce294194500b584ffcb62fdf564661bb176a2508588a2adbba965" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "5bba29c5fe72093581be4ee0cf64fe345b7f366b9784f4cf9071674c7c720bbf"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "723dcc2a9a37a9ad238c335c289b62474284ecffc30564e3a4b7281386476f72"
+    sha256 cellar: :any_skip_relocation, monterey:       "25218ccd4e41873383140eb223da71c0d018d08a62a213fbfe102e745c97b355"
+    sha256 cellar: :any_skip_relocation, big_sur:        "9a50ad11be71a77763353b97fcf5214c44b1fc495d616d189633e1749e649689"
+    sha256 cellar: :any_skip_relocation, catalina:       "c82f967236223fcbb3245513aead6c3d34789031d3244440ec86c5aa4a95bd87"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "cc2e44b2d4cf1ac3d71572ecaa5f4ba3d0ba882a1c9ed7813ca7d8edda546cc6"
   end
 
-  depends_on "ghc@8.0" => :build
   depends_on "cabal-install" => :build
+  depends_on "ghc" => :build
   depends_on "pkg-config" => :build
   depends_on "nettle"
+
+  uses_from_macos "zlib"
 
   resource "homebrew-key.gpg" do
     url "https://gist.githubusercontent.com/zmwangx/be307671d11cd78985bd3a96182f15ea/raw/c7e803814efc4ca96cc9a56632aa542ea4ccf5b3/homebrew-key.gpg"
@@ -26,14 +28,13 @@ class HopenpgpTools < Formula
   end
 
   def install
-    # Reported 7 Oct 2017 to clint AT debian DOT org
-    # RE: happy, see https://github.com/simonmar/happy/issues/94
-    # RE: graphviz, see https://github.com/haskell-infra/hackage-trustees/issues/114
-    (buildpath/"cabal.config").write <<~EOS
-      constraints: happy<1.19.6, graphviz >= 2999.17.0.0
-    EOS
-
-    install_cabal_package :using => ["alex", "happy"]
+    # hOpenPGPTools's dependency hOpenPGP has conflict instance (Hashable Set) w/ hashable above 1.3.4.0
+    # remove when hOpenPGP remove conflict instance or add upper bound of hashable
+    # aeson has breaking change of 2.x.x.x
+    # remove when hopenpgp-tools adopt aeson 2.x.x.x or add upper bound of aeson
+    cabal_args = std_cabal_v2_args + ["--constraint=hashable<1.3.4.0", "--constraint=aeson<1.6"]
+    system "cabal", "v2-update"
+    system "cabal", "v2-install", *cabal_args
   end
 
   test do

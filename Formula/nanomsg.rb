@@ -1,14 +1,23 @@
 class Nanomsg < Formula
   desc "Socket library in C"
-  homepage "http://nanomsg.org"
-  url "https://github.com/nanomsg/nanomsg/archive/1.1.2.tar.gz"
-  sha256 "3c52165a735c2fb597d2306593ae4b17900688b90113d4115ad8480288f28ccb"
-  head "https://github.com/nanomsg/nanomsg.git"
+  homepage "https://nanomsg.org/"
+  url "https://github.com/nanomsg/nanomsg/archive/1.2.tar.gz"
+  sha256 "6ef7282e833df6a364f3617692ef21e59d5c4878acea4f2d7d36e21c8858de67"
+  license "MIT"
+  head "https://github.com/nanomsg/nanomsg.git", branch: "master"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "dd584d9e1a3a2ed69a36f9db5cfb6aa0a25c57492fce5dc0f9c4881acc922583" => :high_sierra
-    sha256 "123358e13bb19279f98efc1409662d7243ddd3cbda09dd2d6e1537fb15f61d33" => :sierra
-    sha256 "0e8011a28082c5ecd421d614ec9cad8288fc5362ce605fd20231579a6073c7f0" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "dcfbd463f07433a38c053f412678fcf5eb718ba13bafc86930bac6c7af651d55"
+    sha256 cellar: :any,                 arm64_big_sur:  "78c5546a8a36be470a1aab0bfd05c473e841981ce51388ea395dcc94ce5c7a93"
+    sha256 cellar: :any,                 monterey:       "112db66905b5f3b99bc8740e33b7735a5ea3da4eb4d5e14ddd466c736b24e4eb"
+    sha256 cellar: :any,                 big_sur:        "4ef65cd7590b96d868f21168e970892fdbe216f3bc0a74beb35006b24049b6ea"
+    sha256 cellar: :any,                 catalina:       "421059d935dabba7625c58d56408f0658dab708c3dae59caf7f459c38d9bb632"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "099a03bfe5111a28fe413cc3e15958844adaf5324b68f86d30497ad4a87ded53"
   end
 
   depends_on "cmake" => :build
@@ -20,19 +29,14 @@ class Nanomsg < Formula
   end
 
   test do
-    bind = "tcp://127.0.0.1:8000"
+    bind = "tcp://127.0.0.1:#{free_port}"
 
-    pid = fork do
+    fork do
       exec "#{bin}/nanocat --rep --bind #{bind} --format ascii --data home"
     end
     sleep 2
 
-    begin
-      output = shell_output("#{bin}/nanocat --req --connect #{bind} --format ascii --data brew")
-      assert_match /home/, output
-    ensure
-      Process.kill("SIGINT", pid)
-      Process.wait(pid)
-    end
+    output = shell_output("#{bin}/nanocat --req --connect #{bind} --format ascii --data brew")
+    assert_match "home", output
   end
 end

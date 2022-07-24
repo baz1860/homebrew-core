@@ -1,48 +1,54 @@
 class Gedit < Formula
-  desc "The GNOME text editor"
+  desc "GNOME text editor"
   homepage "https://wiki.gnome.org/Apps/Gedit"
-  url "https://download.gnome.org/sources/gedit/3.22/gedit-3.22.1.tar.xz"
-  sha256 "aa7bc3618fffa92fdb7daf2f57152e1eb7962e68561a9c92813d7bbb7fc9492b"
-  revision 2
+  url "https://download.gnome.org/sources/gedit/42/gedit-42.1.tar.xz"
+  sha256 "7f1fd43df5110d4c37de6541993f41f0fbc3efc790900e92053479ba069920e9"
+  license "GPL-2.0-or-later"
 
   bottle do
-    sha256 "7034ca573e7ec077be39b582ffad8993225268383acf766fec69cd1326bf5fad" => :high_sierra
-    sha256 "4e3524ae109cf26bb619b5d908cefd7209c089c8ff490dad4f6ff520c2b18a0b" => :sierra
-    sha256 "2668fb181f4d16c4976d4d670988cef16c7acbe392c2fb502de2ab3170bc954f" => :el_capitan
+    sha256 arm64_monterey: "6bf62715f6d13766d9f5acecccb83388fd76e676717bf66fd35c1583f24cc52a"
+    sha256 arm64_big_sur:  "befed484ace491f22c794ab58ab00c163926f3a371fbaef317aed9fce9777eb6"
+    sha256 monterey:       "00937891d211cb9135396a1772b1455ea25b5456e95ccd3fb959d99b0463ee4f"
+    sha256 big_sur:        "a8f006d3c869d4758f8c2807a689105148af330f9ee3261d0bbe07e9e70793ea"
+    sha256 catalina:       "0b09d9d9db66e4c95211942e5b0bb8edd341ea40edb6ddb272876a1e72f3753b"
+    sha256 x86_64_linux:   "799ad9372a0590ae0bb113949df29cd769207a46dc3378d83b6b03982f41d1c4"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
   depends_on "itstool" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => [:build, :test]
+  depends_on "vala" => :build
+  depends_on "adwaita-icon-theme"
   depends_on "atk"
   depends_on "cairo"
   depends_on "gdk-pixbuf"
   depends_on "gettext"
   depends_on "glib"
-  depends_on "pango"
-  depends_on "gtk+3"
-  depends_on "gtk-mac-integration"
   depends_on "gobject-introspection"
-  depends_on "gspell"
-  depends_on "iso-codes"
-  depends_on "libxml2"
-  depends_on "libpeas"
-  depends_on "gtksourceview3"
   depends_on "gsettings-desktop-schemas"
-  depends_on "adwaita-icon-theme"
+  depends_on "gspell"
+  depends_on "gtk+3"
+  depends_on "gtksourceview4"
+  depends_on "libpeas"
+  depends_on "libsoup"
+  depends_on "libxml2"
+  depends_on "pango"
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--disable-updater",
-                          "--disable-schemas-compile",
-                          "--disable-python"
-    system "make", "install"
+    ENV["DESTDIR"] = "/"
+    ENV.append "LDFLAGS", "-Wl,-rpath,#{lib}/gedit" if OS.linux?
+
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   def post_install
-    system "#{Formula["glib"].opt_bin}/glib-compile-schemas", "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
+    system Formula["glib"].opt_bin/"glib-compile-schemas", HOMEBREW_PREFIX/"share/glib-2.0/schemas"
+    system Formula["gtk+3"].opt_bin/"gtk3-update-icon-cache", "-qtf", HOMEBREW_PREFIX/"share/icons/hicolor"
   end
 
   test do
@@ -50,82 +56,15 @@ class Gedit < Formula
     system bin/"gedit", "--version"
     # API test
     (testpath/"test.c").write <<~EOS
-      #include <gedit/gedit-utils.h>
+      #include <gedit/gedit-debug.h>
 
       int main(int argc, char *argv[]) {
-        gchar *text = gedit_utils_make_valid_utf8("test text");
+        gedit_debug_init();
         return 0;
       }
     EOS
-    ENV.libxml2
-    atk = Formula["atk"]
-    cairo = Formula["cairo"]
-    fontconfig = Formula["fontconfig"]
-    freetype = Formula["freetype"]
-    gdk_pixbuf = Formula["gdk-pixbuf"]
-    gettext = Formula["gettext"]
-    glib = Formula["glib"]
-    gobject_introspection = Formula["gobject-introspection"]
-    gtkx3 = Formula["gtk+3"]
-    gtksourceview3 = Formula["gtksourceview3"]
-    libepoxy = Formula["libepoxy"]
-    libffi = Formula["libffi"]
-    libpeas = Formula["libpeas"]
-    libpng = Formula["libpng"]
-    pango = Formula["pango"]
-    pixman = Formula["pixman"]
-    flags = %W[
-      -I#{atk.opt_include}/atk-1.0
-      -I#{cairo.opt_include}/cairo
-      -I#{fontconfig.opt_include}
-      -I#{freetype.opt_include}/freetype2
-      -I#{gdk_pixbuf.opt_include}/gdk-pixbuf-2.0
-      -I#{gettext.opt_include}
-      -I#{glib.opt_include}/gio-unix-2.0/
-      -I#{glib.opt_include}/glib-2.0
-      -I#{glib.opt_lib}/glib-2.0/include
-      -I#{gobject_introspection.opt_include}/gobject-introspection-1.0
-      -I#{gtksourceview3.opt_include}/gtksourceview-3.0
-      -I#{gtkx3.opt_include}/gtk-3.0
-      -I#{include}/gedit-3.14
-      -I#{libepoxy.opt_include}
-      -I#{libffi.opt_lib}/libffi-3.0.13/include
-      -I#{libpeas.opt_include}/libpeas-1.0
-      -I#{libpng.opt_include}/libpng16
-      -I#{pango.opt_include}/pango-1.0
-      -I#{pixman.opt_include}/pixman-1
-      -D_REENTRANT
-      -L#{atk.opt_lib}
-      -L#{cairo.opt_lib}
-      -L#{gdk_pixbuf.opt_lib}
-      -L#{lib}/gedit
-      -L#{gettext.opt_lib}
-      -L#{glib.opt_lib}
-      -L#{gobject_introspection.opt_lib}
-      -L#{gtksourceview3.opt_lib}
-      -L#{gtkx3.opt_lib}
-      -L#{libpeas.opt_lib}
-      -L#{lib}
-      -L#{pango.opt_lib}
-      -latk-1.0
-      -lcairo
-      -lcairo-gobject
-      -lgdk-3
-      -lgdk_pixbuf-2.0
-      -lgedit
-      -lgio-2.0
-      -lgirepository-1.0
-      -lglib-2.0
-      -lgmodule-2.0
-      -lgobject-2.0
-      -lgtk-3
-      -lgtksourceview-3.0
-      -lintl
-      -lpango-1.0
-      -lpangocairo-1.0
-      -lpeas-1.0
-      -lpeas-gtk-1.0
-    ]
+    flags = shell_output("pkg-config --cflags --libs gedit").chomp.split
+    flags << "-Wl,-rpath,#{lib}/gedit" if OS.linux?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

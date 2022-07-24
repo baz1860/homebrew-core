@@ -1,47 +1,51 @@
 class Libspatialite < Formula
   desc "Adds spatial SQL capabilities to SQLite"
   homepage "https://www.gaia-gis.it/fossil/libspatialite/index"
-  revision 5
+  license any_of: ["MPL-1.1", "GPL-2.0-or-later", "LGPL-2.1-or-later"]
+  revision 2
 
   stable do
-    url "https://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-4.3.0a.tar.gz"
-    mirror "https://ftp.netbsd.org/pub/pkgsrc/distfiles/libspatialite-4.3.0a.tar.gz"
-    mirror "https://www.mirrorservice.org/sites/ftp.netbsd.org/pub/pkgsrc/distfiles/libspatialite-4.3.0a.tar.gz"
-    sha256 "88900030a4762904a7880273f292e5e8ca6b15b7c6c3fb88ffa9e67ee8a5a499"
+    url "https://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-5.0.1.tar.gz"
+    mirror "https://ftp.netbsd.org/pub/pkgsrc/distfiles/libspatialite-5.0.1.tar.gz"
+    mirror "https://www.mirrorservice.org/sites/ftp.netbsd.org/pub/pkgsrc/distfiles/libspatialite-5.0.1.tar.gz"
+    sha256 "eecbc94311c78012d059ebc0fae86ea5ef6eecb13303e6e82b3753c1b3409e98"
 
+    # Fix -flat_namespace being used on Big Sur and later.
     patch do
-      url "https://raw.githubusercontent.com/Homebrew/formula-patches/27a0e51936e01829d0a6f3c75a7fbcaf92bb133f/libspatialite/sqlite310.patch"
-      sha256 "459434f5e6658d6f63d403a7795aa5b198b87fc9f55944c714180e7de662fce2"
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff"
+      sha256 "83af02f2aa2b746bb7225872cab29a253264be49db0ecebb12f841562d9a2923"
     end
   end
 
+  livecheck do
+    url "https://www.gaia-gis.it/gaia-sins/libspatialite-sources/"
+    regex(/href=.*?libspatialite[._-]v?(\d+(?:\.\d+)+[a-z]?)\.t/i)
+  end
+
   bottle do
-    cellar :any
-    sha256 "97f25eee82fd0a111d8301eb29c3f8ea5081afd285a0418acda71440a2ed88e0" => :high_sierra
-    sha256 "38f71998eb23fad84ffedae7591ccb731b7a66435f9aac8c0ff4842a5392fd15" => :sierra
-    sha256 "f688d451502926229f0e180e14e620f9a3ff7b646a22df07342b4f0b74bdf9a3" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "8dc0901eff2763a59d1ddc22f3ed19ef1a1b706ba2d4069a092e1c86e730db91"
+    sha256 cellar: :any,                 arm64_big_sur:  "bdc286c42eb9dcead8e145ae385f4764cc6b081b4284388749b3e0ee270b4431"
+    sha256 cellar: :any,                 monterey:       "87c4d5eedbd6657e5bbb5f02c64f82dd9d7de502c57fecd44a2059cdff476724"
+    sha256 cellar: :any,                 big_sur:        "001ef9d46fb1b508459bf5a1aac259643def005b8fb808663dd32e49c89cff5a"
+    sha256 cellar: :any,                 catalina:       "d403ece87a9d8349fc2bad142f52b1c44c423cc17fbc7da5ee3f2a2a168dd796"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b7936163e48b970c168ccd0b53d917b47364d91b4698aed7cd1199858d0e30b8"
   end
 
   head do
-    url "https://www.gaia-gis.it/fossil/libspatialite", :using => :fossil
+    url "https://www.gaia-gis.it/fossil/libspatialite", using: :fossil
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  option "without-freexl", "Build without support for reading Excel files"
-  option "without-libxml2", "Disable support for xml parsing (parsing needed by spatialite-gui)"
-  option "without-geopackage", "Build without OGC GeoPackage support"
-
   depends_on "pkg-config" => :build
-  depends_on "proj"
+  depends_on "freexl"
   depends_on "geos"
-  # Needs SQLite > 3.7.3 which rules out system SQLite on Snow Leopard and
-  # below. Also needs dynamic extension support which rules out system SQLite
-  # on Lion. Finally, RTree index support is required as well.
+  depends_on "librttopo"
+  depends_on "libxml2"
+  depends_on "minizip"
+  depends_on "proj"
   depends_on "sqlite"
-  depends_on "libxml2" => :recommended
-  depends_on "freexl" => :recommended
 
   def install
     system "autoreconf", "-fi" if build.head?
@@ -53,6 +57,7 @@ class Libspatialite < Formula
     inreplace "configure",
               "shrext_cmds='`test .$module = .yes && echo .so || echo .dylib`'",
               "shrext_cmds='.dylib'"
+    chmod 0755, "configure"
 
     # Ensure Homebrew's libsqlite is found before the system version.
     sqlite = Formula["sqlite"]
@@ -64,10 +69,8 @@ class Libspatialite < Formula
       --prefix=#{prefix}
       --with-sysroot=#{HOMEBREW_PREFIX}
       --enable-geocallbacks
+      --enable-rttopo=yes
     ]
-    args << "--enable-freexl=no" if build.without? "freexl"
-    args << "--enable-libxml2=no" if build.without? "libxml2"
-    args << "--enable-geopackage=no" if build.without? "geopackage"
 
     system "./configure", *args
     system "make", "install"

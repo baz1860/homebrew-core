@@ -2,29 +2,38 @@ class AwsSdkCpp < Formula
   desc "AWS SDK for C++"
   homepage "https://github.com/aws/aws-sdk-cpp"
   # aws-sdk-cpp should only be updated every 10 releases on multiples of 10
-  url "https://github.com/aws/aws-sdk-cpp/archive/1.3.50.tar.gz"
-  sha256 "bab117392759ab829465e765630fd9332045fb940bea2233c700ae8ad97808ea"
-  head "https://github.com/aws/aws-sdk-cpp.git"
+  url "https://github.com/aws/aws-sdk-cpp.git",
+      tag:      "1.9.300",
+      revision: "6dd2b5755a099ae4f5c8e3af156157dba8cd5cf0"
+  license "Apache-2.0"
+  head "https://github.com/aws/aws-sdk-cpp.git", branch: "main"
 
   bottle do
-    cellar :any
-    sha256 "63bbeb495fefc89ef5eac3070c40606541b68bbb35ce9aea2c6100468308c947" => :high_sierra
-    sha256 "e2f0e419c9df4eac74946b002cc5e9ed989b0c11f8a401e9c41b2b86e3e799ae" => :sierra
-    sha256 "bd3881fe6ed4e25b392cdd064e69b8e25fbd080b5697ed21f1ce3c05be01b92a" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "75b03e2f17881722d876516e8e03e793c2c55795203e26a13390e3a22af50b21"
+    sha256 cellar: :any,                 arm64_big_sur:  "6cbccb18c7300c98c9f72084e3a483064f1c1e4bacf43d92ca4e80159df759f9"
+    sha256 cellar: :any,                 monterey:       "f37683ae377a0f1b20845af721e98b1d38cdf5e5e6bd84cdd2d2ac978526e704"
+    sha256 cellar: :any,                 big_sur:        "a1d6cce4d44db4cf086342f5597c0dae1099186a08ec019cf36070ac34461dad"
+    sha256 cellar: :any,                 catalina:       "206681242bd90b14998335f0e5fe6a501bb9dbdca5690f07073e469b889d2013"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2afb18c8813ea403e8db9814b5135cd2a4518d83b83f42e973a67ad43f5bc501"
   end
-
-  option "with-static", "Build with static linking"
-  option "without-http-client", "Don't include the libcurl HTTP client"
 
   depends_on "cmake" => :build
 
-  def install
-    args = std_cmake_args
-    args << "-DSTATIC_LINKING=1" if build.with? "static"
-    args << "-DNO_HTTP_CLIENT=1" if build.without? "http-client"
+  uses_from_macos "curl"
 
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
+
+  def install
+    ENV.append "LDFLAGS", "-Wl,-rpath,#{rpath}"
     mkdir "build" do
-      system "cmake", "..", *args
+      args = %w[
+        -DENABLE_TESTING=OFF
+      ]
+      system "cmake", "..", *std_cmake_args, *args
       system "make"
       system "make", "install"
     end
@@ -42,7 +51,8 @@ class AwsSdkCpp < Formula
           return 0;
       }
     EOS
-    system ENV.cxx, "test.cpp", "-o", "test", "-L#{lib}", "-laws-cpp-sdk-core"
+    system ENV.cxx, "-std=c++11", "test.cpp", "-L#{lib}", "-laws-cpp-sdk-core",
+           "-o", "test"
     system "./test"
   end
 end

@@ -1,84 +1,63 @@
 class Freeling < Formula
   desc "Suite of language analyzers"
   homepage "http://nlp.lsi.upc.edu/freeling/"
-  url "https://github.com/TALP-UPC/FreeLing/releases/download/4.0/FreeLing-4.0.tar.gz"
-  sha256 "c79d21c5af215105ba16eb69ee75b589bf7d41abce86feaa40757513e33c6ecf"
-  revision 8
+  url "https://github.com/TALP-UPC/FreeLing/releases/download/4.2/FreeLing-src-4.2.tar.gz"
+  sha256 "f96afbdb000d7375426644fb2f25baff9a63136dddce6551ea0fd20059bfce3b"
+  license "AGPL-3.0-only"
+  revision 7
 
   bottle do
-    sha256 "5a8a54e6fec19fc08e012942e7956d9052dc8d0e948d4420802bbbe32d42f8fd" => :high_sierra
-    sha256 "9377df49e3b5a89954f251d3d6a382adf7a67fef8657c5dd10ff8705da5dc524" => :sierra
-    sha256 "4aeb8e5fc2a7f18394f1aebce4896c59379f8dc9f6d6e4e5b86e0b2f0fe58aa5" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "d8ae1e0fdb2f2db8770004741ba7fc6d985ed66a0820b6849cd9a9d7e79da744"
+    sha256 cellar: :any,                 arm64_big_sur:  "9e170df3becfa06aa7edaf75c06a26a39e756c97ffc372adb660053f4d82a67a"
+    sha256 cellar: :any,                 monterey:       "25e1fe2ec2d1728ebe8cee27dd7b5baf95d32d1cff6813a0ced2eb927421fc01"
+    sha256 cellar: :any,                 big_sur:        "00c5ce7d582ab965d086ec8c7e650fd43cc8e4fadc6ec7b9b161e7cd0b00c71e"
+    sha256 cellar: :any,                 catalina:       "a22dbaf57d31df4e85f1e31bcd41206b49c19f39c6ec5675e616dd1b710f0675"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "49029bdcd98e38c42d4c6968182959f415f2ef999b0d6aff85cd570b71652d3d"
   end
 
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
+  depends_on "cmake" => :build
+  depends_on "boost"
   depends_on "icu4c"
 
-  conflicts_with "hunspell", :because => "both install 'analyze' binary"
+  conflicts_with "dynet", because: "freeling ships its own copy of dynet"
+  conflicts_with "eigen", because: "freeling ships its own copy of eigen"
+  conflicts_with "foma", because: "freeling ships its own copy of foma"
+  conflicts_with "hunspell", because: "both install 'analyze' binary"
 
-  resource "boost" do
-    url "https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.tar.bz2"
-    sha256 "7bcc5caace97baa948931d712ea5f37038dbb1c5d89b43ad4def4ed7cb683332"
+  # Fixes `error: use of undeclared identifier 'log'`
+  # https://github.com/TALP-UPC/FreeLing/issues/114
+  patch do
+    url "https://github.com/TALP-UPC/FreeLing/commit/e052981e93e0a663784b04391471a5aa9c37718f.patch?full_index=1"
+    sha256 "02c8b9636413182df420cb2f855a96de8760202a28abeff2ea7bdbe5f95deabc"
+  end
+
+  # Fixes `error: use of undeclared identifier 'fabs'`
+  # Also reported in issue linked above
+  patch do
+    url "https://github.com/TALP-UPC/FreeLing/commit/36e267b453c4f2bce88014382c7e661657d1b234.patch?full_index=1"
+    sha256 "6cf1d4dfa381d7d43978cde194599ffadf7596bab10ff48cdb214c39363b55a0"
+  end
+
+  # Also fixes `error: use of undeclared identifier 'fabs'`
+  # See issue in first patch
+  patch do
+    url "https://github.com/TALP-UPC/FreeLing/commit/34a1a78545fb6a4ca31ee70e59fd46211fd3f651.patch?full_index=1"
+    sha256 "8f7f87a630a9d13ea6daebf210b557a095b5cb8747605eb90925a3aecab97e18"
   end
 
   def install
-    resource("boost").stage do
-      # Force boost to compile with the desired compiler
-      open("user-config.jam", "a") do |file|
-        file.write "using darwin : : #{ENV.cxx} ;\n"
-      end
+    # Allow compilation without extra data (more than 1 GB), should be fixed
+    # in next release
+    # https://github.com/TALP-UPC/FreeLing/issues/112
+    inreplace "CMakeLists.txt", "SET(languages \"as;ca;cs;cy;de;en;es;fr;gl;hr;it;nb;pt;ru;sl\")",
+                                "SET(languages \"en;es;pt\")"
+    inreplace "CMakeLists.txt", "SET(variants \"es/es-old;es/es-ar;es/es-cl;ca/balear;ca/valencia\")",
+                                "SET(variants \"es/es-old;es/es-ar;es/es-cl\")"
 
-      bootstrap_args = %W[
-        --without-icu
-        --prefix=#{libexec}/boost
-        --libdir=#{libexec}/boost/lib
-        --with-icu=#{Formula["icu4c"].opt_prefix}
-        --with-libraries=program_options,regex,system,thread
-      ]
-
-      args = %W[
-        --prefix=#{libexec}/boost
-        --libdir=#{libexec}/boost/lib
-        -d2
-        -j#{ENV.make_jobs}
-        --ignore-site-config
-        --layout=tagged
-        --user-config=user-config.jam
-        install
-        threading=multi
-        link=shared
-        optimization=space
-        variant=release
-        cxxflags=-std=c++11
-      ]
-
-      if ENV.compiler == :clang
-        args << "cxxflags=-stdlib=libc++" << "linkflags=-stdlib=libc++"
-      end
-
-      system "./bootstrap.sh", *bootstrap_args
-      system "./b2", "headers"
-      system "./b2", *args
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args
+      system "make", "install"
     end
-
-    (libexec/"boost/lib").each_child do |dylib|
-      MachO::Tools.change_dylib_id(dylib.to_s, dylib.to_s)
-    end
-
-    icu4c = Formula["icu4c"]
-    libtool = Formula["libtool"]
-    ENV.append "LDFLAGS", "-L#{libtool.lib}"
-    ENV.append "LDFLAGS", "-L#{icu4c.lib}"
-    ENV.append "LDFLAGS", "-L#{libexec}/boost/lib"
-    ENV.append "CPPFLAGS", "-I#{libtool.include}"
-    ENV.append "CPPFLAGS", "-I#{icu4c.include}"
-    ENV.append "CPPFLAGS", "-I#{libexec}/boost/include"
-
-    system "autoreconf", "--install"
-    system "./configure", "--prefix=#{prefix}", "--enable-boost-locale"
-    system "make", "install"
 
     libexec.install "#{bin}/fl_initialize"
     inreplace "#{bin}/analyze",

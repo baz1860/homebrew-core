@@ -3,24 +3,26 @@ class Lcdproc < Formula
   homepage "http://www.lcdproc.org/"
   url "https://github.com/lcdproc/lcdproc/releases/download/v0.5.9/lcdproc-0.5.9.tar.gz"
   sha256 "d48a915496c96ff775b377d2222de3150ae5172bfb84a6ec9f9ceab962f97b83"
+  license "GPL-2.0"
+  revision 2
 
   bottle do
-    sha256 "59439a9e18e3e8e636a60e1710cd10f8a4bad8632d08782fc4442a2427fe1ddb" => :high_sierra
-    sha256 "2371b10dc3bd2644ac83ced35dcde1960110217385f9f5547917ebbbb823e332" => :sierra
-    sha256 "1de4bece6e781dc6d88d000039095cbf6edbd10313163ef9644152d67778171c" => :el_capitan
-    sha256 "2ac794ede644c1c86b321af648eb2b0197762cb7e5eb09cd0a31e8eed842e2f9" => :yosemite
+    sha256 monterey:     "90bb0544163a3966aac4de0dffaff4a9cc59cb05e08c314a28829fcf8df8e38b"
+    sha256 big_sur:      "937564e19f5e45fd49b02e83577a4e217abf89ca3884958b3f9e80b2132fa8df"
+    sha256 catalina:     "8899d5c5afebdf222f014f383e009071bda3f075a08e5f0d729a81f99c9c8086"
+    sha256 x86_64_linux: "d869dec7aa2e03b2c6bc21a281ac56537d5a596e0a87442fc79fda035f000282"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "libftdi"
   depends_on "libusb"
-  depends_on "libhid"
-  depends_on "libftdi0"
+  depends_on "libusb-compat" # Remove when all drivers migrated https://github.com/lcdproc/lcdproc/issues/13
+
+  uses_from_macos "ncurses"
 
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
+    system "./configure", *std_configure_args,
                           "--disable-silent-rules",
-                          "--prefix=#{prefix}",
                           "--enable-drivers=all",
                           "--enable-libftdi=yes"
     system "make", "install"

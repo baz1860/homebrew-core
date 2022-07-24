@@ -1,32 +1,27 @@
 class Pacparser < Formula
   desc "Library to parse proxy auto-config (PAC) files"
-  homepage "https://github.com/pacparser/pacparser"
-  url "https://github.com/pacparser/pacparser/archive/1.3.7.tar.gz"
-  sha256 "575c5d8096b4c842b2af852bbb8bcfde96170b28b49f33249dbe2057a8beea13"
-  head "https://github.com/pacparser/pacparser.git"
+  homepage "https://github.com/manugarg/pacparser"
+  url "https://github.com/manugarg/pacparser/archive/v1.4.0.tar.gz"
+  sha256 "d62d30aa6e2b4ccdf6773fc30a8b90d1d64eb6ad8edcbf56d2b803e913dcddbb"
+  license "LGPL-3.0-or-later"
+  head "https://github.com/manugarg/pacparser.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "2edae05d7acea79c4a395cb9052244101cb78f15c92bbcf7235eacbcd6d09d53" => :high_sierra
-    sha256 "38db6b19b4cec0c237b6c9e11b67db9514b58e12e5dad0edc97e9919e57f71b3" => :sierra
-    sha256 "7cd235305c7701181eb78c7b35683e88bb9fb14172f4c1ff7028b3fd5b480cf9" => :el_capitan
-    sha256 "3d2092ad71629a2c71d5b88138d0ea7443247d7cd89414ef46a9cab7898b250c" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "c9a4d912f32c3d95b1d3e9908c1bf173b5454ab2fe97b72d542e7e9d3323acaa"
+    sha256 cellar: :any,                 arm64_big_sur:  "87c7b416faa3933313915c97df4908636f6fb90d076906aedb9ab0f6349b0184"
+    sha256 cellar: :any,                 monterey:       "66567eed659b8c575fd086749fb206f091b4dac80c18aace817402f53363ce5d"
+    sha256 cellar: :any,                 big_sur:        "ec53ab3e50bc58c1fb3226e83ea9dea4ccf12294674588a2ac05177699816b49"
+    sha256 cellar: :any,                 catalina:       "99ad319b5cefd28b2d33f4645fa0f2f408a99b5905901eb61a052d38fa29df1a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b2afb1ac8ba357e7310b718a253d8d294ab9af92467a55c48110a73cc2284ea4"
   end
-
-  depends_on "python" => :optional
 
   def install
     # Disable parallel build due to upstream concurrency issue.
-    # https://github.com/pacparser/pacparser/issues/27
+    # https://github.com/manugarg/pacparser/issues/27
     ENV.deparallelize
     ENV["VERSION"] = version
     Dir.chdir "src"
-    system "make", "install",
-           "PREFIX=#{prefix}"
-    if build.with? "python"
-      system "make", "install-pymod",
-             "EXTRA_ARGS=\"--prefix=#{prefix}\""
-    end
+    system "make", "install", "PREFIX=#{prefix}"
   end
 
   test do
@@ -35,9 +30,9 @@ class Pacparser < Formula
       function FindProxyForURL(url, host) {
 
         if ((isPlainHostName(host) ||
-            dnsDomainIs(host, ".manugarg.com")) &&
-            !localHostOrDomainIs(host, "www.manugarg.com"))
-          return "plainhost/.manugarg.com";
+            dnsDomainIs(host, ".example.edu")) &&
+            !localHostOrDomainIs(host, "www.example.edu"))
+          return "plainhost/.example.edu";
 
         // Return externaldomain if host matches .*\.externaldomain\.example
         if (/.*\.externaldomain\.example/.test(host))
@@ -79,11 +74,11 @@ class Pacparser < Formula
       },
       {
         "cmd" => "-u http://host1",
-        "res" => "plainhost/.manugarg.com",
+        "res" => "plainhost/.example.edu",
       },
       {
-        "cmd" => "-u http://www1.manugarg.com",
-        "res" => "plainhost/.manugarg.com",
+        "cmd" => "-u http://www1.example.edu",
+        "res" => "plainhost/.example.edu",
       },
       {
         "cmd" => "-u http://manugarg.externaldomain.example",

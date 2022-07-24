@@ -1,42 +1,39 @@
 class Psqlodbc < Formula
   desc "Official PostgreSQL ODBC driver"
   homepage "https://odbc.postgresql.org"
-  url "https://ftp.postgresql.org/pub/odbc/versions/src/psqlodbc-10.01.0000.tar.gz"
-  sha256 "87ca436f268b92fd525113e78133f65b444c6feec474837c7ec39d128eaecab3"
+  url "https://ftp.postgresql.org/pub/odbc/versions/src/psqlodbc-13.02.0000.tar.gz"
+  sha256 "b39b7e5c41fd6475c551112fa724bf57c4a446175ec4188a90e2844cc1612585"
+
+  livecheck do
+    url "https://ftp.postgresql.org/pub/odbc/versions/src/"
+    regex(/href=.*?psqlodbc[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "b1a48d253a1c945b768d71834ae8774597ad1fd29e4814ba7da889a0ed044b4d" => :high_sierra
-    sha256 "ca7cc3b3e57f4a121d823baf9a8452f321e493765164325bf15a451381245e8a" => :sierra
-    sha256 "3c053b77eac2261f37c449f0b7cc4f620fae54687ae6e4b709b0459844be4c48" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "ed1b6837baffae5f6c56b867601f01a2e3afe17706a0807181f313bb433689d5"
+    sha256 cellar: :any,                 arm64_big_sur:  "45bf96f7600543acf57ff529ac884ce9da5d84ab3df2fba8c799c318988b17a8"
+    sha256 cellar: :any,                 monterey:       "9acc450ccbb8c63aebbc866a17f2b71b75297740ac8f6c9ea6bab5883f74e4a6"
+    sha256 cellar: :any,                 big_sur:        "8109e135efa71d1e0369b2433181819ef275bec48934a5b3107f99fcdce73efb"
+    sha256 cellar: :any,                 catalina:       "6da4ec9d0ec4ce763dc117b4e8c465289a90ea05c5c4d8bc954789334ea8021c"
+    sha256 cellar: :any,                 mojave:         "c766f5701dba28974ac654fcba040715fcef30a6fc9974802d7b61a5d63e0584"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "de683e7933da22982cc7d6804a8d5ebb0333c87c8cff49aa3ec23c8e2119ea8b"
   end
 
   head do
     url "https://git.postgresql.org/git/psqlodbc.git"
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  depends_on "openssl"
+  depends_on "openssl@1.1"
   depends_on "postgresql"
-  depends_on "unixodbc" => :recommended
-  depends_on "libiodbc" => :optional
+  depends_on "unixodbc"
 
   def install
-    if build.with?("libiodbc") && build.with?("unixodbc")
-      odie "psqlodbc: --without-unixodbc must be specified when using --with-libiodbc"
-    end
-
-    args = %W[
-      --prefix=#{prefix}
-    ]
-
-    args << "--with-iodbc=#{Formula["libiodbc"].opt_prefix}" if build.with?("libiodbc")
-    args << "--with-unixodbc=#{Formula["unixodbc"].opt_prefix}" if build.with?("unixodbc")
-
     system "./bootstrap" if build.head?
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}",
+                          "--with-unixodbc=#{Formula["unixodbc"].opt_prefix}"
     system "make"
     system "make", "install"
   end

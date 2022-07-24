@@ -1,37 +1,51 @@
 class DockerCredentialHelper < Formula
-  desc "macOS Credential Helper for Docker"
+  desc "Platform keystore credential helper for Docker"
   homepage "https://github.com/docker/docker-credential-helpers"
-  url "https://github.com/docker/docker-credential-helpers/archive/v0.6.0.tar.gz"
-  sha256 "7d8cdb67c89dece68e96dce11eab9d03c1d798296d3f3601eec4589b24664e7a"
-  head "https://github.com/docker/docker-credential-helpers.git"
+  url "https://github.com/docker/docker-credential-helpers/archive/v0.6.4.tar.gz"
+  sha256 "b97d27cefb2de7a18079aad31c9aef8e3b8a38313182b73aaf8b83701275ac83"
+  license "MIT"
+  head "https://github.com/docker/docker-credential-helpers.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
     rebuild 1
-    sha256 "a55283cbd0afea4e7241c7df92917e87e5367fa9bd518bfadca186f3af8fb0dc" => :high_sierra
-    sha256 "4296ea20d1b107c874b6ef6cdf116812c2ffe0eee3546cce168ac5d6b1008557" => :sierra
-    sha256 "e004af49ee34fca476c7d9da5ce94fa2f551dbc71fd8fd04d54079703cfbfe15" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "7fbfeca2a0efa2081e97fb1048f4b5236f07e3d23b1e18b04616de0a4678c27b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "2c33c81c19c588dba521a9cf3c7e9a9e402529a743c44e453be2d5a7de529173"
+    sha256 cellar: :any_skip_relocation, monterey:       "4ff0d7d5e31056b8c98f3bedd28cd07b48b59fdd34c600fdf94bdc77100cf1ee"
+    sha256 cellar: :any_skip_relocation, big_sur:        "a3efeacdbbce115d279f6d65dad68eca32afa0844d333a2c56f17ca36bba53f8"
+    sha256 cellar: :any_skip_relocation, catalina:       "1739db425f719496aea5493cfd6d24616931a212172aa320f58e28c51c065fa0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "fb26b7a359764d1f39562b7266448cd92b3cb167418041bf87ece7eacb27b5df"
   end
 
   depends_on "go" => :build
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "libsecret"
+  end
 
   def install
-    ENV["GOPATH"] = buildpath
-    dir = buildpath/"src/github.com/docker/docker-credential-helpers"
-    dir.install buildpath.children - [buildpath/".brew_home"]
-
-    cd dir do
+    if OS.mac?
       system "make", "vet_osx"
       system "make", "osxkeychain"
       bin.install "bin/docker-credential-osxkeychain"
-      prefix.install_metafiles
+    else
+      system "make", "vet_linux"
+      system "make", "pass"
+      system "make", "secretservice"
+      bin.install "bin/docker-credential-pass"
+      bin.install "bin/docker-credential-secretservice"
     end
   end
 
   test do
-    # A more complex test isn't possible as this tool operates using the macOS
-    # user keychain (incompatible with CI).
-    run_output = shell_output("#{bin}/docker-credential-osxkeychain", 1)
-    assert_match %r{^Usage: .*/docker-credential-osxkeychain.*}, run_output
+    if OS.mac?
+      run_output = shell_output("#{bin}/docker-credential-osxkeychain", 1)
+      assert_match %r{^Usage: .*/docker-credential-osxkeychain.*}, run_output
+    else
+      run_output = shell_output("#{bin}/docker-credential-pass list")
+      assert_match "{}", run_output
+
+      run_output = shell_output("#{bin}/docker-credential-secretservice list", 1)
+      assert_match "Error from list function in secretservice_linux.c", run_output
+    end
   end
 end

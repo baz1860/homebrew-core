@@ -2,109 +2,116 @@ class Erlang < Formula
   desc "Programming language for highly scalable real-time systems"
   homepage "https://www.erlang.org/"
   # Download tarball from GitHub; it is served faster than the official tarball.
-  url "https://github.com/erlang/otp/archive/OTP-20.2.4.tar.gz"
-  sha256 "82072944a1278ff992867b84da7499c64e34e8a853804f4e7a557235308c79d7"
-  head "https://github.com/erlang/otp.git"
+  url "https://github.com/erlang/otp/releases/download/OTP-25.0.2/otp_src_25.0.2.tar.gz"
+  sha256 "6a5cbc8d0f18e7a7fd2fb3d1567e2b70737ee4124cb22980ad4ed663c61e010e"
+  license "Apache-2.0"
+  revision 1
+
+  livecheck do
+    url :stable
+    regex(/^OTP[._-]v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "e871f14a23eccf573a5401094e5770224ab3f8f2a160bb2d00f41a7b5e2aa72e" => :high_sierra
-    sha256 "31fa89fb6bac105c02f4e8c2674c35315c560c5d096526d96ea286878e4d64f2" => :sierra
-    sha256 "af6cfa114f204c95c0487d8525c422b159adc00cc53b0e4f8bec571fba1c539b" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "8b515e9ff6051878359ea7d3c8d68224bd0ba1eb1fb112bae7fda19ea1640681"
+    sha256 cellar: :any,                 arm64_big_sur:  "db9ea131b9f0596e97da110cb1ed3d376d70a6a70ff95b3a0187a1bb601547bb"
+    sha256 cellar: :any,                 monterey:       "35a54845ac66df92309bfcf6f45be0e8b791b2663021b86e1ccbfc3549bc9640"
+    sha256 cellar: :any,                 big_sur:        "61add4c3705ffda2ff9dc41564e67ba7cf4b3b14be9e4e0f059a7e4d9bf0c856"
+    sha256 cellar: :any,                 catalina:       "f50ac6b34b93cf4ef9e26ff1abc969cbf99138fe3d26bffee7af5f38ce25575d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a01ec9a6ce262a3ca14befa4fb6442bf8167d40bb10f408bce5497d24496ec99"
   end
 
-  option "without-hipe", "Disable building hipe; fails on various macOS systems"
-  option "with-native-libs", "Enable native library compilation"
-  option "with-dirty-schedulers", "Enable experimental dirty schedulers"
-  option "with-java", "Build jinterface application"
-  option "without-docs", "Do not install documentation"
+  head do
+    url "https://github.com/erlang/otp.git"
 
-  deprecated_option "disable-hipe" => "without-hipe"
-  deprecated_option "no-docs" => "without-docs"
-
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
-  depends_on "openssl"
-  depends_on "fop" => :optional # enables building PDF docs
-  depends_on :java => :optional
-  depends_on "wxmac" => :recommended # for GUI apps like observer
-
-  resource "man" do
-    url "https://www.erlang.org/download/otp_doc_man_20.2.tar.gz"
-    mirror "https://fossies.org/linux/misc/otp_doc_man_20.2.tar.gz"
-    sha256 "950e088f9e47fc10a98e3f67d6420a990650836c648686a2f5dafe331747cbdf"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
+
+  depends_on "openssl@1.1"
+  depends_on "wxwidgets" # for GUI apps like observer
 
   resource "html" do
-    url "https://www.erlang.org/download/otp_doc_html_20.2.tar.gz"
-    mirror "https://fossies.org/linux/misc/otp_doc_html_20.2.tar.gz"
-    sha256 "7f5e7d4cd0c58e15d7d29231931c2a710f7f5fdfcb0ff8edb8142969520c4256"
+    url "https://github.com/erlang/otp/releases/download/OTP-25.0.2/otp_doc_html_25.0.2.tar.gz"
+    mirror "https://fossies.org/linux/misc/otp_doc_html_25.0.2.tar.gz"
+    sha256 "1927c0536df13c03ecf30c223f56ae1f594f369ec5f8b88f6baa2c047bed151a"
   end
 
   def install
     # Unset these so that building wx, kernel, compiler and
-    # other modules doesn't fail with an unintelligable error.
+    # other modules doesn't fail with an unintelligible error.
     %w[LIBS FLAGS AFLAGS ZFLAGS].each { |k| ENV.delete("ERL_#{k}") }
 
-    ENV["FOP"] = "#{HOMEBREW_PREFIX}/bin/fop" if build.with? "fop"
-
     # Do this if building from a checkout to generate configure
-    system "./otp_build", "autoconf" if File.exist? "otp_build"
+    system "./otp_build", "autoconf" unless File.exist? "configure"
 
     args = %W[
       --disable-debug
       --disable-silent-rules
       --prefix=#{prefix}
-      --enable-kernel-poll
-      --enable-threads
-      --enable-sctp
       --enable-dynamic-ssl-lib
-      --with-ssl=#{Formula["openssl"].opt_prefix}
+      --enable-hipe
       --enable-shared-zlib
       --enable-smp-support
+      --enable-threads
+      --enable-wx
+      --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
+      --without-javac
     ]
 
-    args << "--enable-darwin-64bit" if MacOS.prefer_64_bit?
-    args << "--enable-native-libs" if build.with? "native-libs"
-    args << "--enable-dirty-schedulers" if build.with? "dirty-schedulers"
-    args << "--enable-wx" if build.with? "wxmac"
-    args << "--with-dynamic-trace=dtrace" if MacOS::CLT.installed?
-
-    if build.without? "hipe"
-      # HIPE doesn't strike me as that reliable on macOS
-      # https://syntatic.wordpress.com/2008/06/12/macports-erlang-bus-error-due-to-mac-os-x-1053-update/
-      # https://www.erlang.org/pipermail/erlang-patches/2008-September/000293.html
-      args << "--disable-hipe"
-    else
-      args << "--enable-hipe"
-    end
-
-    if build.with? "java"
-      args << "--with-javac"
-    else
-      args << "--without-javac"
+    if OS.mac?
+      args << "--enable-darwin-64bit"
+      args << "--enable-kernel-poll" if MacOS.version > :el_capitan
+      args << "--with-dynamic-trace=dtrace" if MacOS::CLT.installed?
     end
 
     system "./configure", *args
     system "make"
     system "make", "install"
 
-    if build.with? "docs"
-      (lib/"erlang").install resource("man").files("man")
-      doc.install resource("html")
-    end
+    # Build the doc chunks (manpages are also built by default)
+    system "make", "docs", "DOC_TARGETS=chunks"
+    ENV.deparallelize { system "make", "install-docs" }
+
+    doc.install resource("html")
   end
 
-  def caveats; <<~EOS
-    Man pages can be found in:
-      #{opt_lib}/erlang/man
+  def caveats
+    <<~EOS
+      Man pages can be found in:
+        #{opt_lib}/erlang/man
 
-    Access them with `erl -man`, or add this directory to MANPATH.
+      Access them with `erl -man`, or add this directory to MANPATH.
     EOS
   end
 
   test do
     system "#{bin}/erl", "-noshell", "-eval", "crypto:start().", "-s", "init", "stop"
+    (testpath/"factorial").write <<~EOS
+      #!#{bin}/escript
+      %% -*- erlang -*-
+      %%! -smp enable -sname factorial -mnesia debug verbose
+      main([String]) ->
+          try
+              N = list_to_integer(String),
+              F = fac(N),
+              io:format("factorial ~w = ~w\n", [N,F])
+          catch
+              _:_ ->
+                  usage()
+          end;
+      main(_) ->
+          usage().
+
+      usage() ->
+          io:format("usage: factorial integer\n").
+
+      fac(0) -> 1;
+      fac(N) -> N * fac(N-1).
+    EOS
+    chmod 0755, "factorial"
+    assert_match "usage: factorial integer", shell_output("./factorial")
+    assert_match "factorial 42 = 1405006117752879898543142606244511569936384000000000", shell_output("./factorial 42")
   end
 end

@@ -1,17 +1,14 @@
 class MozGitTools < Formula
   desc "Tools for working with Git at Mozilla"
   homepage "https://github.com/mozilla/moz-git-tools"
-  url "https://github.com/mozilla/moz-git-tools.git",
-    :tag => "v0.1", :revision => "cfe890e6f81745c8b093b20a3dc22d28f9fc0032"
-  head "https://github.com/mozilla/moz-git-tools.git"
+  url "https://github.com/mozilla/moz-git-tools/archive/refs/tags/v0.1.tar.gz"
+  sha256 "defb5c369ff94f72d272692282404044fa21aa616487bcb4d26e51635c3bc188"
+  license all_of: ["GPL-2.0-only", "CC0-1.0"]
+  head "https://github.com/mozilla/moz-git-tools.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "0901261be02f9a82cd6ab1b287160e047c4160d81a443f4edc0a7326fdf08a6d" => :high_sierra
-    sha256 "7a771b0e71a44dafd3fc4eb2210f909d412f9ea541a7ff50a96ce272204cc501" => :sierra
-    sha256 "c5ddb2e842a6fb26ba5feacdee6bac287d94732abd888bd11bc5c80be4f100a4" => :el_capitan
-    sha256 "91f89ec1014d6c7b395571210c0f21b1e701f4bfb90540a94fa3daafd4472d3b" => :yosemite
-    sha256 "8df4c14355c7b6291964609122f8643f61d77e05c2b6b68517710e5653a1423e" => :mavericks
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "908939f8f921ec7d4a31b8f27686d7f44ffb2492ceaae621b080121b60b581d8"
   end
 
   def install
@@ -34,11 +31,11 @@ class MozGitTools < Formula
       [user]
         name = Real Person
         email = notacat@hotmail.cat
-      EOS
+    EOS
     system "git", "init"
     (testpath/"myfile").write("my file")
     system "git", "add", "myfile"
     system "git", "commit", "-m", "test"
-    assert_match /master/, shell_output("#{bin}/git-branchname")
+    assert_match "master", shell_output("#{bin}/git-branchname")
   end
 end

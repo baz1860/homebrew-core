@@ -1,44 +1,52 @@
 class Unbound < Formula
   desc "Validating, recursive, caching DNS resolver"
   homepage "https://www.unbound.net"
-  url "https://www.unbound.net/downloads/unbound-1.6.8.tar.gz"
-  sha256 "e3b428e33f56a45417107448418865fe08d58e0e7fea199b855515f60884dd49"
+  url "https://nlnetlabs.nl/downloads/unbound/unbound-1.16.1.tar.gz"
+  sha256 "2fe4762abccd564a0738d5d502f57ead273e681e92d50d7fba32d11103174e9a"
+  license "BSD-3-Clause"
+  head "https://github.com/NLnetLabs/unbound.git", branch: "master"
 
-  bottle do
-    sha256 "14bb3f5ce9567f835522a4cf278e843602def948c9c139c0dbe660dad666b6e9" => :high_sierra
-    sha256 "aa344f2853ef983890eed1eecd53c06e0c41e491253f8480bc944c62edc7ccc4" => :sierra
-    sha256 "8854838cff0d79d0b855b95c588588dc95b5eb1bda3a1db019717d832eebf35b" => :el_capitan
+  # We check the GitHub repo tags instead of
+  # https://nlnetlabs.nl/downloads/unbound/ since the first-party site has a
+  # tendency to lead to an `execution expired` error.
+  livecheck do
+    url :head
+    regex(/^(?:release-)?v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on "openssl"
-  depends_on "libevent"
+  bottle do
+    sha256 arm64_monterey: "3622c6fcc10b30da1c8551d5b78179586de78801357bef214ea3d1409d3b4414"
+    sha256 arm64_big_sur:  "33a1c83064194f1d3e35500a85ac16ebb20b874837c1fa3a2ff520fbb60bd953"
+    sha256 monterey:       "578898bbe7e5fa88ab0af53f87779e5a452ab77e2c6fae51cf87e33a01366eb8"
+    sha256 big_sur:        "a4e6d426792e5074eb217df923a87e0a01f6ec16f9b4da500a0bd9d1dc45c562"
+    sha256 catalina:       "a3ea74572296dd76055c2dc3939ea450712b76e81476d2ca30e1a09ac399274c"
+    sha256 x86_64_linux:   "cec4fbcab6b17b9ee23f330a31d113abef88d40d4ade321cf52d1ef8256d6f2a"
+  end
 
-  depends_on "python" => :optional
-  depends_on "swig" if build.with?("python")
+  depends_on "libevent"
+  depends_on "libnghttp2"
+  depends_on "openssl@1.1"
+
+  uses_from_macos "expat"
 
   def install
     args = %W[
       --prefix=#{prefix}
       --sysconfdir=#{etc}
+      --enable-event-api
+      --enable-tfo-client
+      --enable-tfo-server
       --with-libevent=#{Formula["libevent"].opt_prefix}
-      --with-ssl=#{Formula["openssl"].opt_prefix}
+      --with-libnghttp2=#{Formula["libnghttp2"].opt_prefix}
+      --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
     ]
 
-    if build.with? "python"
-      ENV.prepend "LDFLAGS", `python-config --ldflags`.chomp
-      ENV.prepend "PYTHON_VERSION", "2.7"
-
-      args << "--with-pyunbound"
-      args << "--with-pythonmodule"
-      args << "PYTHON_SITE_PKG=#{lib}/python2.7/site-packages"
-    end
-
-    args << "--with-libexpat=#{MacOS.sdk_path}/usr" unless MacOS::CLT.installed?
+    args << "--with-libexpat=#{MacOS.sdk_path}/usr" if OS.mac? && MacOS.sdk_path_if_needed
+    args << "--with-libexpat=#{Formula["expat"].opt_prefix}" if OS.linux?
     system "./configure", *args
 
     inreplace "doc/example.conf", 'username: "unbound"', 'username: "@@HOMEBREW-UNBOUND-USER@@"'
     system "make"
-    system "make", "test"
     system "make", "install"
   end
 
@@ -46,39 +54,15 @@ class Unbound < Formula
     conf = etc/"unbound/unbound.conf"
     return unless conf.exist?
     return unless conf.read.include?('username: "@@HOMEBREW-UNBOUND-USER@@"')
+
     inreplace conf, 'username: "@@HOMEBREW-UNBOUND-USER@@"',
                     "username: \"#{ENV["USER"]}\""
   end
 
-  plist_options :startup => true
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-/Apple/DTD PLIST 1.0/EN" "http:/www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>KeepAlive</key>
-        <true/>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_sbin}/unbound</string>
-          <string>-d</string>
-          <string>-c</string>
-          <string>#{etc}/unbound/unbound.conf</string>
-        </array>
-        <key>UserName</key>
-        <string>root</string>
-        <key>StandardErrorPath</key>
-        <string>/dev/null</string>
-        <key>StandardOutPath</key>
-        <string>/dev/null</string>
-      </dict>
-    </plist>
-    EOS
+  plist_options startup: true
+  service do
+    run [opt_sbin/"unbound", "-d", "-c", etc/"unbound/unbound.conf"]
+    keep_alive true
   end
 
   test do

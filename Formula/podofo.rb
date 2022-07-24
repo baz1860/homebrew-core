@@ -1,39 +1,45 @@
 class Podofo < Formula
   desc "Library to work with the PDF file format"
   homepage "https://podofo.sourceforge.io"
-  url "https://downloads.sourceforge.net/podofo/podofo-0.9.5.tar.gz"
-  sha256 "854981cb897ebc14bac854ea0f25305372261a48a205363fe1c61659ba7b5304"
-  revision 1
+  url "https://downloads.sourceforge.net/project/podofo/podofo/0.9.8/podofo-0.9.8.tar.gz"
+  sha256 "5de607e15f192b8ad90738300759d88dea0f5ccdce3bf00048a0c932bc645154"
+  license all_of: ["LGPL-2.0-only", "GPL-2.0-only"]
+  head "svn://svn.code.sf.net/p/podofo/code/podofo/trunk"
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "047ebd5eb48107fcc54e2e2692cfe8ee55f1b8408ae06b0d5d193e260217ea91" => :high_sierra
-    sha256 "1bee565ed640de58ab42229e0b8d87b723e7148006fe18d609e27e78614407c6" => :sierra
-    sha256 "03db2d2fbfdd25788c6b8d44eb51d436bc9a15319ef540e59a72693eb80c2a92" => :el_capitan
-    sha256 "8564686fa0043a7dd94bc00f09f1a2b4bb3ba063cff6ff7e59eee6912a213913" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "dd25d9bea4a314122b3e1aee20cc2985f9d4435ae84c0ece7ddd74c7ceec2cdd"
+    sha256 cellar: :any,                 arm64_big_sur:  "1df7e49da361eece0d33e57eda0463b0f1bb60508afaeb75a4e0a60c4992b1bd"
+    sha256 cellar: :any,                 monterey:       "e3d40338c4b76c8f0b25c4fceb5644c75e9ee0a6c8eb59c5e3f9455cc42a592c"
+    sha256 cellar: :any,                 big_sur:        "16d8fbe8da7080e80efc0125002fb1df2f37f2e0a77ef5bb854ed203e7f07bd1"
+    sha256 cellar: :any,                 catalina:       "da10d1382d4a3ffcd26f399081f2c619c6e7ffa44bdba982f531ba3d4fd53ece"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3c82a5d52d9146cd7ab5ad2113fe23247093c4a6ae2abad6c9461cc13b43f4a7"
   end
 
   depends_on "cmake" => :build
-  depends_on "libpng"
-  depends_on "freetype"
   depends_on "fontconfig"
+  depends_on "freetype"
   depends_on "jpeg"
+  depends_on "libidn"
+  depends_on "libpng"
   depends_on "libtiff"
-  depends_on "openssl"
-  depends_on "libidn" => :optional
+  depends_on "openssl@1.1"
 
   def install
-    args = std_cmake_args
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_LIBIDN=ON" if build.without? "libidn"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_CppUnit=ON"
-    args << "-DCMAKE_DISABLE_FIND_PACKAGE_LUA=ON"
-
-    # Build shared to simplify linking for other programs.
-    args << "-DPODOFO_BUILD_SHARED:BOOL=ON"
-
-    args << "-DFREETYPE_INCLUDE_DIR_FT2BUILD=#{Formula["freetype"].opt_include}/freetype2"
-    args << "-DFREETYPE_INCLUDE_DIR_FTHEADER=#{Formula["freetype"].opt_include}/freetype2/config/"
+    args = std_cmake_args + %W[
+      -DCMAKE_INSTALL_NAME_DIR=#{opt_lib}
+      -DCMAKE_BUILD_WITH_INSTALL_NAME_DIR=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_CppUnit=ON
+      -DCMAKE_DISABLE_FIND_PACKAGE_LUA=ON
+      -DPODOFO_BUILD_SHARED:BOOL=ON
+      -DFREETYPE_INCLUDE_DIR_FT2BUILD=#{Formula["freetype"].opt_include}/freetype2
+      -DFREETYPE_INCLUDE_DIR_FTHEADER=#{Formula["freetype"].opt_include}/freetype2/config/
+    ]
+    # C++ standard settings may be implemented upstream in which case the below will not be necessary.
+    # See https://sourceforge.net/p/podofo/tickets/121/
+    args += %w[
+      -DCMAKE_CXX_STANDARD=11
+      -DCMAKE_CXX_STANDARD_REQUIRED=ON
+    ]
 
     mkdir "build" do
       system "cmake", "..", *args

@@ -1,28 +1,33 @@
 class TeensyLoaderCli < Formula
   desc "Command-line integration for Teensy USB development boards"
   homepage "https://www.pjrc.com/teensy/loader_cli.html"
-  url "https://github.com/PaulStoffregen/teensy_loader_cli/archive/2.1.tar.gz"
-  sha256 "5c36fe45b9a3a71ac38848b076cd692bf7ca8826a69941c249daac3a1d95e388"
-  revision 1
-  head "https://github.com/PaulStoffregen/teensy_loader_cli.git"
+  url "https://github.com/PaulStoffregen/teensy_loader_cli/archive/2.2.tar.gz"
+  sha256 "103c691f412d04906c4f46038c234d3e5f78322c1b78ded102df9f900724cd54"
+  license "GPL-3.0-only"
+  head "https://github.com/PaulStoffregen/teensy_loader_cli.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "006db48c98aa23a5694588169a2732bc21413f117e7082597168831e01edc20b" => :high_sierra
-    sha256 "297e5ae2cebf5f5c52809e671ef5b9d224dd7c184695dde5cbb94c085f616669" => :sierra
-    sha256 "b422db39f01dfd49b77d9be2aade4d769b00c3068cce6da5250e9948a21cbf3b" => :el_capitan
-    sha256 "760b87b4455a716d5fd57a3a4d3e45ce7f4a67743a2364ecbd7ef791a456abcc" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a534e52c0de21164168c188ae60e929a17e183be3eba10ee7f4a1394c6bb94c6"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "06529ad4373a483829c4b7ffd9bcb262077e7242be60c4a8645601ccc4aea134"
+    sha256 cellar: :any_skip_relocation, monterey:       "0239cc41b148dea13c918f858930cca2631db5547e5aa17db57c9c5efdcdd2fe"
+    sha256 cellar: :any_skip_relocation, big_sur:        "1077e947102d333896796ada9f702fb11bfc43741b0ffe737292479624249ced"
+    sha256 cellar: :any_skip_relocation, catalina:       "5f622de032367bbd7d3325e1e3d88ee205f941908a111102cbb10d176474e197"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a3e61b76878c12cea8fbce6abbfcd7c2e26afbf79785fda38135009ae1d08f1f"
   end
 
-  depends_on "libusb-compat" => :optional
+  on_linux do
+    depends_on "libusb-compat"
+  end
 
   def install
-    ENV["OS"] = "MACOSX"
-
-    if build.with? "libusb-compat"
-      ENV["USE_LIBUSB"] = "YES"
-    else
+    if OS.mac?
+      ENV["OS"] = "MACOSX"
       ENV["SDK"] = MacOS.sdk_path || "/"
+
+      # Work around "Error opening HID Manager" by disabling HID Manager check. Port of alswl's fix.
+      # Ref: https://github.com/alswl/teensy_loader_cli/commit/9c16bb0add3ba847df5509328ad6bd5bc09d9ecd
+      # Ref: https://forum.pjrc.com/threads/36546-teensy_loader_cli-on-OSX-quot-Error-opening-HID-Manager-quot
+      inreplace "teensy_loader_cli.c", /ret != kIOReturnSuccess/, "0"
     end
 
     system "make"
@@ -31,6 +36,6 @@ class TeensyLoaderCli < Formula
 
   test do
     output = shell_output("#{bin}/teensy_loader_cli 2>&1", 1)
-    assert_match /Filename must be specified/, output
+    assert_match "Filename must be specified", output
   end
 end

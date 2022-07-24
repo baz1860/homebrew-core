@@ -1,18 +1,23 @@
 class Pspg < Formula
   desc "Unix pager optimized for psql"
   homepage "https://github.com/okbob/pspg"
-  url "https://github.com/okbob/pspg/archive/0.9.3.tar.gz"
-  sha256 "399a9baa4cf92f6ba5248e4a1509dfd4a1ca09132aa439b8d8c0e17396eae94c"
-  head "https://github.com/okbob/pspg.git"
+  url "https://github.com/okbob/pspg/archive/5.5.5.tar.gz"
+  sha256 "0afca418cfe2bdf54cf1fd3d982f0eef53e0627f5ba1d96b464afe95635eebbf"
+  license "BSD-2-Clause"
+  head "https://github.com/okbob/pspg.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "90a6ebca2055ec86e0a7dd3531a4fcfb7532828c4ded8c5196ae371a9a6b7872" => :high_sierra
-    sha256 "6658ac290ab5810b0ac30af7d574b28ab3684663c5a81f4c518897316873e587" => :sierra
-    sha256 "60d1b34fde061af4c0fedc04cde1ecc9a50860dd4493de32bd1c2213fb8dac67" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "74383fe2795439bd9d1f18115d1bcb0f0dd208dc5deff3dd0195101fe9ff2858"
+    sha256 cellar: :any,                 arm64_big_sur:  "db6724eabb70a00907847b3d5759515d143ce03d4e7a381eebf62fbe8c54b85f"
+    sha256 cellar: :any,                 monterey:       "6079239547383513059a886df97ba046532c41fc459a72f216c6221234c848c8"
+    sha256 cellar: :any,                 big_sur:        "6745a9487dade7015293e24035777f9e57375d255eed0815bfa54c10bf9dfaf9"
+    sha256 cellar: :any,                 catalina:       "a48b65239ed467c1e2df20375a84c59db9536ed7e53e3de1881b6acbce73c528"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "65cc618a0b63acaf300f26a8af43805a5571fa274737d9e0461e4827f10c89b6"
   end
 
+  depends_on "libpq"
   depends_on "ncurses"
+  depends_on "readline"
 
   def install
     system "./configure", "--disable-debug",
@@ -20,15 +25,16 @@ class Pspg < Formula
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    Add the following line to your psql profile (e.g. ~/.psqlrc)
-      \\setenv PAGER pspg
-      \\pset border 2
-      \\pset linestyle unicode
+  def caveats
+    <<~EOS
+      Add the following line to your psql profile (e.g. ~/.psqlrc)
+        \\setenv PAGER pspg
+        \\pset border 2
+        \\pset linestyle unicode
     EOS
   end
 
   test do
-    assert_match "pspg-#{version.to_f}", shell_output("#{bin}/pspg --version")
+    assert_match "pspg-#{version}", shell_output("#{bin}/pspg --version")
   end
 end

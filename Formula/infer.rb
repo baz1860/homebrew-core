@@ -1,86 +1,126 @@
 class Infer < Formula
   desc "Static analyzer for Java, C, C++, and Objective-C"
   homepage "https://fbinfer.com/"
-  # pull from git tag to get submodules
-  url "https://github.com/facebook/infer.git",
-      :tag => "v0.13.1",
-      :revision => "beea92363f172089621a25a72069a632e8d99720"
+  license "MIT"
+  revision 1
+  head "https://github.com/facebook/infer.git", branch: "main"
 
-  bottle do
-    cellar :any
-    sha256 "3b5045e2cef780fc9e3e564dbd31ef090d511c39792dd1446bcec6ca9ef37b73" => :high_sierra
-    sha256 "fe45a7674a34c9dc4fef89467a962db1886126a3544ad54479c4ec1999867986" => :sierra
-    sha256 "6ad6d697863bc21b468020fa1641247df47e4efc166947c0a30cad7ab2c678ea" => :el_capitan
+  stable do
+    url "https://github.com/facebook/infer/archive/v1.1.0.tar.gz"
+    sha256 "201c7797668a4b498fe108fcc13031b72d9dbf04dab0dc65dd6bd3f30e1f89ee"
+
+    # Fix FileUtils.cpp:44:57: error: invalid initialization of reference of type 'const string& ...
+    # Remove in the next release.
+    patch do
+      url "https://github.com/facebook/infer/commit/c90ec0683456e0f03135e7c059a1233351440736.patch?full_index=1"
+      sha256 "516585352727c5372c4d4582ed9a64bc12e7a9eb59386aa3cec9908f0cfc86a8"
+    end
+
+    # Apply patch for finding correct C++ header from Apple SDKs.
+    # Remove in the next release.
+    patch do
+      url "https://github.com/facebook/infer/commit/ec976d3be4e78dbbb019b3be941066f74e826880.patch?full_index=1"
+      sha256 "4f299566c88dd5b6761d36fcb090d238c216d3721dde9037c725dac255be9d3b"
+    end
   end
 
-  option "without-clang", "Build without the C/C++/Objective-C analyzers"
-  option "without-java", "Build without the Java analyzers"
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
+
+  bottle do
+    sha256 cellar: :any, big_sur:      "2c27006c4ccbc05c6bb405c626d188e2dd5ca183a0a2f4441385def480ba4f34"
+    sha256 cellar: :any, catalina:     "7a2816d33cea3053531f51402e0145e4e8ee7537570ba2a580c3ef8aaff379fc"
+    sha256 cellar: :any, mojave:       "2bda6a47ff87c9d79a3f937c9cf24771798107c1bc215823e6156d6ba414f40d"
+    sha256               x86_64_linux: "987d26d95d3e073a96c683710ab0298a1674d2ee6e7a2ee4cb0d8914f2b0139d"
+  end
+
+  # https://github.com/Homebrew/homebrew-core/pull/87904
+  # https://github.com/facebook/infer/issues/1568
+  deprecate! date: "2021-12-20", because: :does_not_build
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "cmake" => :build
-  depends_on :java => ["1.8", :build]
   depends_on "libtool" => :build
-  depends_on "ocaml" => :build
+  depends_on "ninja" => :build
   depends_on "opam" => :build
+  depends_on "openjdk@11" => [:build, :test]
   depends_on "pkg-config" => :build
+  depends_on "python@3.9" => :build
+  depends_on "gmp"
+  depends_on "mpfr"
+  depends_on "sqlite"
+
+  # Add `llvm` for lld due to CMake bug where CC=clang doesn't fallback to ld.
+  # This causes error: /bin/sh: 1: CMAKE_LINKER-NOTFOUND: not found
+  # CMake PR ref: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/6457
+  uses_from_macos "llvm" => :build # TODO: remove when `cmake` is fixed
+  uses_from_macos "m4" => :build
+  uses_from_macos "unzip" => :build
+  uses_from_macos "libedit"
+  uses_from_macos "libffi"
+  uses_from_macos "libxml2"
+  uses_from_macos "ncurses"
+  uses_from_macos "xz"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "patchelf" => :build
+    depends_on "elfutils" # openmp requires <gelf.h>
+  end
 
   def install
-    if build.without?("clang") && build.without?("java")
-      odie "infer: --without-clang and --without-java are mutually exclusive"
-    end
+    # Fixes: Uncaught Internal Error: ("unknown zone" (zone UTC0))
+    # https://github.com/facebook/infer/issues/1548
+    ENV.delete "TZ"
 
-    # fix symbol not found issue (_clock_gettime) on el_capitan
-    ENV.delete("SDKROOT")
+    # needed to build clang
+    ENV.permit_arch_flags
 
-    if build.with?("clang")
-      # needed to build clang
-      ENV.permit_arch_flags
-      # Apple's libstdc++ is too old to build LLVM
-      ENV.libcxx if ENV.compiler == :clang
-    end
+    # Apple's libstdc++ is too old to build LLVM
+    ENV.libcxx if ENV.compiler == :clang
+
+    # Use JDK11
+    ENV["JAVA_HOME"] = Formula["openjdk@11"].opt_prefix
 
     opamroot = buildpath/"opamroot"
     opamroot.mkpath
     ENV["OPAMROOT"] = opamroot
     ENV["OPAMYES"] = "1"
+    ENV["OPAMVERBOSE"] = "1"
+    ENV["PATCHELF"] = Formula["patchelf"].opt_bin/"patchelf" if OS.linux?
 
-    # Some of the libraries installed by ./build-infer.sh do not
-    # support parallel builds, eg OCaml itself. ./build-infer.sh
-    # builds in its own parallelization logic to mitigate that.
-    ENV.deparallelize
+    system "opam", "init", "--no-setup", "--disable-sandboxing"
 
     # do not attempt to use the clang in facebook-clang-plugins/ as it hasn't been built yet
-    ENV["INFER_CONFIGURE_OPTS"] = "--prefix=#{prefix} --disable-ocaml-binannot --without-fcp-clang"
+    ENV["INFER_CONFIGURE_OPTS"] = "--prefix=#{prefix} --without-fcp-clang"
 
-    target_platform = if build.without?("clang")
-      "java"
-    elsif build.without?("java")
-      "clang"
-    else
-      "all"
-    end
+    # Let's try build clang faster
+    ENV["JOBS"] = ENV.make_jobs.to_s
 
-    system "opam", "init", "--no-setup"
-    ocaml_version = File.read("build-infer.sh").match(/OCAML_VERSION=\${OCAML_VERSION:-\"([^\"]+)\"}/)[1]
-    ocaml_version_number = ocaml_version.split("+", 2)[0]
-    inreplace "#{opamroot}/compilers/#{ocaml_version_number}/#{ocaml_version}/#{ocaml_version}.comp",
-      '["./configure"', '["./configure" "-no-graph"'
-    # so that `infer --version` reports a release version number
-    inreplace "infer/src/base/Version.ml.in", "let is_release = is_yes \"@IS_RELEASE_TREE@\"", "let is_release = true"
-    system "./build-infer.sh", target_platform, "--yes"
-    system "opam", "config", "exec", "--switch=infer-#{ocaml_version}", "--", "make", "install"
-    bin.env_script_all_files(libexec/"bin", Language::Java.java_home_env("1.8"))
+    # Release build
+    touch ".release"
+
+    # Disable handling external dependencies as opam is not aware of Homebrew on Linux.
+    # Error:  Package conflict!  * Missing dependency:  - conf-autoconf
+    inreplace "build-infer.sh", "infer \"$INFER_ROOT\" $locked", "\\0 --no-depexts" if OS.linux?
+
+    system "./build-infer.sh", "all", "--yes"
+    system "make", "install-with-libs"
   end
 
   test do
+    ENV["JAVA_HOME"] = Formula["openjdk@11"].opt_prefix
+    ENV.append_path "PATH", Formula["openjdk@11"].opt_bin
+
     (testpath/"FailingTest.c").write <<~EOS
       #include <stdio.h>
 
       int main() {
         int *s = NULL;
         *s = 42;
-
         return 0;
       }
     EOS
@@ -93,13 +133,34 @@ class Infer < Formula
         if (s != NULL) {
           *s = 42;
         }
-
         return 0;
       }
     EOS
 
-    shell_output("#{bin}/infer --fail-on-issue -- clang -c FailingTest.c", 2)
-    shell_output("#{bin}/infer --fail-on-issue -- clang -c PassingTest.c", 0)
+    no_issues_output = "\n  No issues found  \n"
+
+    failing_c_output = <<~EOS
+
+      FailingTest.c:5: error: Null Dereference
+      \  pointer `s` last assigned on line 4 could be null and is dereferenced at line 5, column 3.
+      \  3. int main() {
+      \  4.   int *s = NULL;
+      \  5.   *s = 42;
+      \       ^
+      \  6.   return 0;
+      \  7. }
+
+
+      Found 1 issue
+      \          Issue Type(ISSUED_TYPE_ID): #
+      \  Null Dereference(NULL_DEREFERENCE): 1
+    EOS
+
+    assert_equal failing_c_output.to_s,
+      shell_output("#{bin}/infer --fail-on-issue -P -- clang -c FailingTest.c", 2)
+
+    assert_equal no_issues_output.to_s,
+      shell_output("#{bin}/infer --fail-on-issue -P -- clang -c PassingTest.c")
 
     (testpath/"FailingTest.java").write <<~EOS
       class FailingTest {
@@ -135,7 +196,26 @@ class Infer < Formula
       }
     EOS
 
-    shell_output("#{bin}/infer --fail-on-issue -- javac FailingTest.java", 2)
-    shell_output("#{bin}/infer --fail-on-issue -- javac PassingTest.java", 0)
+    failing_java_output = <<~EOS
+
+      FailingTest.java:12: error: Null Dereference
+      \  object `s` last assigned on line 11 could be null and is dereferenced at line 12.
+      \  10.     int mayCauseNPE() {
+      \  11.       String s = mayReturnNull(0);
+      \  12. >     return s.length();
+      \  13.     }
+      \  14.   }
+
+
+      Found 1 issue
+      \          Issue Type(ISSUED_TYPE_ID): #
+      \  Null Dereference(NULL_DEREFERENCE): 1
+    EOS
+
+    assert_equal failing_java_output.to_s,
+      shell_output("#{bin}/infer --fail-on-issue -P -- javac FailingTest.java", 2)
+
+    assert_equal no_issues_output.to_s,
+      shell_output("#{bin}/infer --fail-on-issue -P -- javac PassingTest.java")
   end
 end

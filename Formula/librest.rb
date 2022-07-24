@@ -3,19 +3,27 @@ class Librest < Formula
   homepage "https://wiki.gnome.org/Projects/Librest"
   url "https://download.gnome.org/sources/rest/0.8/rest-0.8.1.tar.xz"
   sha256 "0513aad38e5d3cedd4ae3c551634e3be1b9baaa79775e53b2dba9456f15b01c9"
+  revision 4
 
   bottle do
-    sha256 "9051b6736cc74cc7cf4869d80be7573b13361f33464f89eb88bccae86d22c1e9" => :high_sierra
-    sha256 "a799cab80624c9a4ad497725f13889608fee9f22030a85add84bd246a79a1693" => :sierra
-    sha256 "a2499387aa86673e5c7a04c88df26ca47f7b3498687c40b32dbcf14619084899" => :el_capitan
+    rebuild 1
+    sha256                               arm64_big_sur: "ce82e6e380a02285f90307b8609e63cba7dfa52a3d1fae7092296f49e67f624f"
+    sha256                               monterey:      "fc839b0cce9619c5489fe51408792ada7ab2a5569419cd38569ca13fa6ef356b"
+    sha256                               big_sur:       "83313f7234d69f6801104ba55c1b60933d8db57d8b8f818b336b8a498043b067"
+    sha256                               catalina:      "7616a630b4f286a28c6520917353196f29e5ddbc488bf6880d14cb518271ff26"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "8ea0c9d41ed04199de23e8cc5cc1b0dc8ea45e24f437b0b78dc823ce0dea0018"
   end
 
+  depends_on "gobject-introspection" => :build
   depends_on "pkg-config" => :build
   depends_on "glib"
-  depends_on "libsoup"
-  depends_on "gobject-introspection"
+  depends_on "libsoup@2"
 
   def install
+    ENV.prepend_path "PKG_CONFIG_PATH", Formula["libsoup@2"].opt_lib/"pkgconfig"
+    ENV.prepend_path "XDG_DATA_DIRS", Formula["libsoup@2"].opt_share
+    ENV.prepend_path "XDG_DATA_DIRS", HOMEBREW_PREFIX/"share"
+
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--prefix=#{prefix}",
@@ -39,7 +47,7 @@ class Librest < Formula
       }
     EOS
     glib = Formula["glib"]
-    libsoup = Formula["libsoup"]
+    libsoup = Formula["libsoup@2"]
     flags = %W[
       -I#{libsoup.opt_include}/libsoup-2.4
       -I#{glib.opt_include}/glib-2.0

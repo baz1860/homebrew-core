@@ -1,21 +1,24 @@
 class Luaradio < Formula
   desc "Lightweight, embeddable flow graph signal processing framework for SDR"
-  homepage "http://luaradio.io/"
-  url "https://github.com/vsergeev/luaradio/archive/v0.5.0.tar.gz"
-  sha256 "660b995f8fe6e62e2304647565cfecc3dc042472e514a05c1d2c0d1342565908"
-  head "https://github.com/vsergeev/luaradio.git"
+  homepage "https://luaradio.io/"
+  url "https://github.com/vsergeev/luaradio/archive/v0.10.0.tar.gz"
+  sha256 "d540aac3363255c4a1f47313888d9133b037cc5d1edca0d428499a272710b992"
+  license "MIT"
+  head "https://github.com/vsergeev/luaradio.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "4edb4fe949e790279a47dbb4fff762852baf034c181b50713f431d16c29e6971" => :high_sierra
-    sha256 "9d1b4988ac40cde3ec5c689f1bca02d18829828ddec5e6209be102b576948fde" => :sierra
-    sha256 "4c25ef01c7e0fbd08b924883a0251d6e0808cc23ccd8386d30256675797f4c80" => :el_capitan
-    sha256 "126631069fc04e1a67bae61ca843f1651c80f43c5a47da59c67dba6933278458" => :yosemite
+    sha256 cellar: :any,                 arm64_big_sur: "b04641f0b463cd38e257f954a7b2fb49a5b4fe3ee671a5faa09f9603023f7ed2"
+    sha256 cellar: :any,                 monterey:      "2789e761aa3eb0ff47516350e8e38357086cded52f1e77644ce268171fb32cec"
+    sha256 cellar: :any,                 big_sur:       "765bcff473c15da215a2c162c3247c12b3a12a6a088ff324103de2e05510e973"
+    sha256 cellar: :any,                 catalina:      "e0de1690d1a42741722374cc61a8966a51c9ff8219b46d5e361e06fdcf11e4b4"
+    sha256 cellar: :any,                 mojave:        "535aa76ad7c009e4ffa918eb910462d861081a7516f17a2210275bb6e619ad9c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "3172d2fc3864696ad84bab32d36c8fb60f262a71986003b43b5a55f87fa25a7c"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "luajit"
-  depends_on "fftw" => :recommended
+  depends_on "fftw"
+  depends_on "liquid-dsp"
+  depends_on "luajit-openresty"
 
   def install
     cd "embed" do
@@ -28,6 +31,13 @@ class Luaradio < Formula
       end
       system "make", "install", "PREFIX=#{prefix}"
     end
+
+    env = {
+      PATH:      "#{Formula["luajit-openresty"].opt_bin}:$PATH",
+      LUA_CPATH: "#{lib}/lua/5.1/?.so${LUA_CPATH:+;$LUA_CPATH};;",
+    }
+
+    bin.env_script_all_files libexec/"bin", env
   end
 
   test do

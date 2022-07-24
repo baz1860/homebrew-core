@@ -1,62 +1,66 @@
 class Hdf5 < Formula
   desc "File format designed to store large amounts of data"
   homepage "https://www.hdfgroup.org/HDF5"
-  url "https://www.hdfgroup.org/package/source-bzip2/?wpdmdl=4300"
-  mirror "https://dl.bintray.com/homebrew/mirror/hdf5-1.10.1"
-  version "1.10.1"
-  sha256 "9c5ce1e33d2463fb1a42dd04daacbc22104e57676e2204e3d66b1ef54b88ebf2"
-  revision 2
+  url "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.2/src/hdf5-1.12.2.tar.bz2"
+  sha256 "1a88bbe36213a2cea0c8397201a459643e7155c9dc91e062675b3fb07ee38afe"
+  license "BSD-3-Clause"
+  version_scheme 1
 
-  bottle do
-    rebuild 1
-    sha256 "ce60d6ad246ecf8baae4e007a359da7c1cae8c3e199a2f9422f601fb0dc50e03" => :high_sierra
-    sha256 "13fb989ccd1ce01a88be9159d15afd1898e7d358e7f338fec8542cef1204903c" => :sierra
-    sha256 "fffbe4774667aa473e7ab6b004dea0247b98fab63ae7581b70ea129b6092c369" => :el_capitan
+  # This regex isn't matching filenames within href attributes (as we normally
+  # do on HTML pages) because this page uses JavaScript to handle the download
+  # buttons and the HTML doesn't contain the related URLs.
+  livecheck do
+    url "https://www.hdfgroup.org/downloads/hdf5/source-code/"
+    regex(/>\s*hdf5[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-mpi", "Enable parallel support"
-
-  deprecated_option "enable-parallel" => "with-mpi"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "ef569e1536a1ee2051380aed7d89284a1baace5b1c0b66280e7905fa852a7992"
+    sha256 cellar: :any,                 arm64_big_sur:  "7ffeb068662160d8f844154198a257f0f545c1972b76f16cf8fdcbfc3c44e4f4"
+    sha256 cellar: :any,                 monterey:       "42715c0074ee5c1afc370a70bb669ed01a384b40f26a2b97661cb94e0e6d8702"
+    sha256 cellar: :any,                 big_sur:        "75b6c8d5fd1c1e296e31b6a41d2c3c0e0b1de08632d4b6bce6b6b50adb25c6f3"
+    sha256 cellar: :any,                 catalina:       "fcd9f1dfc408887eb131a56c2fa9963f64edf756f620d58e2d8ad071f29eb9f1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ce1e43594ac459f4eaaafe9a979d7109d1003f613efc22d5e0571a93ce477a1a"
+  end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
   depends_on "gcc" # for gfortran
-  depends_on "open-mpi" if build.with? "mpi"
-  depends_on "szip"
+  depends_on "libaec"
+
+  uses_from_macos "zlib"
+
+  conflicts_with "hdf5-mpi", because: "hdf5-mpi is a variant of hdf5, one can only use one or the other"
 
   def install
-    inreplace %w[c++/src/h5c++.in fortran/src/h5fc.in tools/src/misc/h5cc.in],
-      "${libdir}/libhdf5.settings", "#{pkgshare}/libhdf5.settings"
+    inreplace %w[c++/src/h5c++.in fortran/src/h5fc.in bin/h5cc.in],
+              "${libdir}/libhdf5.settings",
+              "#{pkgshare}/libhdf5.settings"
 
-    inreplace "src/Makefile.am", "settingsdir=$(libdir)", "settingsdir=#{pkgshare}"
+    inreplace "src/Makefile.am",
+              "settingsdir=$(libdir)",
+              "settingsdir=#{pkgshare}"
 
-    system "autoreconf", "-fiv"
+    system "autoreconf", "--force", "--install", "--verbose"
 
     args = %W[
       --disable-dependency-tracking
       --disable-silent-rules
-      --prefix=#{prefix}
-      --with-szlib=#{Formula["szip"].opt_prefix}
       --enable-build-mode=production
       --enable-fortran
+      --enable-cxx
+      --prefix=#{prefix}
+      --with-szlib=#{Formula["libaec"].opt_prefix}
     ]
-
-    if build.without?("mpi")
-      args << "--enable-cxx"
-    else
-      args << "--disable-cxx"
-    end
-
-    if build.with? "mpi"
-      ENV["CC"] = "mpicc"
-      ENV["CXX"] = "mpicxx"
-      ENV["FC"] = "mpif90"
-
-      args << "--enable-parallel"
-    end
+    args << "--with-zlib=#{Formula["zlib"].opt_prefix}" if OS.linux?
 
     system "./configure", *args
+
+    # Avoid shims in settings file
+    inreplace "src/libhdf5.settings", Superenv.shims_path/ENV.cxx, ENV.cxx
+    inreplace "src/libhdf5.settings", Superenv.shims_path/ENV.cc, ENV.cc
+
     system "make", "install"
   end
 
@@ -99,7 +103,7 @@ class Hdf5 < Formula
       if (error /= 0) call abort
       write (*,"(I0,'.',I0,'.',I0)") major, minor, rel
       end
-      EOS
+    EOS
     system "#{bin}/h5fc", "test.f90"
     assert_equal version.to_s, shell_output("./a.out").chomp
   end

@@ -1,49 +1,45 @@
 class Cloog < Formula
   desc "Generate code for scanning Z-polyhedra"
-  homepage "https://www.bastoul.net/cloog/"
-  url "https://www.bastoul.net/cloog/pages/download/count.php3?url=./cloog-0.18.4.tar.gz"
-  sha256 "325adf3710ce2229b7eeb9e84d3b539556d093ae860027185e7af8a8b00a750e"
-  revision 2
+  homepage "https://github.com/periscop/cloog"
+  url "https://github.com/periscop/cloog/releases/download/cloog-0.20.0/cloog-0.20.0.tar.gz"
+  sha256 "835c49951ff57be71dcceb6234d19d2cc22a3a5df84aea0a9d9760d92166fc72"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any
-    sha256 "0133d815343a26762ac6938b8f089f3ce3b699adb0ccfef2960ba11881cb8e4d" => :high_sierra
-    sha256 "506b9121ccf842e516ff20e38a852d70bf2b2fafa1efab6825af24e28f86f4a8" => :sierra
-    sha256 "5db5643738fbe35f6bb88ff4df8ba76d18d39d72eeb9f37e835203d3244a8613" => :el_capitan
-  end
-
-  head do
-    url "http://repo.or.cz/r/cloog.git"
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
+    sha256 cellar: :any,                 arm64_monterey: "e6e5952ded447b71b8742c7110512d9afc91b7399a900ec8f7b3317c47731f49"
+    sha256 cellar: :any,                 arm64_big_sur:  "7e9717c9f378f51c40282abd7defb978d0a0edd960eb84410f493bd96a27e222"
+    sha256 cellar: :any,                 monterey:       "7238821fcae5761ac240e91f19287ac119eab3db509b7f1b040ba7f9e5b562ff"
+    sha256 cellar: :any,                 big_sur:        "d5e21a7bc40be89004c107f89e49c8dbda04cc1b9fb54e15d4225823562b8b19"
+    sha256 cellar: :any,                 catalina:       "52c35562f93176d8f3e5216f5f2867aa857e3f0b8b238eb036dea9dbc077595e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b700274e30904d1827d5ec5eacd0809b13183ca532305437a15592dc61167bc0"
   end
 
   depends_on "pkg-config" => :build
   depends_on "gmp"
   depends_on "isl"
 
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
+  end
+
   def install
-    system "./autogen.sh" if build.head?
+    # Avoid doc build.
+    ENV["ac_cv_prog_TEXI2DVI"] = ""
 
-    args = [
-      "--disable-dependency-tracking",
-      "--disable-silent-rules",
-      "--prefix=#{prefix}",
-      "--with-gmp=system",
-      "--with-gmp-prefix=#{Formula["gmp"].opt_prefix}",
-      "--with-isl=system",
-      "--with-isl-prefix=#{Formula["isl"].opt_prefix}",
-    ]
-
-    args << "--with-osl=bundled" if build.head?
-
-    system "./configure", *args
+    system "./configure", "--disable-dependency-tracking",
+                          "--disable-silent-rules",
+                          "--prefix=#{prefix}",
+                          "--with-gmp=system",
+                          "--with-gmp-prefix=#{Formula["gmp"].opt_prefix}",
+                          "--with-isl=system",
+                          "--with-isl-prefix=#{Formula["isl"].opt_prefix}"
     system "make", "install"
   end
 
   test do
-    cloog_source = <<~EOS
+    (testpath/"test.cloog").write <<~EOS
       c
 
       0 2
@@ -59,7 +55,7 @@ class Cloog < Formula
       0
     EOS
 
-    output = pipe_output("#{bin}/cloog /dev/stdin", cloog_source)
-    assert_match %r{Generated from /dev/stdin by CLooG}, output
+    assert_match %r{Generated from #{testpath}/test.cloog by CLooG},
+                 shell_output("#{bin}/cloog #{testpath}/test.cloog")
   end
 end

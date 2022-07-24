@@ -1,48 +1,68 @@
 class Aide < Formula
   desc "File and directory integrity checker"
-  homepage "https://aide.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/aide/aide/0.16/aide-0.16.tar.gz"
-  sha256 "a81c53a131c4fd130b169b3a26ac35386a2f6e1e014f12807524cc273ed97345"
+  homepage "https://aide.github.io/"
+  url "https://github.com/aide/aide/releases/download/v0.17.4/aide-0.17.4.tar.gz"
+  sha256 "c81505246f3ffc2e76036d43a77212ae82895b5881d9b9e25c1361b1a9b7a846"
+  license "GPL-2.0-or-later"
 
   bottle do
-    rebuild 1
-    sha256 "c9429f028f2627c8ae1b76737b26741cecc4c18507139b02bcc6c487bc5e15a7" => :high_sierra
-    sha256 "71d151f2f389cbbc5884eff30261d0691d020c0983411962c1ba42927d0ae052" => :sierra
-    sha256 "2860850684659f15f8d5dc01127a7a9f2bfc21f773d99c4a8897585b4542723d" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b0c84efe8e1900637012961de81510d4b161add9251fc83614141cc149e0c575"
+    sha256 cellar: :any,                 arm64_big_sur:  "7d5c7b012260f55372992d7e692f53c72d14e8b265db4869af5641f0b44f8435"
+    sha256 cellar: :any,                 monterey:       "f19c632ec5e607e4fa4687cc3b49f644d678a957e93ab5e74df37c51df97203a"
+    sha256 cellar: :any,                 big_sur:        "c619712d6930437e597f599e5e62f0047fd9ce985aae1ed964d1cc5a03fdf5ef"
+    sha256 cellar: :any,                 catalina:       "aa1ae5486d07a19d0729947adcc180518ad1b6a46fc29c0b450e95868b80a05a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ef25683c89e216c309bd49f0422a83111ca6535e695822b3962cce5ed77bacee"
   end
 
   head do
-    url "https://git.code.sf.net/p/aide/code.git"
-    depends_on "automake" => :build
+    url "https://github.com/aide/aide.git"
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
   end
 
+  depends_on "pkg-config" => :build
   depends_on "libgcrypt"
   depends_on "libgpg-error"
   depends_on "pcre"
 
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
+  uses_from_macos "curl"
+
   def install
+    # use sdk's strnstr instead
+    ENV.append_to_cflags "-DHAVE_STRNSTR"
+
     system "sh", "./autogen.sh" if build.head?
 
-    system "./configure", "--disable-lfs",
-                          "--disable-static",
-                          "--with-curl",
-                          "--with-zlib",
-                          "--sysconfdir=#{etc}",
-                          "--prefix=#{prefix}"
+    args = %W[
+      --disable-lfs
+      --disable-static
+      --with-zlib
+      --sysconfdir=#{etc}
+      --prefix=#{prefix}
+    ]
+
+    args << if OS.mac?
+      "--with-curl"
+    else
+      "--with-curl=#{Formula["curl"].prefix}"
+    end
+
+    system "./configure", *args
 
     system "make", "install"
   end
 
   test do
     (testpath/"aide.conf").write <<~EOS
-      database = file:/var/lib/aide/aide.db
+      database_in = file:/var/lib/aide/aide.db
       database_out = file:/var/lib/aide/aide.db.new
       database_new = file:/var/lib/aide/aide.db.new
       gzip_dbout = yes
-      summarize_changes = yes
-      grouped = yes
-      verbose = 7
+      report_summarize_changes = yes
+      report_grouped = yes
+      log_level = info
       database_attrs = sha256
       /etc p+i+u+g+sha256
     EOS

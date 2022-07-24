@@ -1,27 +1,43 @@
 class Mosquitto < Formula
   desc "Message broker implementing the MQTT protocol"
   homepage "https://mosquitto.org/"
-  url "https://mosquitto.org/files/source/mosquitto-1.4.14.tar.gz"
-  sha256 "156b1fa731d12baad4b8b22f7b6a8af50ba881fc711b81e9919ec103cf2942d1"
-  revision 2
+  url "https://mosquitto.org/files/source/mosquitto-2.0.14.tar.gz"
+  sha256 "d0dde8fdb12caf6e2426b4f28081919a2fce3448773bdb8af0d3cd5fe5776925"
+  # dual-licensed under EPL-1.0 and EDL-1.0 (Eclipse Distribution License v1.0),
+  # EDL-1.0 is not in the SPDX list
+  license "EPL-1.0"
 
-  bottle do
-    sha256 "db6cc90bff7409aa2d287a9e090458fc5ffd2ef882c6d38efee28bfe9bc43bae" => :high_sierra
-    sha256 "88a6fd908f71fdf46ed19f0baa7154759751227c92234afe30ba27bf218db653" => :sierra
-    sha256 "d3195ebbcd82c77b56a0e65c1752ae803d5593d2a39b665e0524c853a0520878" => :el_capitan
+  livecheck do
+    url "https://mosquitto.org/download/"
+    regex(/href=.*?mosquitto[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 arm64_monterey: "92a59ffbdb47053e77f36675ef075449345dcea7bdc254526405aa31ed2d7a21"
+    sha256 arm64_big_sur:  "c40d4a17c9f8a52f326ecef721466e750aa81f273e2e5d98fa6c363de658a0fd"
+    sha256 monterey:       "0e314cf5f5a8740ea67a35d6ca060720b4f6d071fdf1343f797a0319ee88cbb2"
+    sha256 big_sur:        "c77536fa79291ed18b741733ea4847883e60d53a651a89c034190f066d0eb377"
+    sha256 catalina:       "164d07eb54f034a6dbd23d5ad347ead5154cb97741ac3c2e164f3f1d266837c0"
+    sha256 x86_64_linux:   "4c2327faf63358dcd1b16d6b759b3c5c8be40a704f3a3532c7d3dfde9991032d"
+  end
+
   depends_on "cmake" => :build
-  depends_on "c-ares"
-  depends_on "openssl"
-  depends_on "libwebsockets" => :recommended
+  depends_on "pkg-config" => :build
+  depends_on "cjson"
+  depends_on "libwebsockets"
+  depends_on "openssl@1.1"
+
+  uses_from_macos "libxslt" => :build
+
+  on_linux do
+    depends_on "util-linux"
+  end
 
   def install
-    args = std_cmake_args
-    args << "-DWITH_WEBSOCKETS=ON" if build.with? "libwebsockets"
-
-    system "cmake", ".", *args
+    system "cmake", ".", *std_cmake_args,
+                    "-DWITH_PLUGINS=OFF",
+                    "-DWITH_WEBSOCKETS=ON",
+                    "-DCMAKE_INSTALL_RPATH=#{rpath}"
     system "make", "install"
   end
 
@@ -29,41 +45,26 @@ class Mosquitto < Formula
     (var/"mosquitto").mkpath
   end
 
-  def caveats; <<~EOS
-    mosquitto has been installed with a default configuration file.
-    You can make changes to the configuration by editing:
-        #{etc}/mosquitto/mosquitto.conf
+  def caveats
+    <<~EOS
+      mosquitto has been installed with a default configuration file.
+      You can make changes to the configuration by editing:
+          #{etc}/mosquitto/mosquitto.conf
     EOS
   end
 
-  plist_options :manual => "mosquitto -c #{HOMEBREW_PREFIX}/etc/mosquitto/mosquitto.conf"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_sbin}/mosquitto</string>
-        <string>-c</string>
-        <string>#{etc}/mosquitto/mosquitto.conf</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>KeepAlive</key>
-      <false/>
-      <key>WorkingDirectory</key>
-      <string>#{var}/mosquitto</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_sbin/"mosquitto", "-c", etc/"mosquitto/mosquitto.conf"]
+    keep_alive false
+    working_dir var/"mosquitto"
   end
 
   test do
     quiet_system "#{sbin}/mosquitto", "-h"
     assert_equal 3, $CHILD_STATUS.exitstatus
+    quiet_system "#{bin}/mosquitto_ctrl", "dynsec", "help"
+    assert_equal 0, $CHILD_STATUS.exitstatus
+    quiet_system "#{bin}/mosquitto_passwd", "-c", "-b", "/tmp/mosquitto.pass", "foo", "bar"
+    assert_equal 0, $CHILD_STATUS.exitstatus
   end
 end

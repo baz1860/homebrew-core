@@ -1,20 +1,24 @@
 class Snapraid < Formula
   desc "Backup program for disk arrays"
-  homepage "https://snapraid.sourceforge.io/"
-  url "https://github.com/amadvance/snapraid/releases/download/v11.2/snapraid-11.2.tar.gz"
-  sha256 "735cdeb7656ac48cbb0b4a89a203dd566505071e465d5effbcc56bcb8fd3a0d7"
+  homepage "https://www.snapraid.it/"
+  url "https://github.com/amadvance/snapraid/releases/download/v12.1/snapraid-12.1.tar.gz"
+  sha256 "49337d9bafa96c2beac0125463bd22622be2fc00f3b4dee7e4b0e864d2a49661"
+  license "GPL-3.0"
 
   bottle do
-    sha256 "a3cdc8a3975bf5f3073e21d089d5e3c067fb809ccf758724f25fc092bebf7b71" => :high_sierra
-    sha256 "eba431c9a6d92f379e0063c3c40cf6a655fa2a29256da707f851569046e7d7c9" => :sierra
-    sha256 "e6be5ae4ae3aa3bffbd4f57c4dab84602d3883673ce9f2b74189a0f39c82b4b2" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "78708e3a4c2f93c56e0af8441aa35282d20b258f7dfc2fd5ba6a3f78ff12cf24"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "16d757885ce58f495b0ab7c210c32385a998d5731e42ed32267df2365c564a88"
+    sha256 cellar: :any_skip_relocation, monterey:       "912787b43bdf380ca5689fe5df0e751cd22721c8e09bbad5bf036037fdd896e8"
+    sha256 cellar: :any_skip_relocation, big_sur:        "fa18547de5904d3f9a109e340b98ce6290e3ebbb9324178697838205e7f340e4"
+    sha256 cellar: :any_skip_relocation, catalina:       "282d78894d7e897e7d9a1d1c348ff3e6113db1a75e4cba21f05d9764d379cc34"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ad355309464e57e016e38ac9d93eeff4d18582c32ab90f6e097ec93dab8f162c"
   end
 
   head do
     url "https://github.com/amadvance/snapraid.git"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
   end
 
   def install

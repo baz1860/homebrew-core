@@ -1,26 +1,46 @@
 class Mdds < Formula
   desc "Multi-dimensional data structure and indexing algorithm"
   homepage "https://gitlab.com/mdds/mdds"
-  url "https://kohei.us/files/mdds/src/mdds-1.3.1.tar.bz2"
-  sha256 "dcb8cd2425567a5a5ec164afea475bce57784bca3e352ad4cbdd3d1a7e08e5a1"
+  url "https://kohei.us/files/mdds/src/mdds-2.0.3.tar.bz2"
+  sha256 "9771fe42e133443c13ca187253763e17c8bc96a1a02aec9e1e8893367ffa9ce5"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "5a1f26a51dbd73b634db0a3ec72d80758e0b1b94a50908bace789eb8994b9d87" => :high_sierra
-    sha256 "5a1f26a51dbd73b634db0a3ec72d80758e0b1b94a50908bace789eb8994b9d87" => :sierra
-    sha256 "5a1f26a51dbd73b634db0a3ec72d80758e0b1b94a50908bace789eb8994b9d87" => :el_capitan
+    sha256 cellar: :any_skip_relocation, all: "bebc791aaa0345a6005430a3935a2cd23fb97ef7f196d63046cc3c27d1dac748"
+  end
+
+  head do
+    url "https://gitlab.com/mdds/mdds.git"
+
+    depends_on "automake" => :build
   end
 
   depends_on "autoconf" => :build
   depends_on "boost"
-  needs :cxx11
+
+  on_linux do
+    depends_on "gcc" # for C++17
+  end
+
+  fails_with gcc: "5"
 
   def install
+    args = %W[
+      --prefix=#{prefix}
+      --disable-openmp
+    ]
+
     # Gets it to work when the CLT is installed
     inreplace "configure.ac", "$CPPFLAGS -I/usr/include -I/usr/local/include",
                               "$CPPFLAGS -I/usr/local/include"
-    system "autoconf"
-    system "./configure", "--prefix=#{prefix}"
+
+    if build.head?
+      system "./autogen.sh", *args
+    else
+      system "autoconf"
+      system "./configure", *args
+    end
+
     system "make", "install"
   end
 

@@ -1,23 +1,32 @@
 class OpenMesh < Formula
   desc "Generic data structure to represent and manipulate polygonal meshes"
   homepage "https://openmesh.org/"
-  url "https://www.openmesh.org/media/Releases/6.3/OpenMesh-6.3.tar.bz2"
-  sha256 "b97be926e430bcda10f44f2d4bbe2657b0778c2eed17346f4f32c06db36843ce"
-  head "https://www.graphics.rwth-aachen.de:9000/OpenMesh/OpenMesh.git"
+  url "https://www.openmesh.org/media/Releases/9.0/OpenMesh-9.0.tar.bz2"
+  sha256 "69311a75b6060993b07fef005b328ea62178c13fbb0c44773874137231510218"
+  license "BSD-3-Clause"
+  head "https://www.graphics.rwth-aachen.de:9000/OpenMesh/OpenMesh.git", branch: "master"
+
+  livecheck do
+    url "https://www.openmesh.org/download/"
+    regex(/href=.*?OpenMesh[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "a2673ca1b0233e480d9c7e682714ce73371282dae666f29bc723e42d64b3729e" => :high_sierra
-    sha256 "676e75669a5b5d754bb4bfcb44ae218ee19e51a2ee337a73d02d7afa3975dbd4" => :sierra
-    sha256 "adcf854d3ed46bdd19c10f04537239991a9ca96e06c078f16c1d8f303f411561" => :el_capitan
-    sha256 "3ea01760dd5aed9a42c1961aaf020e146a0b9a57fcaab1181803a17525fca1b9" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "04e362ff1d3d9dc04399cf018ca9d19330693094b2de00f66ce60dbb2afd9aed"
+    sha256 cellar: :any,                 arm64_big_sur:  "ef9bdabb86ef70f589a16a33d0074bf4f22f1c5ae13bd66d78723e52df2ed921"
+    sha256 cellar: :any,                 monterey:       "913221efd242346fa16b5e36313cbc614e9e397fd64a7dc21038012ef1bb4400"
+    sha256 cellar: :any,                 big_sur:        "02040786c707f555cb3fe98ab34445f4034f4dcfc4ede94002207983be2e3767"
+    sha256 cellar: :any,                 catalina:       "dafbe1a80d05a5e75477303dbc69d936a5bc366a8b20beaa52ecda864c796625"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ce084fa027dba1d790612441f726eba166950f5c89b52beb8341c8d40bc932f7"
   end
 
   depends_on "cmake" => :build
 
   def install
+    ENV.cxx11
+
     mkdir "build" do
-      system "cmake", "..", "-DBUILD_APPS=OFF", *std_cmake_args
+      system "cmake", "..", "-DBUILD_APPS=OFF", *std_cmake_args, "-DCMAKE_INSTALL_RPATH=#{rpath}"
       system "make", "install"
     end
   end
@@ -65,6 +74,8 @@ class OpenMesh < Formula
       -L#{lib}
       -lOpenMeshCore
       -lOpenMeshTools
+      --std=c++11
+      -Wl,-rpath,#{lib}
     ]
     system ENV.cxx, "test.cpp", "-o", "test", *flags
     system "./test"

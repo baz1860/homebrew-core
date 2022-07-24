@@ -1,21 +1,38 @@
 class Serd < Formula
   desc "C library for RDF syntax"
-  homepage "https://drobilla.net/software/serd/"
-  url "https://download.drobilla.net/serd-0.28.0.tar.bz2"
-  sha256 "1df21a8874d256a9f3d51a18b8c6e2539e8092b62cc2674b110307e93f898aec"
+  homepage "https://drobilla.net/software/serd.html"
+  url "https://download.drobilla.net/serd-0.30.14.tar.xz"
+  sha256 "a14137d47b11d6ad431e78da341ca9737998d9eaccf6a49263d4c8d79fd856e3"
+  license "ISC"
 
-  bottle do
-    cellar :any
-    sha256 "0c55076d7655da6d7d5154e24cd3d720fd9afcd610f5e7e9ee5af23859ab85f7" => :high_sierra
-    sha256 "7c7c1f9317f0fd595bfcdb8214e510c10648f99cdf9be1464b272abd4fa223ea" => :sierra
-    sha256 "8c0c40af6e4aaa222c37cd154d2ef80c6b13a50744d97e94139250a5e1a778a0" => :el_capitan
+  livecheck do
+    url "https://download.drobilla.net/"
+    regex(/href=.*?serd[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "88449226b9a9b18d4b59cf0365af5722a3600eee09efd545d0c7742cc116b668"
+    sha256 cellar: :any,                 arm64_big_sur:  "b48484ddbc698e3df53e2e673e74092a749ec5b620e38ca87cf029d555a2c35f"
+    sha256 cellar: :any,                 monterey:       "69212a51830c1a236502f5b5e1a600399b411f6be1b96b2b32ac1f75574b59be"
+    sha256 cellar: :any,                 big_sur:        "502abedf5cca58588ba7241d7e26d1acd3c2896b39b5fa3ff8bfdf3e28780d65"
+    sha256 cellar: :any,                 catalina:       "fec7b444a66a2065eeea33f6d5f76bdde71f25e123cd56ed94a4df8cc04d10a7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3f03736f95ad66e9f7350136dc14bc49db8b73e61a9457ee3bf38780e3d84583"
+  end
+
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
 
   def install
-    system "./waf", "configure", "--prefix=#{prefix}"
-    system "./waf"
-    system "./waf", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
+  end
+
+  test do
+    rdf_syntax_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns"
+    re = %r{(<#{Regexp.quote(rdf_syntax_ns)}#.*>\s+)?<http://example.org/List>\s+\.}
+    assert_match re, pipe_output("serdi -", "() a <http://example.org/List> .")
   end
 end

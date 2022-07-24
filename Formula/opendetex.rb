@@ -1,43 +1,38 @@
 class Opendetex < Formula
   desc "Tool to strip TeX or LaTeX commands from documents"
   homepage "https://github.com/pkubowicz/opendetex"
-  url "https://github.com/pkubowicz/opendetex/archive/v2.8.3.tar.gz"
-  sha256 "1f8a967ff7445ec498586e045def35474bf2cbc2b5669043fffbc569deb84c10"
+  url "https://github.com/pkubowicz/opendetex/releases/download/v2.8.9/opendetex-2.8.9.tar.bz2"
+  sha256 "0d6b8cb1f3394b790dd757b0171ad8b398c48e306fa6339e86ed8303c51df084"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "39f296a67d7bb776673c7bf967612c0978f3d9a9bae6f96604e8ac1e18c76cbf" => :high_sierra
-    sha256 "a5e9edb249ef5d97a72afaa586effbdd4ef7b48ff4b1fb0d0078615849bbea27" => :sierra
-    sha256 "4cc67ed6010d4b4ac0c0df288af9fe66e55ab7446a297b1fa65bf5e78c7d769b" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "7b7c22303e3de7519dc20cc7862c6aa3ac49fa6bae8d3bd043c46c3930dea810"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "9416484618318a11e895667857e7d8b39598bc31c2c1d8fbdbb7914176345e5e"
+    sha256 cellar: :any_skip_relocation, monterey:       "18e2156648aac0c7429e14b30ebe1444cc6b95fd0ca99366fa39f81148bc5e17"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ce26ea02e5c47385374aba395951434319d5e48e6dbda94f7ffa25e4632b54a6"
+    sha256 cellar: :any_skip_relocation, catalina:       "46db3f033cb646e360fcabc83eb6fabba87b858eb1cc3e32d4bad78e73816bc6"
+    sha256 cellar: :any_skip_relocation, mojave:         "92d55157d568aa004dd09342308f8e4be8dfb6a95f9719646c5d9792b677f7a2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e88e075265c2480dd11436e5d6027a090fb8e199c51fb6e5ffb431db5bf1662c"
   end
 
-  patch :DATA
+  uses_from_macos "flex" => :build
 
   def install
     system "make"
     bin.install "detex"
     bin.install "delatex"
-    man1.install "detex.1l" => "detex.1"
+    man1.install "detex.1"
+  end
+
+  test do
+    (testpath/"test.tex").write <<~EOS
+      \\documentclass{article}
+      \\begin{document}
+      Simple \\emph{text}.
+      \\end{document}
+    EOS
+
+    output = shell_output("#{bin}/detex test.tex")
+    assert_equal "Simple text.\n", output
   end
 end
-
-__END__
-diff --git a/detex.1l b/detex.1l
-index a70c813..7033b44 100644
---- a/detex.1l
-+++ b/detex.1l
-@@ -1,4 +1,4 @@
--.TH DETEX 1L "12 August 1993" "Purdue University"
-+.TH DETEX 1 "12 August 1993" "Purdue University"
- .SH NAME
- detex \- a filter to strip \fITeX\fP commands from a .tex file.
- .SH SYNOPSIS
-@@ -103,7 +103,7 @@ The old functionality can be essentially duplicated by using the
- .B \-s
- option.
- .SH SEE ALSO
--tex(1L)
-+tex(1)
- .SH DIAGNOSTICS
- Nesting of \\input is allowed but the number of opened files must not
- exceed the system's limit on the number of simultaneously opened files.

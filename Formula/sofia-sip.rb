@@ -1,26 +1,30 @@
 class SofiaSip < Formula
   desc "SIP User-Agent library"
   homepage "https://sofia-sip.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/sofia-sip/sofia-sip/1.12.11/sofia-sip-1.12.11.tar.gz"
-  sha256 "2b01bc2e1826e00d1f7f57d29a2854b15fd5fe24695e47a14a735d195dd37c81"
-  revision 1
+  url "https://github.com/freeswitch/sofia-sip/archive/v1.13.8.tar.gz"
+  sha256 "792b99eb35e50d7abeb42e91a5dceaf28afc5be1a85ffb01995855792a747fec"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any
-    sha256 "215b6a55868352c1ce67741e1cbede118813b0b1d12a56ba7425114a9bbb56d3" => :high_sierra
-    sha256 "ddbaf0fc570bd632c520057effc396a1f5e5cc48930644559ca9cafd9cd25360" => :sierra
-    sha256 "2e78cc40330c53363fb1dddc0568464001b46944628283e26811e4e6ccae28fe" => :el_capitan
-    sha256 "e2f9ede8ce51b2074659a1fcf576d83031c9037aafd3c39f75330e8e7cb236a5" => :yosemite
-    sha256 "1e68620530a8dda00d795bdf92f7c564174eefde5d7e703839de2e080bd89ea4" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "4a9236cfca7bdf5f2b0150c43b6880bb3228aeb74e78f4ca5d90b23e7629345e"
+    sha256 cellar: :any,                 arm64_big_sur:  "ce246432a246e2d745544771006439d443b639b5a40c7e155c13d8e4b6d1175b"
+    sha256 cellar: :any,                 monterey:       "4634460ca33e34cca0c8261a164f1b17d9585ab4824836f78518dc52d945e543"
+    sha256 cellar: :any,                 big_sur:        "34823f7ddba4cabc4ecfbd38441f2a0efec3f99dcfc05203f15b2c69d3ac8ab8"
+    sha256 cellar: :any,                 catalina:       "6c76cd5a4ddbcf0f886a511baa0dfd351a25f1f49ec38ea5bf73f29d7874a78a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1508be4f8955a341f1e100e657a260ae2e291325a36e1fe71d42664a095cb112"
   end
 
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
   depends_on "pkg-config" => :build
   depends_on "glib"
-  depends_on "gettext"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
 
   def install
+    system "./bootstrap.sh"
     system "./configure", "--disable-dependency-tracking",
+                          "--disable-silent-rules",
                           "--prefix=#{prefix}"
     system "make", "install"
   end

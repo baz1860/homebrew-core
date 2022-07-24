@@ -1,47 +1,56 @@
 class Libgit2 < Formula
   desc "C library of Git core methods that is re-entrant and linkable"
   homepage "https://libgit2.github.com/"
-  url "https://github.com/libgit2/libgit2/archive/v0.26.0.tar.gz"
-  sha256 "6a62393e0ceb37d02fe0d5707713f504e7acac9006ef33da1e88960bd78b6eac"
-  head "https://github.com/libgit2/libgit2.git"
+  url "https://github.com/libgit2/libgit2/archive/v1.4.4.tar.gz"
+  sha256 "e9923e9916a32f54c661d55d79c28fa304cb23617639e68bff9f94d3e18f2d4b"
+  license "GPL-2.0-only"
+  head "https://github.com/libgit2/libgit2.git", branch: "main"
 
-  bottle do
-    sha256 "2858f330bff072c20375d4882042123022e81237f0f3ca8382c9e3a017f514d6" => :high_sierra
-    sha256 "1cb3dac0dfc74a62e40e061c3046ce938b8c28fe0fea15e398cc4862178aa940" => :sierra
-    sha256 "8705a0cc5f73017412ce12fd87677e9b6e14781d82b6f845a64ffe84e24ecb2f" => :el_capitan
-    sha256 "f44d62f41114ee8ecba3298986cf9da5cf4b6cb44a64a9a64dd0c316938712d1" => :yosemite
+  livecheck do
+    url :stable
+    strategy :github_latest
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "332c012c8f5218acc8e02d076d6f588a7a894544d53fc8b38d11bf3eb6c9cc3d"
+    sha256 cellar: :any,                 arm64_big_sur:  "ce3c004de97ade23b818f3e039fb1b512d9d6a0e1b10e199ca497bd7ed202bb7"
+    sha256 cellar: :any,                 monterey:       "fc0f26f5383d478d225ee126ed802656b0490817a69f5b066f7902c168ec2576"
+    sha256 cellar: :any,                 big_sur:        "79f8276aa1edb0286d573ae91e06f009e951ed0fbe5dedb5dead84d1106a5de0"
+    sha256 cellar: :any,                 catalina:       "49b7ca1f4c469f91b91a1232f6fad32f507bcf5a57c45ee4c362b012d4ce7350"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d5e2330130e07eefae1c03d7e563335d197cd055ce6b2fa4ebe630f4b0c9c089"
+  end
+
   depends_on "cmake" => :build
-  depends_on "libssh2" => :recommended
-  depends_on "openssl" if MacOS.version <= :lion # Uses SecureTransport on >10.7
+  depends_on "pkg-config" => :build
+  depends_on "libssh2"
 
   def install
     args = std_cmake_args
     args << "-DBUILD_EXAMPLES=YES"
-    args << "-DBUILD_CLAR=NO" # Don't build tests.
-    args << "-DUSE_SSH=NO" if build.without? "libssh2"
+    args << "-DBUILD_TESTS=OFF" # Don't build tests.
+    args << "-DUSE_SSH=YES"
 
     mkdir "build" do
       system "cmake", "..", *args
       system "make", "install"
       cd "examples" do
-        (pkgshare/"examples").install "add", "blame", "cat-file", "cgit2",
-                                      "describe", "diff", "for-each-ref",
-                                      "general", "init", "log", "remote",
-                                      "rev-list", "rev-parse", "showindex",
-                                      "status", "tag"
+        (pkgshare/"examples").install "lg2"
       end
+      system "make", "clean"
+      system "cmake", "..", "-DBUILD_SHARED_LIBS=OFF", *args
+      system "make"
+      lib.install "libgit2.a"
     end
   end
 
   test do
     (testpath/"test.c").write <<~EOS
       #include <git2.h>
+      #include <assert.h>
 
       int main(int argc, char *argv[]) {
         int options = git_libgit2_features();
+        assert(options & GIT_FEATURE_SSH);
         return 0;
       }
     EOS

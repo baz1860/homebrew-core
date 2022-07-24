@@ -3,90 +3,94 @@ class Dxpy < Formula
 
   desc "DNAnexus toolkit utilities and platform API bindings for Python"
   homepage "https://github.com/dnanexus/dx-toolkit"
-  url "https://files.pythonhosted.org/packages/04/16/1d1e1ff25d4f694f04f88417afbd72703d850aebe9f84fdbb8ed836089d7/dxpy-0.191.0.tar.gz"
-  sha256 "b98a55fc766a9e7044f6f299d148c5dde3967f22669add915a1a1921e4006820"
-  revision 1
+  url "https://files.pythonhosted.org/packages/b2/07/bf0509cee7d225156ec0a635db4659205c91a05c07f0b2527fbd6bea2910/dxpy-0.326.1.tar.gz"
+  sha256 "0a69bdb5ba4b64c0c332e3dbefb66de88f53c4e6f7c6a54829889784820e2546"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "73f52983798c560445f0a18ef35c9e830ad4faa8b5d4808511ca09928f80ffc1" => :high_sierra
-    sha256 "526ed51259393fb569a912b8865e1627af6ebae9bccd460d33cb403027c66e52" => :sierra
-    sha256 "08e04fb3cdca5a1d50229e76713fd6a7f384996ed1e30c97a5260118dbf75a91" => :el_capitan
-    sha256 "b5a5feb625e40d2bffca2a5be08bd4977a55129d7c9925129b50c51b782f5399" => :yosemite
-    sha256 "91a3634cb4366db887baf1e250bce3c978f9283a2a37593e676440a3a4791adf" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "cd6ca09d78104bdd51bf359c7289c24ad7ac57b2009157f8195acb21e3f25018"
+    sha256 cellar: :any,                 arm64_big_sur:  "2cc0b338e4ce038fd742b4875009e55371943c1a563c2ff2b872f382f81e8a4f"
+    sha256 cellar: :any,                 monterey:       "938e2ddd62d00757b87b7ab85cefeefd07c0cf10fa6ec0f40aad711103da92cb"
+    sha256 cellar: :any,                 big_sur:        "3c147f3d2695345e9365774d298c83712d7fe22dd9f5a1c5e328eb3bfd99d901"
+    sha256 cellar: :any,                 catalina:       "92f456ac63a79412415ecce2fe065ad689a996571d164be2b9533b26164b71e1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "63d9bad65c9a862b23f3037e5b14f1da16804c9686899328286e901f3b447795"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "rust" => :build # for cryptography
+  depends_on "python@3.10"
+  depends_on "six"
 
-  resource "beautifulsoup4" do
-    url "https://files.pythonhosted.org/packages/26/79/ef9a8bcbec5abc4c618a80737b44b56f1cb393b40238574078c5002b97ce/beautifulsoup4-4.4.1.tar.gz"
-    sha256 "87d4013d0625d4789a4f56b8d79a04d5ce6db1152bb65f1d39744f7709a366b4"
+  on_macos do
+    depends_on "readline"
   end
 
-  resource "fusepy" do
-    url "https://files.pythonhosted.org/packages/0f/4d/26a937988e2633aa9f1d5268aa3782afaee9a482c6c6f221fc1e1ae58862/fusepy-2.0.2.tar.gz"
-    sha256 "aa5929d5464caed81406481a330dc975d1a95b9a41d0a98f095c7e18fe501bfc"
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "libffi"
   end
 
-  resource "futures" do
-    url "https://files.pythonhosted.org/packages/8d/73/b5fff618482bc06c9711e7cdc0d5d7eb1904d35898f48f2d7f9696b08bef/futures-3.0.4.tar.gz"
-    sha256 "19485d83f7bd2151c0aeaf88fbba3ee50dadfb222ffc3b66a344ef4952b782a3"
+  resource "argcomplete" do
+    url "https://files.pythonhosted.org/packages/05/f8/67851ae4fe5396ba6868c5d84219b81ea6a5d53991a6853616095c30adc0/argcomplete-2.0.0.tar.gz"
+    sha256 "6372ad78c89d662035101418ae253668445b391755cfe94ea52f1b9d22425b20"
   end
 
-  resource "gnureadline" do
-    url "https://files.pythonhosted.org/packages/3a/ee/2c3f568b0a74974791ac590ec742ef6133e2fbd287a074ba72a53fa5e97c/gnureadline-6.3.3.tar.gz"
-    sha256 "a259b038f4b625b07e6206bbc060baa5489ca17c798df3f9507875f2bf980cbe"
+  resource "certifi" do
+    url "https://files.pythonhosted.org/packages/cc/85/319a8a684e8ac6d87a1193090e06b6bbb302717496380e225ee10487c888/certifi-2022.6.15.tar.gz"
+    sha256 "84c85a9078b11105f04f3036a9482ae10e4621616db313fe045dd24743a0820d"
+  end
+
+  resource "cffi" do
+    url "https://files.pythonhosted.org/packages/2b/a8/050ab4f0c3d4c1b8aaa805f70e26e84d0e27004907c5b8ecc1d31815f92a/cffi-1.15.1.tar.gz"
+    sha256 "d400bfb9a37b1351253cb402671cea7e89bdecc294e8016a707f6d1d8ac934f9"
+  end
+
+  resource "charset-normalizer" do
+    url "https://files.pythonhosted.org/packages/56/31/7bcaf657fafb3c6db8c787a865434290b726653c912085fbd371e9b92e1c/charset-normalizer-2.0.12.tar.gz"
+    sha256 "2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597"
+  end
+
+  resource "cryptography" do
+    url "https://files.pythonhosted.org/packages/10/a7/51953e73828deef2b58ba1604de9167843ee9cd4185d8aaffcb45dd1932d/cryptography-36.0.2.tar.gz"
+    sha256 "70f8f4f7bb2ac9f340655cbac89d68c527af5bb4387522a8413e841e3e6628c9"
+  end
+
+  resource "idna" do
+    url "https://files.pythonhosted.org/packages/62/08/e3fc7c8161090f742f504f40b1bccbfc544d4a4e09eb774bf40aafce5436/idna-3.3.tar.gz"
+    sha256 "9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"
   end
 
   resource "psutil" do
-    url "https://files.pythonhosted.org/packages/fe/69/c0d8e9b9f8a58cbf71aa4cf7f27c27ee0ab05abe32d9157ec22e223edef4/psutil-3.3.0.tar.gz"
-    sha256 "421b6591d16b509aaa8d8c15821d66bb94cb4a8dc4385cad5c51b85d4a096d85"
+    url "https://files.pythonhosted.org/packages/d6/de/0999ea2562b96d7165812606b18f7169307b60cd378bc29cf3673322c7e9/psutil-5.9.1.tar.gz"
+    sha256 "57f1819b5d9e95cdfb0c881a8a5b7d542ed0b7c522d575706a80bedc848c8954"
+  end
+
+  resource "pycparser" do
+    url "https://files.pythonhosted.org/packages/5e/0b/95d387f5f4433cb0f53ff7ad859bd2c6051051cebbb564f139a999ab46de/pycparser-2.21.tar.gz"
+    sha256 "e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"
   end
 
   resource "python-dateutil" do
-    url "https://files.pythonhosted.org/packages/66/54/d561347dbfa0a1eeaf49a005da5fd71c0a0be8e4e2676f14775dd0097430/python-dateutil-2.3.tar.gz"
-    sha256 "2db67d8832f19332908b4b9644865ced34087919702140862093e347e95730e4"
-  end
-
-  resource "python-magic" do
-    url "https://files.pythonhosted.org/packages/21/57/57c47169c651534014a9852ec690fc0893bab2f67e24d6dab3c945522e7d/python-magic-0.4.6.tar.gz"
-    sha256 "903d3d3c676e2b1244892954e2bbbe27871a633385a9bfe81f1a81a7032df2fe"
+    url "https://files.pythonhosted.org/packages/4c/c4/13b4776ea2d76c115c1d1b84579f3764ee6d57204f6be27119f13a61d0a9/python-dateutil-2.8.2.tar.gz"
+    sha256 "0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"
   end
 
   resource "requests" do
-    url "https://files.pythonhosted.org/packages/0a/00/8cc925deac3a87046a4148d7846b571cf433515872b5430de4cd9dea83cb/requests-2.7.0.tar.gz"
-    sha256 "398a3db6d61899d25fd4a06c6ca12051b0ce171d705decd7ed5511517b4bb93d"
+    url "https://files.pythonhosted.org/packages/60/f3/26ff3767f099b73e0efa138a9998da67890793bfa475d8278f84a30fec77/requests-2.27.1.tar.gz"
+    sha256 "68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"
   end
 
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+  resource "urllib3" do
+    url "https://files.pythonhosted.org/packages/25/36/f056e5f1389004cf886bb7a8514077f24224238a7534497c014a6b9ac770/urllib3-1.26.10.tar.gz"
+    sha256 "879ba4d1e89654d9769ce13121e0f94310ea32e8d2f8cf587b77c08bbcdb30d6"
   end
 
-  resource "ws4py" do
-    url "https://files.pythonhosted.org/packages/d6/69/0f5723c5784317278866891546c5fe4521dc404600df504651e9c934fd0d/ws4py-0.3.2.tar.gz"
-    sha256 "48a4e005496a60081f74ca130ce55603ff87e1507483535acf902b94761bda8b"
-  end
-
-  resource "xattr" do
-    url "https://files.pythonhosted.org/packages/c5/80/b25d549ae4bf4f3e9635a331b759ffca2de4dd8a78dc5106d1ca92f5d08d/xattr-0.6.4.tar.gz"
-    sha256 "f9dcebc99555634b697fa3dad8ea3047deb389c6f1928d347a0c49277a5c0e9e"
+  resource "websocket-client" do
+    url "https://files.pythonhosted.org/packages/35/d4/14e446a82bc9172d088ebd81c0b02c5ca8481bfeecb13c9ef07998f9249b/websocket_client-0.54.0.tar.gz"
+    sha256 "e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849"
   end
 
   def install
-    # superenv removes -arch flags causing gnureadline to fail
-    # See Homebrew/legacy-homebrew#44472
-    ENV.permit_arch_flags
-
     virtualenv_install_with_resources
-
-    # Fix collision between system readline and gnureadline resulting in
-    # "incompatible readline module detected (libedit), tab completion disabled"
-    # Reported 7 Aug 2016: https://github.com/dnanexus/dx-toolkit/issues/169
-    site_packages = libexec/"lib/python2.7/site-packages"
-    (site_packages/"homebrew-gnureadline-hack.pth").write <<~EOS
-      import sys; import gnureadline; sys.modules["readline"] = gnureadline
-    EOS
   end
 
   test do

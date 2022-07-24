@@ -1,24 +1,38 @@
 class Icu4c < Formula
   desc "C/C++ and Java libraries for Unicode and globalization"
-  homepage "http://site.icu-project.org/"
-  url "https://ssl.icu-project.org/files/icu4c/60.2/icu4c-60_2-src.tgz"
-  mirror "https://downloads.sourceforge.net/project/icu/ICU4C/60.2/icu4c-60_2-src.tgz"
-  version "60.2"
-  sha256 "f073ea8f35b926d70bb33e6577508aa642a8b316a803f11be20af384811db418"
-  head "https://ssl.icu-project.org/repos/icu/trunk/icu4c/", :using => :svn
+  homepage "https://icu.unicode.org/home"
+  url "https://github.com/unicode-org/icu/releases/download/release-70-1/icu4c-70_1-src.tgz"
+  version "70.1"
+  sha256 "8d205428c17bf13bb535300669ed28b338a157b1c01ae66d31d0d3e2d47c3fd5"
+  license "ICU"
+
+  livecheck do
+    url :stable
+    regex(/^release[._-]v?(\d+(?:[.-]\d+)+)$/i)
+    strategy :git do |tags, regex|
+      tags.map { |tag| tag[regex, 1]&.gsub("-", ".") }.compact
+    end
+  end
 
   bottle do
-    cellar :any
-    sha256 "cd6252141fd00076f67a01daceec4c5dfdea033c6a63b1a0ea7c98653757eb48" => :high_sierra
-    sha256 "2d8e104b3346632e091386e8640d2f3033e38654341b9a670d334832b1432c11" => :sierra
-    sha256 "54cc020520f422f5a708b20e1bec4e009cb7a52e7a150a3dd8edcfaa4f591200" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "43cf787a35559b90597db8e1aaba95dbeedb84b1ee3d2e942be8938ae618724c"
+    sha256 cellar: :any,                 arm64_big_sur:  "c3c22a25dd864a6494d2371bea6b8b9d5e49f8c401b2f6cda00f4c349f57e975"
+    sha256 cellar: :any,                 monterey:       "321592eb1aebb7c6edc7a5e91393598725ebcc63362f059072b993c27f3bf979"
+    sha256 cellar: :any,                 big_sur:        "f124a30b9ecb4bfe61cd8ab5e46d58877fd5acb319360dae446648730a4b3ad8"
+    sha256 cellar: :any,                 catalina:       "8773ed472307dff9a522558503e0f12aa77433510e856136946a558ae3087c0f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "04f36c9e1047fb1a9e1f1889eae2ade68d6518fb847a90e7947cc87ca94512ef"
   end
 
   keg_only :provided_by_macos, "macOS provides libicucore.dylib (but nothing else)"
 
   def install
-    args = %W[--prefix=#{prefix} --disable-samples --disable-tests --enable-static]
-    args << "--with-library-bits=64" if MacOS.prefer_64_bit?
+    args = %W[
+      --prefix=#{prefix}
+      --disable-samples
+      --disable-tests
+      --enable-static
+      --with-library-bits=64
+    ]
 
     cd "source" do
       system "./configure", *args
@@ -28,6 +42,11 @@ class Icu4c < Formula
   end
 
   test do
-    system "#{bin}/gendict", "--uchars", "/usr/share/dict/words", "dict"
+    if File.exist? "/usr/share/dict/words"
+      system "#{bin}/gendict", "--uchars", "/usr/share/dict/words", "dict"
+    else
+      (testpath/"hello").write "hello\nworld\n"
+      system "#{bin}/gendict", "--uchars", "hello", "dict"
+    end
   end
 end

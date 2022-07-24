@@ -1,14 +1,12 @@
 class Pacapt < Formula
   desc "Package manager in the style of Arch's pacman"
   homepage "https://github.com/icy/pacapt"
-  url "https://github.com/icy/pacapt/archive/v2.3.14.tar.gz"
-  sha256 "73683fcd9414fc745cc26b734dad6b5b4d37227b4e2336b787f985d3b1323526"
+  url "https://github.com/icy/pacapt/archive/v3.0.7.tar.gz"
+  sha256 "d1081b639466de7650ed66c7bb5a522482c60c24b03c292c46b86a3983e66234"
+  license "Fair"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "4f69f27536059701100c0130ab2c06381f02629f2610af0b576cc8cae196abb4" => :high_sierra
-    sha256 "000a282250eba0c958445cb4a1137d938c17b338e25ea9e4771844155627728a" => :sierra
-    sha256 "000a282250eba0c958445cb4a1137d938c17b338e25ea9e4771844155627728a" => :el_capitan
+    sha256 cellar: :any_skip_relocation, all: "fb8be933786f8348cc9852b23098c5b3186c2111d0aa7f4a5fd637bec3dae051"
   end
 
   def install

@@ -1,32 +1,38 @@
 class Unpaper < Formula
   desc "Post-processing for scanned/photocopied books"
-  homepage "https://www.flameeyes.eu/projects/unpaper"
-  url "https://www.flameeyes.eu/files/unpaper-6.1.tar.xz"
-  sha256 "237c84f5da544b3f7709827f9f12c37c346cdf029b1128fb4633f9bafa5cb930"
-  revision 1
+  homepage "https://www.flameeyes.com/projects/unpaper"
+  url "https://www.flameeyes.com/files/unpaper-7.0.0.tar.xz"
+  sha256 "2575fbbf26c22719d1cb882b59602c9900c7f747118ac130883f63419be46a80"
+  license "GPL-2.0-or-later"
+  head "https://github.com/unpaper/unpaper.git", branch: "main"
 
   bottle do
-    cellar :any
-    sha256 "b37d324fd0e60d59421e19434c46c72a9593119d55958b96628b64f498a42191" => :high_sierra
-    sha256 "f37e1cc563b2eaa5bfde892d775200c86fcabd4261745a62e76f4ff175fad8c6" => :sierra
-    sha256 "7332b87cd5d0e087774f41fd0df69d5f26c616ca469a1d33cdfdcf4baa6153ff" => :el_capitan
-    sha256 "c84f37be3e99fcf3d47bf4bbffba7192d451761a31056705f11d6a4a19dcd45a" => :yosemite
-    sha256 "318d0e90644880ee357818a8d6d144d7ccc4873cca90a1ff77f1031f20994b93" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "74997b9a9738930333b8c4cb000a055d2bc9dd42510be3e9d6d2f96a80908eba"
+    sha256 cellar: :any,                 arm64_big_sur:  "d0b6c4e384cc73092163b88989eed3a87a5d489e693ecafcebfa5770f4e3d6d3"
+    sha256 cellar: :any,                 monterey:       "1dad125fcaf9aa24d1b347a575d286dbad91c7e5e475813314f3084ee1dd3947"
+    sha256 cellar: :any,                 big_sur:        "3e23cbc93bf46fce64ebd7277e23207090c1275b067294f360d3437778cf9c03"
+    sha256 cellar: :any,                 catalina:       "58134afe9017002e684e0ff392e77ee1eca707fa8e323ee7283858054be811eb"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "abeb5bcc20a8037dd4629cb662d1eaf71ebcf901474e508b13e911d65dce1317"
   end
 
-  head do
-    url "https://github.com/Flameeyes/unpaper.git"
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-  end
-
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "sphinx-doc" => :build
   depends_on "ffmpeg"
 
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5" # ffmpeg is compiled with GCC
+
   def install
-    system "autoreconf", "-i" if build.head?
-    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do

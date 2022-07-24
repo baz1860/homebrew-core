@@ -1,69 +1,52 @@
 class Pilosa < Formula
   desc "Distributed bitmap index that queries across data sets"
   homepage "https://www.pilosa.com"
-  url "https://github.com/pilosa/pilosa/archive/v0.8.8.tar.gz"
-  sha256 "d430cb86f99595e26817fcff1441af815055485ef213a91c54af59181182dfd8"
+  url "https://github.com/pilosa/pilosa/archive/v1.4.1.tar.gz"
+  sha256 "a250dda8788fefdb0b0b7eeff1bb44375a570cd4c6a0c501bc55612775b1578e"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "b53e5982845292ea5a836866bb38356a1ef78b302f26ed687c46355bedfe1178" => :high_sierra
-    sha256 "cffc67a81a17cf30cfd37ad219593703806af37c9c000f8ee183f4fba4c80c80" => :sierra
-    sha256 "b803765ae2cfb19131293a09de26f4b18d3b7033fa7d4f52262b8f297471a2e7" => :el_capitan
+    sha256 cellar: :any_skip_relocation, monterey:     "c24516ce6e3b184a1f85497be64e097f1a467602dcaac317564e4ff1254bd271"
+    sha256 cellar: :any_skip_relocation, big_sur:      "05873e34a40580f73c31890f85b768e28a928383839f1bbd47ef7880273e3db4"
+    sha256 cellar: :any_skip_relocation, catalina:     "703ee800aa37986fb22892672ae4f20020561df1aeccf60bc68f4f2c5807ec02"
+    sha256 cellar: :any_skip_relocation, mojave:       "486ace10d0957669478591911549112c22d812b26a746b3aca8cf00fee726fc8"
+    sha256 cellar: :any_skip_relocation, high_sierra:  "f7cd715d06c813bf358b3151ddfe24c4a7664b464b3d7bd047b222189d603281"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "776da185052f34aa5c973e92bfefb27304168a7d24f5cbb1dd1a951e1330cd5e"
   end
 
-  depends_on "dep" => :build
+  # https://github.com/pilosa/pilosa/issues/2149#issuecomment-993029527
+  deprecate! date: "2021-12-14", because: :unmaintained
+
   depends_on "go" => :build
-  depends_on "go-statik" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/pilosa/pilosa").install buildpath.children
+    # Fix compilation with Go 1.18 - see https://github.com/golang/go/issues/51706
+    inreplace "go.mod",
+              "golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872",
+              "golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a"
 
-    cd "src/github.com/pilosa/pilosa" do
-      system "make", "generate-statik", "pilosa", "FLAGS=-o #{bin}/pilosa", "VERSION=v#{version}"
-      prefix.install_metafiles
-    end
+    (buildpath/"go.sum").append_lines <<~EOS
+      golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a h1:dGzPydgVsqGcTRVwiLJ1jVbufYwmzD3LfVPLKsKg+0k=
+      golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+    EOS
+
+    system "make", "build", "FLAGS=-o #{bin}/pilosa", "VERSION=v#{version}"
   end
 
-  plist_options :manual => "pilosa server"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/pilosa</string>
-            <string>server</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <dict>
-            <key>SuccessfulExit</key>
-            <false/>
-        </dict>
-        <key>WorkingDirectory</key>
-        <string>#{var}</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"pilosa", "server"]
+    keep_alive true
+    working_dir var
   end
 
   test do
-    begin
-      server = fork do
-        exec "#{bin}/pilosa", "server"
-      end
-      sleep 0.5
-      assert_match("Welcome. Pilosa is running.", shell_output("curl localhost:10101"))
-      assert_match("<!DOCTYPE html>", shell_output("curl --user-agent NotCurl localhost:10101"))
-    ensure
-      Process.kill "TERM", server
-      Process.wait server
+    server = fork do
+      exec "#{bin}/pilosa", "server"
     end
+    sleep 0.5
+    assert_match("Welcome. Pilosa is running.", shell_output("curl localhost:10101"))
+  ensure
+    Process.kill "TERM", server
+    Process.wait server
   end
 end

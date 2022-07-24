@@ -1,89 +1,76 @@
 class Icecream < Formula
   desc "Distributed compiler with a central scheduler to share build load"
   homepage "https://en.opensuse.org/Icecream"
-  url "https://github.com/icecc/icecream/archive/1.1.tar.gz"
-  sha256 "92532791221d7ec041b7c5cf9998d9c3ee8f57cbd2da1819c203a4c6799ffc18"
+  url "https://github.com/icecc/icecream/archive/1.4.tar.gz"
+  sha256 "249dcf74f0fc477ff9735ff0bdcdfaa4c257a864c4db5255d8b25c9f4fd20b6b"
+  license "GPL-2.0-or-later"
 
   bottle do
-    sha256 "ac7f6745981bd1c0853af12c4a460cd196a95b7c27c6072746db62086e6afcf0" => :high_sierra
-    sha256 "ff931dd74efc02cad494df41e2df0919fd1a65b2908ade15566b5a6f0974e3ee" => :sierra
-    sha256 "744922ad03cb2468d1b3251238f7130fb1e4295388370bf47d6edeb43a8c36b2" => :el_capitan
-    sha256 "0adc60662ea9ede33caf1fffb35a129593479a99c34bb36525c1c718b0a77639" => :yosemite
+    sha256 arm64_monterey: "053f5583b18d4201020f59f9d4481a2d6c0b584c5bb3297038ddd9653d70998e"
+    sha256 arm64_big_sur:  "1a26f6bb194f5e27212c555783574c81d56f4fcb5e3bdc410278f8f74b128016"
+    sha256 monterey:       "781ad1cb41ba91d5bd7b2f6763807b3fd89a0ff30b572b8ec77273d713867c1e"
+    sha256 big_sur:        "076868e850f3b6b5ae814e19b03528143ea5bb3f903edcdca14cac7ce3fbf4e8"
+    sha256 catalina:       "a85e725c50fc4fad0d28621cd9c241326c516b3bfb32e01a4710615b0bcec4f5"
+    sha256 x86_64_linux:   "9eef6bec6b3f10bb768c84872285e4ffe45e45ffcd4e05c4e7727c702875d044"
   end
-
-  option "with-docbook2X", "Build with man page"
-  option "without-clang-wrappers", "Don't use symlink wrappers for clang/clang++"
-  option "with-clang-rewrite-includes", "Use by default Clang's -frewrite-includes option"
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
+  depends_on "docbook2x" => :build
   depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "libarchive"
   depends_on "lzo"
-  depends_on "docbook2x" => [:optional, :build]
+  depends_on "zstd"
+
+  on_linux do
+    depends_on "llvm" => :test
+    depends_on "libcap-ng"
+  end
 
   def install
     args = %W[
       --disable-dependency-tracking
       --disable-silent-rules
       --prefix=#{prefix}
+      --enable-clang-wrappers
     ]
-    args << "--without-man" if build.without? "docbook2X"
-    args << "--enable-clang-wrappers" if build.with? "clang-wrappers"
-    args << "--enable-clang-write-includes" if build.with? "clang-rewrite-includes"
 
     system "./autogen.sh"
     system "./configure", *args
     system "make", "install"
 
-    (prefix/"org.opensuse.icecc.plist").write iceccd_plist
-    (prefix/"org.opensuse.icecc-scheduler.plist").write scheduler_plist
+    # Manually install scheduler property list
+    (prefix/"#{plist_name}-scheduler.plist").write scheduler_plist
   end
 
-  def caveats; <<~EOS
-    To override the toolset with icecc, add to your path:
-      #{opt_libexec}/icecc/bin
-
-    To have launchd start the icecc daemon at login:
-      cp #{opt_prefix}/org.opensuse.icecc.plist ~/Library/LaunchAgents/
-      launchctl load -w ~/Library/LaunchAgents/org.opensuse.icecc.plist
+  def caveats
+    <<~EOS
+      To override the toolset with icecc, add to your path:
+        #{opt_libexec}/icecc/bin
     EOS
   end
 
-  def iceccd_plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>Icecc Daemon</string>
-        <key>ProgramArguments</key>
-        <array>
-        <string>#{sbin}/iceccd</string>
-        <string>-d</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run opt_sbin/"iceccd"
   end
 
-  def scheduler_plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>Icecc Scheduler</string>
-        <key>ProgramArguments</key>
-        <array>
-        <string>#{sbin}/icecc-scheduler</string>
-        <string>-d</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-    </dict>
-    </plist>
+  def scheduler_plist
+    <<~EOS
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+          <key>Label</key>
+          <string>#{plist_name}-scheduler</string>
+          <key>ProgramArguments</key>
+          <array>
+          <string>#{sbin}/icecc-scheduler</string>
+          </array>
+          <key>RunAtLoad</key>
+          <true/>
+      </dict>
+      </plist>
     EOS
   end
 
@@ -110,28 +97,26 @@ class Icecream < Formula
     system opt_libexec/"icecc/bin/g++", "-o", "hello-cc", "hello-cc.cc"
     assert_equal "Hello, world!\n", shell_output("./hello-cc")
 
-    if build.with? "clang-wrappers"
-      (testpath/"hello-clang.c").write <<~EOS
-        #include <stdio.h>
-        int main()
-        {
-          puts("Hello, world!");
-          return 0;
-        }
-      EOS
-      system opt_libexec/"icecc/bin/clang", "-o", "hello-clang", "hello-clang.c"
-      assert_equal "Hello, world!\n", shell_output("./hello-clang")
+    (testpath/"hello-clang.c").write <<~EOS
+      #include <stdio.h>
+      int main()
+      {
+        puts("Hello, world!");
+        return 0;
+      }
+    EOS
+    system opt_libexec/"icecc/bin/clang", "-o", "hello-clang", "hello-clang.c"
+    assert_equal "Hello, world!\n", shell_output("./hello-clang")
 
-      (testpath/"hello-cclang.cc").write <<~EOS
-        #include <iostream>
-        int main()
-        {
-          std::cout << "Hello, world!" << std::endl;
-          return 0;
-        }
-      EOS
-      system opt_libexec/"icecc/bin/clang++", "-o", "hello-cclang", "hello-cclang.cc"
-      assert_equal "Hello, world!\n", shell_output("./hello-cclang")
-    end
+    (testpath/"hello-cclang.cc").write <<~EOS
+      #include <iostream>
+      int main()
+      {
+        std::cout << "Hello, world!" << std::endl;
+        return 0;
+      }
+    EOS
+    system opt_libexec/"icecc/bin/clang++", "-o", "hello-cclang", "hello-cclang.cc"
+    assert_equal "Hello, world!\n", shell_output("./hello-cclang")
   end
 end

@@ -3,47 +3,44 @@ class Tarsnapper < Formula
 
   desc "Tarsnap wrapper which expires backups using a gfs-scheme"
   homepage "https://github.com/miracle2k/tarsnapper"
-  url "https://github.com/miracle2k/tarsnapper/archive/0.4.tar.gz"
-  sha256 "94ac22c3ed72e6321596f7d229b34fd21b59a00035162c5b22f2a1ee64dc6d01"
+  url "https://files.pythonhosted.org/packages/4e/c5/0a08950e5faba96e211715571c68ef64ee37b399ef4f0c4ab55e66c3c4fe/tarsnapper-0.5.0.tar.gz"
+  sha256 "b129b0fba3a24b2ce80c8a2ecd4375e36b6c7428b400e7b7ab9ea68ec9bb23ec"
+  license "BSD-2-Clause"
+  revision 1
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "1d0bcdf7f096f3eb500f6cc568ead2b1958b9e2b5334e5defc16c6fb5c6fb955" => :high_sierra
-    sha256 "9b1053c30ac6cc1d1f81f287cb84deba9a8df6c353fa90d969a8e104301b7112" => :sierra
-    sha256 "dc172bc2eb7b5f4dc6adf477828e1f2523932e16e2997b4e4c8633b31d3a28a0" => :el_capitan
-    sha256 "47e026fb50a96660899d9128c8c74e0191a3c414d363cecb3078c9a6eae12241" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "ac8f71359974b87ec296543400b6feed59990d637bb39bd76693f532901a9ba1"
+    sha256 cellar: :any,                 arm64_big_sur:  "fb9e4083414f5e3c529a444047e4a840fbe008d8e1210ca35183c95e284712c5"
+    sha256 cellar: :any,                 monterey:       "30725e21171a6c3151f778e5c710ce155aba69a5778610596df6b3b6fe6b944f"
+    sha256 cellar: :any,                 big_sur:        "766dad885fa778bda3d99c853e14d4e3d179b9a1c11131165c4dd7875553d29f"
+    sha256 cellar: :any,                 catalina:       "4e95af80521f93738700549a1683cf9a73c776d637587c065e7c0fa56985168e"
+    sha256 cellar: :any,                 mojave:         "09e4372f39f9cb0d141ebc4d89835ebb6787baa3c0a20e6b791a919168035428"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1f9c0304d01b9274fcd7acb0a8cb66610cac32f1c3aaf7e0b05b36c7ddd1b384"
   end
 
+  depends_on "libyaml"
+  depends_on "python@3.10"
+  depends_on "six"
   depends_on "tarsnap"
 
-  resource "argparse" do
-    url "https://files.pythonhosted.org/packages/18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/argparse-1.4.0.tar.gz"
-    sha256 "62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4"
-  end
-
   resource "pexpect" do
-    url "https://files.pythonhosted.org/packages/e8/13/d0b0599099d6cd23663043a2a0bb7c61e58c6ba359b2656e6fb000ef5b98/pexpect-4.2.1.tar.gz"
-    sha256 "3d132465a75b57aa818341c6521392a06cc660feb3988d7f1074f39bd23c9a92"
-  end
-
-  resource "PyYAML" do
-    url "https://files.pythonhosted.org/packages/4a/85/db5a2df477072b2902b0eb892feb37d88ac635d36245a72a6a69b23b383a/PyYAML-3.12.tar.gz"
-    sha256 "592766c6303207a20efc445587778322d7f73b161bd994f227adaa341ba212ab"
-  end
-
-  resource "python-dateutil" do
-    url "https://files.pythonhosted.org/packages/51/fc/39a3fbde6864942e8bb24c93663734b74e281b984d1b8c4f95d64b0c21f6/python-dateutil-2.6.0.tar.gz"
-    sha256 "62a2f8df3d66f878373fd0072eacf4ee52194ba302e00082828e0d263b0418d2"
+    url "https://files.pythonhosted.org/packages/e5/9b/ff402e0e930e70467a7178abb7c128709a30dfb22d8777c043e501bc1b10/pexpect-4.8.0.tar.gz"
+    sha256 "fc65a43959d153d0114afe13997d439c22823a27cefceb5ff35c2178c6784c0c"
   end
 
   resource "ptyprocess" do
-    url "https://files.pythonhosted.org/packages/db/d7/b465161910f3d1cef593c5e002bff67e0384898f597f1a7fdc8db4c02bf6/ptyprocess-0.5.1.tar.gz"
-    sha256 "0530ce63a9295bfae7bd06edc02b6aa935619f486f0f1dc0972f516265ee81a6"
+    url "https://files.pythonhosted.org/packages/20/e5/16ff212c1e452235a90aeb09066144d0c5a6a8c0834397e03f5224495c4e/ptyprocess-0.7.0.tar.gz"
+    sha256 "5c5d0a3b48ceee0b48485e0c26037c0acd7d29765ca3fbb5cb3831d347423220"
   end
 
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+  resource "python-dateutil" do
+    url "https://files.pythonhosted.org/packages/4c/c4/13b4776ea2d76c115c1d1b84579f3764ee6d57204f6be27119f13a61d0a9/python-dateutil-2.8.2.tar.gz"
+    sha256 "0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"
+  end
+
+  resource "PyYAML" do
+    url "https://files.pythonhosted.org/packages/36/2b/61d51a2c4f25ef062ae3f74576b01638bebad5e045f747ff12643df63844/PyYAML-6.0.tar.gz"
+    sha256 "68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2"
   end
 
   def install
@@ -51,6 +48,6 @@ class Tarsnapper < Formula
   end
 
   test do
-    assert_match /usage: tarsnapper/, shell_output("#{bin}/tarsnapper --help")
+    assert_match "usage: tarsnapper", shell_output("#{bin}/tarsnapper --help")
   end
 end

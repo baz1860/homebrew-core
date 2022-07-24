@@ -1,19 +1,26 @@
 class TeeClc < Formula
   desc "Microsoft Team Explorer Everywhere command-line Client"
-  homepage "https://java.visualstudio.com/Docs/tools/eclipse"
-  url "https://github.com/Microsoft/team-explorer-everywhere/releases/download/14.123.1/TEE-CLC-14.123.1.zip"
-  sha256 "868416c59cffd5d84118ad35b164c09c1a8980737de8de2f64dd727c7a11ad0a"
+  homepage "https://github.com/Microsoft/team-explorer-everywhere"
+  url "https://github.com/Microsoft/team-explorer-everywhere/releases/download/14.135.0/TEE-CLC-14.135.0.zip"
+  sha256 "efc51f9b7cd8178d8f9c4c6897c98363e84cc1e44be42b7647d803c0059cffe4"
+  license "MIT"
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "9dd40c57c121a700b71b8b89136ec535c2783316d2be8b60f514dfeb9daab031"
+  end
 
-  depends_on :java => "1.6+"
+  deprecate! date: "2019-05-13", because: :unmaintained
 
-  conflicts_with "tiny-fugue", :because => "both install a `tf` binary"
+  depends_on "openjdk"
+
+  uses_from_macos "expect" => :test
+
+  conflicts_with "tiny-fugue", because: "both install a `tf` binary"
 
   def install
     libexec.install "tf", "lib"
     (libexec/"native").install "native/macosx"
-    bin.write_exec_script libexec/"tf"
+    (bin/"tf").write_env_script libexec/"tf", JAVA_HOME: Formula["openjdk"].opt_prefix
 
     prefix.install "ThirdPartyNotices.html"
     share.install "help"

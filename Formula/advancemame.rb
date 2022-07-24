@@ -1,23 +1,36 @@
 class Advancemame < Formula
   desc "MAME with advanced video support"
   homepage "https://www.advancemame.it/"
-  url "https://github.com/amadvance/advancemame/releases/download/v3.7/advancemame-3.7.tar.gz"
-  sha256 "36c88305dc485e85ff86854b3d8bb75c4c81fa7356f6dbfcbfd6a5e192199b2c"
+  url "https://github.com/amadvance/advancemame/releases/download/v3.9/advancemame-3.9.tar.gz"
+  sha256 "3e4628e1577e70a1dbe104f17b1b746745b8eda80837f53fbf7b091c88be8c2b"
+  license "GPL-2.0"
+  revision 1
 
-  bottle do
-    sha256 "cebd9f5bdee213f0994527f63a3c8ad6d78cb43e377bdd19978fa2d9e03acd15" => :high_sierra
-    sha256 "3bf6b73863b14621de91fe5908921d322e28e4e26855eae7f5cf3ba15b360c07" => :sierra
-    sha256 "e5f14218046ce7f164a270378743aefff119d0fc7c69987bfb78fc8d1105ea7b" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on "sdl"
-  depends_on "freetype"
+  bottle do
+    sha256 arm64_monterey: "0345ac679c13343cc595026f63d7fa90992935964ae4f949abf6b047ebafd06d"
+    sha256 arm64_big_sur:  "8ac0b808eb5358417c5c2aab31e53cca0031a0dd4abb922d7eea5c52622e8f08"
+    sha256 monterey:       "f3e7d8dd40e68328a8135949522fe2873a2bd6d8c2271300a74fcb8156e186d3"
+    sha256 big_sur:        "8b2d656d506250066ce382a3f538d9476034fa3cf4fcddb87a61ecc84cd4c5d6"
+    sha256 catalina:       "6afeb2ebbdbb73b15b5771e33c5da13283b21a8fc26250f0db0cdecd5f41fb9f"
+    sha256 x86_64_linux:   "5e416d1d1d749bf88a0a97db5175a22755a200f7db388743b32284ac91b50513"
+  end
 
-  conflicts_with "advancemenu", :because => "both install `advmenu` binaries"
+  depends_on "pkg-config" => :build
+  depends_on "freetype"
+  depends_on "sdl2"
+
+  uses_from_macos "expat"
+  uses_from_macos "ncurses"
 
   def install
-    ENV.delete "SDKROOT" if MacOS.version == :yosemite
-    system "./configure", "--prefix=#{prefix}"
+    system "./configure", "--prefix=#{prefix}",
+                          "--enable-freetype",
+                          "--enable-sdl2"
     system "make", "install", "LDFLAGS=#{ENV.ldflags}", "mandir=#{man}", "docdir=#{doc}"
   end
 

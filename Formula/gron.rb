@@ -1,42 +1,24 @@
-require "language/go"
-
 class Gron < Formula
   desc "Make JSON greppable"
   homepage "https://github.com/tomnomnom/gron"
-  url "https://github.com/tomnomnom/gron/archive/v0.5.1.tar.gz"
-  sha256 "062462b8b6e884cd5731b0bc870e9a45f450e056f4367acccddb926079686560"
-  head "https://github.com/tomnomnom/gron.git"
+  url "https://github.com/tomnomnom/gron/archive/v0.7.1.tar.gz"
+  sha256 "1c98f2ef2ba03558864b1ab5e9c4b47a2e89d3ffaf24cfa0ac75cd38d775feb4"
+  license "MIT"
+  head "https://github.com/tomnomnom/gron.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "69513942bdaf37db13e7c380bc5241ef7a1a7e778b186c4197e8fa8e177bd6fb" => :high_sierra
-    sha256 "04dfab480e6fa4f718491d8b1c13929769260fb5330c62d5944a9b23c224005e" => :sierra
-    sha256 "8b719a5634fc88a4fa10bea59524ba58209e0da61fcbcba99ce09830a0c2358a" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "856236ceb1dbc90437bd4a214ac5cbf9618ae17bb170f5187fc0acbd8110b174"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "322c63263dead630c89ab151634b663ecf95d93a82034b3e5b75c42318912835"
+    sha256 cellar: :any_skip_relocation, monterey:       "7b03cebd6d4120718aeb3de935087981d9e234c844df866076518417dfd6e9e0"
+    sha256 cellar: :any_skip_relocation, big_sur:        "c28a8bf800179d49a5aeb52d57bac6100eee9a5755c0dc112dc7fd7e7413323f"
+    sha256 cellar: :any_skip_relocation, catalina:       "d8422ab18406e6231c4731d0f124641508175c2ee142bd5bd0d99f1a97252c3b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b10089d68a7958fb52643f3813b910fb5ab3a89ffb18d5161e5f717956b6bf2c"
   end
 
   depends_on "go" => :build
 
-  go_resource "github.com/fatih/color" do
-    url "https://github.com/fatih/color.git",
-        :revision => "5df930a27be2502f99b292b7cc09ebad4d0891f4"
-  end
-
-  go_resource "github.com/nwidger/jsoncolor" do
-    url "https://github.com/nwidger/jsoncolor.git",
-        :revision => "75a6de4340e59be95f0884b9cebdda246e0fdf40"
-  end
-
-  go_resource "github.com/pkg/errors" do
-    url "https://github.com/pkg/errors.git",
-        :revision => "e881fd58d78e04cf6d0de1217f8707c8cc2249bc"
-  end
-
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/tomnomnom").mkpath
-    ln_s buildpath, buildpath/"src/github.com/tomnomnom/gron"
-    Language::Go.stage_deps resources, buildpath/"src"
-    system "go", "build", "-o", bin/"gron"
+    system "go", "build", *std_go_args(ldflags: "-s -w")
   end
 
   test do

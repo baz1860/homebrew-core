@@ -2,19 +2,22 @@ class Pyinvoke < Formula
   include Language::Python::Virtualenv
 
   desc "Pythonic task management & command execution"
-  homepage "http://pyinvoke.org/"
-  url "https://github.com/pyinvoke/invoke/archive/0.22.1.tar.gz"
-  sha256 "0ff243defb9dfdc45a869fb9cc50ba3c0590ef6b337f4df49c465f63911176fb"
-  head "https://github.com/pyinvoke/invoke.git"
+  homepage "https://www.pyinvoke.org/"
+  url "https://files.pythonhosted.org/packages/df/59/41b614b9d415929b4d72e3ee658bd088640e9a800e55663529a8237deae3/invoke-1.7.1.tar.gz"
+  sha256 "7b6deaf585eee0a848205d0b8c0014b9bf6f287a8eb798818a642dff1df14b19"
+  license "BSD-2-Clause"
+  head "https://github.com/pyinvoke/invoke.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "22caddb4a74b1d916fee0352c5ca99f4abe7f7544d5afa870d9d9b22442a8105" => :high_sierra
-    sha256 "b649f689fa537171c909318338baa5147b4c6abe0e0d3ab4405bda9f9e433d3d" => :sierra
-    sha256 "f6576a575d302c1549e7cf76d3d07f5fc0f5c38efdd3534e915c0a39f4de57f9" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "392d78217312b728482857432048b90a8fde1793a530453137ac3b735fee518d"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "392d78217312b728482857432048b90a8fde1793a530453137ac3b735fee518d"
+    sha256 cellar: :any_skip_relocation, monterey:       "824d5bbe3056db0e176a10a5aa2ad8062f6efe77e492c1394aeca8d6c072f9ce"
+    sha256 cellar: :any_skip_relocation, big_sur:        "824d5bbe3056db0e176a10a5aa2ad8062f6efe77e492c1394aeca8d6c072f9ce"
+    sha256 cellar: :any_skip_relocation, catalina:       "824d5bbe3056db0e176a10a5aa2ad8062f6efe77e492c1394aeca8d6c072f9ce"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5df852536a802c027346bbb2e799d8513aa75eac316b7b156ff2127b273fee99"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
 
   def install
     virtualenv_install_with_resources

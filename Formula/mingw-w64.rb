@@ -1,34 +1,51 @@
 class MingwW64 < Formula
   desc "Minimalist GNU for Windows and GCC cross-compilers"
-  homepage "https://mingw-w64.org/"
-  url "https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v5.0.3.tar.bz2"
-  sha256 "2a601db99ef579b9be69c775218ad956a24a09d7dabc9ff6c5bd60da9ccc9cb4"
-  revision 2
+  homepage "https://sourceforge.net/projects/mingw-w64/"
+  url "https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v10.0.0.tar.bz2"
+  sha256 "ba6b430aed72c63a3768531f6a3ffc2b0fde2c57a3b251450dcf489a894f0894"
+  license "ZPL-2.1"
+  revision 1
 
-  bottle do
-    sha256 "263eedfa805ef8e53ae365f303ddacdeecba759630bc60fd6fa6fa1fba583293" => :high_sierra
-    sha256 "56c84c7ad3d5a2a2858eeb79f33eada75488107c352252f5533f5e805d175d74" => :sierra
-    sha256 "91f92b16c39d0afebef40845c5b6aea9d4ad95165afef8024c2e1cd768d43ad0" => :el_capitan
+  livecheck do
+    url :stable
+    regex(%r{url=.*?release/mingw-w64[._-]v?(\d+(?:\.\d+)+)\.t}i)
   end
 
-  depends_on "gmp"
-  depends_on "mpfr"
-  depends_on "libmpc"
-  depends_on "isl"
+  bottle do
+    rebuild 1
+    sha256 arm64_monterey: "83ac80b88fcf2d47b786d457648bb3f1f1002deb9ff71b1f5f884de8e1c0b392"
+    sha256 arm64_big_sur:  "857aecb324bf425ca3ef2bcfd462a4909df2f6d5152feb69bf86c1371234fbb9"
+    sha256 monterey:       "40976416e23d81cd33649fb1dbb5582d359effee42005f66a7b99bc97019a86d"
+    sha256 big_sur:        "0a6af7c3ce1f1d37a09a0b7e9e526d32a15d4817ee9ca9feab9ad2ce5d8a83d4"
+    sha256 catalina:       "cede2bfb5f915da57afb35cccc4fdfb89fcdec572a16714ef6bdc7a8383d395e"
+    sha256 x86_64_linux:   "e5e8544cc80513ebd44ebbed9207d10bf0419d8ca91f264fea85edaf6b4534aa"
+  end
 
   # Apple's makeinfo is old and has bugs
   depends_on "texinfo" => :build
 
+  depends_on "gmp"
+  depends_on "isl"
+  depends_on "libmpc"
+  depends_on "mpfr"
+
   resource "binutils" do
-    url "https://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.gz"
-    mirror "https://ftpmirror.gnu.org/binutils/binutils-2.29.1.tar.gz"
-    sha256 "0d9d2bbf71e17903f26a676e7fba7c200e581c84b8f2f43e72d875d0e638771c"
+    url "https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.xz"
+    mirror "https://ftpmirror.gnu.org/binutils/binutils-2.38.tar.xz"
+    sha256 "e316477a914f567eccc34d5d29785b8b0f5a10208d36bbacedcc39048ecfe024"
+
+    # Fix dlltool failures during parallel builds until the release after 2.38, upstream patch
+    # https://sourceware.org/bugzilla/show_bug.cgi?id=28885
+    #
+    # patch is from https://sourceware.org/git/?p=binutils-gdb.git;a=patch;h=d65c0ddddd85645cab6f11fd711d21638a74489f
+    # with ChangeLog patch removed
+    patch :DATA
   end
 
   resource "gcc" do
-    url "https://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz"
-    mirror "https://ftpmirror.gnu.org/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz"
-    sha256 "832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c"
+    url "https://ftp.gnu.org/gnu/gcc/gcc-12.1.0/gcc-12.1.0.tar.xz"
+    mirror "https://ftpmirror.gnu.org/gcc/gcc-12.1.0/gcc-12.1.0.tar.xz"
+    sha256 "62fd634889f31c02b64af2c468f064b47ad1ca78411c45abe6ac4b5f8dd19c7b"
   end
 
   def target_archs
@@ -43,9 +60,11 @@ class MingwW64 < Formula
       resource("binutils").stage do
         args = %W[
           --target=#{target}
+          --with-sysroot=#{arch_dir}
           --prefix=#{arch_dir}
           --enable-targets=#{target}
           --disable-multilib
+          --disable-nls
         ]
         mkdir "build-#{arch}" do
           system "../configure", *args
@@ -70,8 +89,9 @@ class MingwW64 < Formula
       resource("gcc").stage buildpath/"gcc"
       args = %W[
         --target=#{target}
+        --with-sysroot=#{arch_dir}
         --prefix=#{arch_dir}
-        --with-bugurl=https://github.com/Homebrew/homebrew-core/issues
+        --with-bugurl=#{tap.issues_url}
         --enable-languages=c,c++,fortran
         --with-ld=#{arch_dir}/bin/#{target}-ld
         --with-as=#{arch_dir}/bin/#{target}-as
@@ -79,7 +99,10 @@ class MingwW64 < Formula
         --with-mpfr=#{Formula["mpfr"].opt_prefix}
         --with-mpc=#{Formula["libmpc"].opt_prefix}
         --with-isl=#{Formula["isl"].opt_prefix}
+        --with-zstd=no
         --disable-multilib
+        --disable-nls
+        --enable-threads=posix
       ]
 
       mkdir "#{buildpath}/gcc/build-#{arch}" do
@@ -94,16 +117,55 @@ class MingwW64 < Formula
         CXX=#{target}-g++
         CPP=#{target}-cpp
         --host=#{target}
+        --with-sysroot=#{arch_dir}/#{target}
         --prefix=#{arch_dir}/#{target}
       ]
 
-      if arch == "i686"
+      case arch
+      when "i686"
         args << "--enable-lib32" << "--disable-lib64"
-      elsif arch == "x86_64"
+      when "x86_64"
         args << "--disable-lib32" << "--enable-lib64"
       end
 
       mkdir "mingw-w64-crt/build-#{arch}" do
+        system "../configure", *args
+        # Resolves "Too many open files in system"
+        # bfd_open failed open stub file dfxvs01181.o: Too many open files in system
+        # bfd_open failed open stub file: dvxvs00563.o: Too many open files in systembfd_open
+        # https://sourceware.org/bugzilla/show_bug.cgi?id=24723
+        # https://sourceware.org/bugzilla/show_bug.cgi?id=23573#c18
+        ENV.deparallelize do
+          system "make"
+          system "make", "install"
+        end
+      end
+
+      # Build the winpthreads library
+      # we need to build this prior to the
+      # GCC runtime libraries, to have `-lpthread`
+      # available, for `--enable-threads=posix`
+      args = %W[
+        CC=#{target}-gcc
+        CXX=#{target}-g++
+        CPP=#{target}-cpp
+        --host=#{target}
+        --with-sysroot=#{arch_dir}/#{target}
+        --prefix=#{arch_dir}/#{target}
+      ]
+      mkdir "mingw-w64-libraries/winpthreads/build-#{arch}" do
+        system "../configure", *args
+        system "make"
+        system "make", "install"
+      end
+
+      args = %W[
+        --host=#{target}
+        --with-sysroot=#{arch_dir}/#{target}
+        --prefix=#{arch_dir}
+        --program-prefix=#{target}-
+      ]
+      mkdir "mingw-w64-tools/widl/build-#{arch}" do
         system "../configure", *args
         system "make"
         system "make", "install"
@@ -111,20 +173,6 @@ class MingwW64 < Formula
 
       # Finish building GCC (runtime libraries)
       chdir "#{buildpath}/gcc/build-#{arch}" do
-        system "make"
-        system "make", "install"
-      end
-
-      # Build the winpthreads library
-      args = %W[
-        CC=#{target}-gcc
-        CXX=#{target}-g++
-        CPP=#{target}-cpp
-        --host=#{target}
-        --prefix=#{arch_dir}/#{target}
-      ]
-      mkdir "mingw-w64-libraries/winpthreads/build-#{arch}" do
-        system "../configure", *args
         system "make"
         system "make", "install"
       end
@@ -149,8 +197,25 @@ class MingwW64 < Formula
     (testpath/"hello.f90").write <<~EOS
       program hello ; print *, "Hello, world!" ; end program hello
     EOS
+    # https://docs.microsoft.com/en-us/windows/win32/rpc/using-midl
+    (testpath/"example.idl").write <<~EOS
+      [
+        uuid(ba209999-0c6c-11d2-97cf-00c04f8eea45),
+        version(1.0)
+      ]
+      interface MyInterface
+      {
+        const unsigned short INT_ARRAY_LEN = 100;
+
+        void MyRemoteProc(
+            [in] int param1,
+            [out] int outArray[INT_ARRAY_LEN]
+        );
+      }
+    EOS
 
     ENV["LC_ALL"] = "C"
+    ENV.remove_macosxsdk if OS.mac?
     target_archs.each do |arch|
       target = "#{arch}-w64-mingw32"
       outarch = (arch == "i686") ? "i386" : "x86-64"
@@ -163,6 +228,30 @@ class MingwW64 < Formula
 
       system "#{bin}/#{target}-gfortran", "-o", "test.exe", "hello.f90"
       assert_match "file format pei-#{outarch}", shell_output("#{bin}/#{target}-objdump -a test.exe")
+
+      system "#{bin}/#{target}-widl", "example.idl"
+      assert_predicate testpath/"example_s.c", :exist?, "example_s.c should have been created"
     end
   end
 end
+
+__END__
+diff --git a/binutils/dlltool.c b/binutils/dlltool.c
+index d95bf3f5470..89871510b45 100644
+--- a/binutils/dlltool.c
++++ b/binutils/dlltool.c
+@@ -3992,10 +3992,11 @@ main (int ac, char **av)
+   if (tmp_prefix == NULL)
+     {
+       /* If possible use a deterministic prefix.  */
+-      if (dll_name)
++      if (imp_name || delayimp_name)
+         {
+-          tmp_prefix = xmalloc (strlen (dll_name) + 2);
+-          sprintf (tmp_prefix, "%s_", dll_name);
++          const char *input = imp_name ? imp_name : delayimp_name;
++          tmp_prefix = xmalloc (strlen (input) + 2);
++          sprintf (tmp_prefix, "%s_", input);
+           for (i = 0; tmp_prefix[i]; i++)
+             if (!ISALNUM (tmp_prefix[i]))
+               tmp_prefix[i] = '_';

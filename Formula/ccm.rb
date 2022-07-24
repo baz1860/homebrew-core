@@ -1,42 +1,38 @@
 class Ccm < Formula
+  include Language::Python::Virtualenv
+
   desc "Create and destroy an Apache Cassandra cluster on localhost"
-  homepage "https://github.com/pcmanus/ccm"
-  url "https://files.pythonhosted.org/packages/fc/ab/b51afd466cc4acf2192e230ddb6fd3adb56066f05c7be1852af7bd655068/ccm-3.1.4.tar.gz"
-  sha256 "a98268c2d8e5534d8d2d94267060e9ee9105b35e43d704bac0fa495a773acf7d"
-  head "https://github.com/pcmanus/ccm.git"
+  homepage "https://github.com/riptano/ccm"
+  url "https://files.pythonhosted.org/packages/f1/12/091e82033d53b3802e1ead6b16045c5ecfb03374f8586a4ae4673a914c1a/ccm-3.1.5.tar.gz"
+  sha256 "f07cc0a37116d2ce1b96c0d467f792668aa25835c73beb61639fa50a1954326c"
+  license "Apache-2.0"
+  revision 3
+  head "https://github.com/riptano/ccm.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "996ae7df7b2eff3e519f056ac05ac86529355f2d2c2023683464c3043794a187" => :high_sierra
-    sha256 "996ae7df7b2eff3e519f056ac05ac86529355f2d2c2023683464c3043794a187" => :sierra
-    sha256 "e370947953aa56e48eb71ea1555d3ce971a6257f741f8c3abccf9fe9a002eef5" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "b0afbb4b4623fd1d164d742e64247fce9912ee49b36156ee654e6ccca9d8b8d3"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "3327e612ae47705224d8aaa05b516b5dea4c35dd0b411cde6253f66def171b58"
+    sha256 cellar: :any_skip_relocation, monterey:       "fa06c77a9703e116d09988d230fb256d8123cdad6251d8a34e750e13981dbdae"
+    sha256 cellar: :any_skip_relocation, big_sur:        "cf6b0a4df32b09df6f4809b54b0dcf81a2dcc63c95828dc2178c75a5ac98ecbe"
+    sha256 cellar: :any_skip_relocation, catalina:       "ba15093446fbe0f1beb000f890f26adff53901dc7d6c9261b8e3dc31a5f00cfa"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7f1e9482baf6aa02be97dd299448a47420d6ba56986e04292312c58c01830978"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
+  depends_on "six"
 
   resource "PyYAML" do
-    url "https://files.pythonhosted.org/packages/4a/85/db5a2df477072b2902b0eb892feb37d88ac635d36245a72a6a69b23b383a/PyYAML-3.12.tar.gz"
-    sha256 "592766c6303207a20efc445587778322d7f73b161bd994f227adaa341ba212ab"
+    url "https://files.pythonhosted.org/packages/36/2b/61d51a2c4f25ef062ae3f74576b01638bebad5e045f747ff12643df63844/PyYAML-6.0.tar.gz"
+    sha256 "68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2"
   end
 
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz"
-    sha256 "70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
+  resource "cassandra-driver" do
+    url "https://files.pythonhosted.org/packages/19/bd/b522b200e8a7cc5ace859e9667308a3a302a23d6df09ae087ca2dfbf60c2/cassandra-driver-3.22.0.tar.gz"
+    sha256 "df825ee4ebb7f7fa33ab028d673530184fe0ee41ea66b2f9ddd478db56145a31"
   end
 
   def install
-    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
-    %w[PyYAML six].each do |r|
-      resource(r).stage do
-        system "python", *Language::Python.setup_install_args(libexec/"vendor")
-      end
-    end
-
-    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
-    system "python", *Language::Python.setup_install_args(libexec)
-
-    bin.install Dir[libexec/"bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    virtualenv_install_with_resources
   end
 
   test do

@@ -1,24 +1,36 @@
 class CenterIm < Formula
   desc "Text-mode multi-protocol instant messaging client"
-  homepage "https://www.centerim.org/index.php/Main_Page"
-  url "https://www.centerim.org/download/releases/centerim-4.22.10.tar.gz"
+  homepage "https://github.com/petrpavlu/centerim5"
+  url "https://web.archive.org/web/20191105151123/https://www.centerim.org/download/releases/centerim-4.22.10.tar.gz"
   sha256 "93ce15eb9c834a4939b5aa0846d5c6023ec2953214daf8dc26c85ceaa4413f6e"
-  revision 1
+  license "GPL-2.0-or-later"
+  revision 2
+
+  # Modify this to use `url :stable` if/when the formula is updated to use an
+  # archive from GitHub in the future.
+  livecheck do
+    url :homepage
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
     rebuild 1
-    sha256 "800a4ecf2a11219b619134a85ba492b8256a48d3363135f711da9ca8aab34139" => :high_sierra
-    sha256 "5f7c56eb5b9cc982df5a17c5cd043ac4968de36e396c219e0f544e9e34e46669" => :sierra
-    sha256 "315556554c3e5b972b0d99145fd6d0971837c2bbd981b849ca89e7a9c069335b" => :el_capitan
-    sha256 "5a51f0130fcd601aeed50ae6f66008aaa0ec96f6ac3e7bc828b627f04b46b9f2" => :yosemite
-    sha256 "673992c76745d9509dd32e71c964946018584db447b37d02a21f332b508c619d" => :mavericks
-    sha256 "934ab216ab1f6eb9033cfb1bbbe720f2a7fa5190eb64c245d2140694c832a965" => :mountain_lion
+    sha256 arm64_monterey: "d91b8376deaa1aaaca8720dd9a45dbbd9dd2ea22035b308c5e798eb5cca62c8e"
+    sha256 arm64_big_sur:  "182513b7096a23e8888d0d76858ad1c1d2ef92648f8f3d4140e291c41224ccbb"
+    sha256 monterey:       "1a230141b53d9e46c63f7619e353ab00e8eeb7c42d106a0af646361d2fb1b246"
+    sha256 big_sur:        "2b44902a2be528a4d9cae18e3b402691dc54a4c2241e72827a74bafe422d85cf"
+    sha256 catalina:       "11a339b812d7fa164fce8e873e837d1ab07256e73ce0c4e483eeb60327ef6fa6"
+    sha256 mojave:         "42a8b8f09b9530139c5d9eaf7c83a435962c61631eea00a13bf70a670044c7a2"
+    sha256 high_sierra:    "9b40fc34ba5177765f01bdd821bec40377f44828421509491d90fb7a329ba400"
+    sha256 sierra:         "7e9f2db21d3ceec8ad7d3a59e5bf600d5d145aa0a88f676d803c1feea307f687"
+    sha256 x86_64_linux:   "b2b4a48005426f9dcd13b1594c3ed631b2212ee2448ab511af7bde7a076e0bb1"
   end
 
   depends_on "pkg-config" => :build
   depends_on "gettext"
-  depends_on "openssl"
-  depends_on "jpeg" => :optional
+  depends_on "openssl@1.1"
+
+  uses_from_macos "curl"
 
   # Fix build with clang; 4.22.10 is an outdated release and 5.0 is a rewrite,
   # so this is not reported upstream
@@ -30,10 +42,14 @@ class CenterIm < Formula
   end
 
   def install
+    # Work around for C++ version header picking up VERSION file on
+    # case-insensitive systems. Can be removed on next update.
+    (buildpath/"intl/VERSION").unlink if OS.mac?
+
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--disable-msn",
-                          "--with-openssl=#{Formula["openssl"].opt_prefix}"
+                          "--with-openssl=#{Formula["openssl@1.1"].opt_prefix}"
     system "make", "install"
 
     # /bin/gawk does not exist on macOS
@@ -41,7 +57,7 @@ class CenterIm < Formula
   end
 
   test do
-    assert_match /trillian/, shell_output("#{bin}/cimconv")
+    assert_match "trillian", shell_output("#{bin}/cimconv")
   end
 end
 
@@ -53,8 +69,7 @@ index b7509c0..024774f 100644
 @@ -82,6 +82,7 @@
  #ifndef SIGSLOT_H__
  #define SIGSLOT_H__
- 
+
 +#include <cstdlib>
  #include <set>
  #include <list>
- 

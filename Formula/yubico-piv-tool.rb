@@ -1,25 +1,39 @@
 class YubicoPivTool < Formula
-  desc "Command-line tool for the YubiKey NEO PIV applet"
+  desc "Command-line tool for the YubiKey PIV application"
   homepage "https://developers.yubico.com/yubico-piv-tool/"
-  url "https://developers.yubico.com/yubico-piv-tool/Releases/yubico-piv-tool-1.5.0.tar.gz"
-  sha256 "c18375179ba25bf9d61365b3903f033f112897bbd54ca63c62fa153f2d05aaab"
+  url "https://developers.yubico.com/yubico-piv-tool/Releases/yubico-piv-tool-2.3.0.tar.gz"
+  sha256 "a02a12d9545d1ef7a1b998606d89b7b655a5f5a1437736cf51db083f876f55a9"
+  license "BSD-2-Clause"
+
+  livecheck do
+    url "https://developers.yubico.com/yubico-piv-tool/Releases/"
+    regex(/href=.*?yubico-piv-tool[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "ec76783c66fbc2c185ed65cf9f429907bce346826225df40856a22a75f1088dd" => :high_sierra
-    sha256 "7fd7da3692b310b237002846bb9de30e1c76fc60662083b2fcbc54bf5c19ec6a" => :sierra
-    sha256 "d47f85177b7db7c4a47552c01d1b4b2ceb312b701f521264a039e9f65b36e5fe" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "8f318d73ecaba695565af93bb8b17220832e30c51cae308b9b3737788e394975"
+    sha256 cellar: :any,                 arm64_big_sur:  "99b5bb89e217f0e98b5edaf95b75a2d50c07a5f593a104edc66518d51e86e59b"
+    sha256 cellar: :any,                 monterey:       "963208d74145e747d84890ad0515214e9fa843d103cebd74501e1230eda7a2b7"
+    sha256 cellar: :any,                 big_sur:        "ba15d7a429b902fcc6cfdd6c5378081b01d22a28779a7571e268e1d5d10ff1d8"
+    sha256 cellar: :any,                 catalina:       "118ab85bbda0694c6edc746dd210849814c05c41a586217c9ed974d67f406a30"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "fba7bda0c4156d76af37f971ead7c8a39d395fa62cacc8ab69d20f8bce77ea98"
   end
 
   depends_on "check" => :build
+  depends_on "cmake" => :build
+  depends_on "gengetopt" => :build
+  depends_on "help2man" => :build
+  depends_on "libtool" => :build
   depends_on "pkg-config" => :build
-  depends_on "openssl"
+  depends_on "check"
+  depends_on "openssl@1.1"
+  depends_on "pcsc-lite"
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args, "-DCMAKE_C_FLAGS=-I#{Formula["pcsc-lite"].opt_include}/PCSC"
+      system "make", "install"
+    end
   end
 
   test do

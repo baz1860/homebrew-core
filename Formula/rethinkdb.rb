@@ -1,45 +1,50 @@
 class Rethinkdb < Formula
-  desc "The open-source database for the realtime web"
-  homepage "https://www.rethinkdb.com/"
-  url "https://download.rethinkdb.com/dist/rethinkdb-2.3.6.tgz"
-  sha256 "c42159666910ad01be295a57caf8839ec3a89227d8919be5418e3aa1f0a3dc28"
+  desc "Open-source database for the realtime web"
+  homepage "https://rethinkdb.com/"
+  url "https://download.rethinkdb.com/repository/raw/dist/rethinkdb-2.4.2.tgz"
+  sha256 "35e6a76a527d473a7d962515a0414dea6e09300fff368ae713964ce2494d9c0d"
+  license "Apache-2.0"
+  revision 1
+  head "https://github.com/rethinkdb/rethinkdb.git", branch: "next"
+
+  livecheck do
+    url "https://download.rethinkdb.com/service/rest/repository/browse/raw/dist/"
+    regex(/href=.*?rethinkdb[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "eaa4700adc14905f388602c44008cbefcd2ac5c22a4a23e6871058a5f1a2a7ca" => :high_sierra
-    sha256 "1f936e43b0cb7b321d9a14a2f2de994154162ca5bb656c8583506ca253eadf6b" => :sierra
-    sha256 "d090123ea89626f60caa5517b1416b669d3cacfd51fcedfdcd6f58020e941190" => :el_capitan
-    sha256 "a17c6864cef6dfc7f1e8ab7da2fcd640d85a504991c0d61175e2f6c78e1ba6ee" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "fccc030ebc0f477f4c1a282c289959f31f8f30e2b5322954d223f68e73130a30"
+    sha256 cellar: :any,                 arm64_big_sur:  "d616d46ab6d345527d3b6365bcbd26957eda633004761f2713c1856caa3f6ea4"
+    sha256 cellar: :any,                 monterey:       "c232317587e1abbc9079b79cca56328d85a48bd16d4c11ea9b891c8483d84f3e"
+    sha256 cellar: :any,                 big_sur:        "9a37dc48d0b88f63c4500144049f5e6bba34708bd6f095557195446d217e4f76"
+    sha256 cellar: :any,                 catalina:       "69b7ab9e02b8f3290733f4cd02b8bf8b3a1cb3934c1d8680b931132346780d18"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a0ebee5ea998c49cde2dcd9499c031fc5eb9bb1534de430906a1faad722b4559"
   end
 
-  depends_on :macos => :lion
   depends_on "boost" => :build
-  depends_on "openssl"
+  depends_on "openssl@1.1"
+  depends_on "protobuf"
 
-  fails_with :gcc do
-    build 5666 # GCC 4.2.1
-    cause "RethinkDB uses C++0x"
-  end
-
-  # Fix error with Xcode 9, patch merged upstream:
-  # https://github.com/rethinkdb/rethinkdb/pull/6450
-  if DevelopmentTools.clang_build_version >= 900
-    patch do
-      url "https://raw.githubusercontent.com/Homebrew/formula-patches/fb00ee376a/rethinkdb/xcode9.patch"
-      sha256 "abd50d91a247ee7de988020dd9d405a3d4cd93edb2875b7d5822ba0f513f85a0"
-    end
-  end
+  uses_from_macos "python" => :build
+  uses_from_macos "curl"
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
 
   def install
-    args = ["--prefix=#{prefix}"]
+    ENV.cxx11
+    # Can use system Python 2 for older macOS. See https://rethinkdb.com/docs/build
+    ENV["PYTHON"] = which("python3") if !OS.mac? || MacOS.version >= :catalina
 
-    # rethinkdb requires that protobuf be linked against libc++
-    # but brew's protobuf is sometimes linked against libstdc++
-    args += ["--fetch", "protobuf"]
+    args = %W[
+      --prefix=#{prefix}
+      --sysconfdir=#{etc}
+      --localstatedir=#{var}
+    ]
+    args << "--allow-fetch" if build.head?
 
     system "./configure", *args
     system "make"
-    system "make", "install-osx"
+    system "make", "install-binaries"
 
     (var/"log/rethinkdb").mkpath
 
@@ -48,34 +53,12 @@ class Rethinkdb < Formula
     etc.install "packaging/assets/config/default.conf.sample" => "rethinkdb.conf"
   end
 
-  plist_options :manual => "rethinkdb"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-          <string>#{opt_bin}/rethinkdb</string>
-          <string>--config-file</string>
-          <string>#{etc}/rethinkdb.conf</string>
-      </array>
-      <key>WorkingDirectory</key>
-      <string>#{HOMEBREW_PREFIX}</string>
-      <key>StandardOutPath</key>
-      <string>#{var}/log/rethinkdb/rethinkdb.log</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/log/rethinkdb/rethinkdb.log</string>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>KeepAlive</key>
-      <true/>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"rethinkdb", "--config-file", etc/"rethinkdb.conf"]
+    keep_alive true
+    working_dir HOMEBREW_PREFIX
+    log_path var/"log/rethinkdb/rethinkdb.log"
+    error_log_path var/"log/rethinkdb/rethinkdb.log"
   end
 
   test do

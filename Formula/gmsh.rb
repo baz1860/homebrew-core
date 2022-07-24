@@ -1,26 +1,31 @@
 class Gmsh < Formula
   desc "3D finite element grid generator with CAD engine"
   homepage "https://gmsh.info/"
-  url "https://gmsh.info/src/gmsh-3.0.6-source.tgz"
-  sha256 "9700bcc440d7a6b16a49cbfcdcdc31db33efe60e1f5113774316b6fa4186987b"
-  revision 1
-  head "https://gitlab.onelab.info/gmsh/gmsh.git"
+  url "https://gmsh.info/src/gmsh-4.10.5-source.tgz"
+  sha256 "cc030c5aee65e7d58f850b8b6f55a68945c89bc871f94e1239279f5a210fc4ea"
+  license "GPL-2.0-or-later"
+  head "https://gitlab.onelab.info/gmsh/gmsh.git", branch: "master"
 
-  bottle do
-    cellar :any
-    sha256 "57cdad859b421b6cc48f6cf164570f67a1101c03c9b276ec18dce3b5c250e995" => :high_sierra
-    sha256 "85e7c6527a94fa3b02d14cce788dc32f6a0b545fa17124f5e4c19288890d8fc6" => :sierra
-    sha256 "d9d6657a71acd75de3833f50d46b454c757f6186f1fe44fdf090ac1604c84f70" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(/href=.*?gmsh[._-]v?(\d+(?:\.\d+)+)[._-]source\.t/i)
   end
 
-  option "with-opencascade", "Build with opencascade support"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "0289ba15e1a86afa889b673da095de28effddd2b1d5ed15f93fe124eb1a3f157"
+    sha256 cellar: :any,                 arm64_big_sur:  "7ac80bc9a7a3677a01914e5411c5dc649fc4b063f08cab4babd3fc3e0fd653ce"
+    sha256 cellar: :any,                 monterey:       "4e627ba55975476f8427695db5e75d71ee53aa343243af96195257d610e65db0"
+    sha256 cellar: :any,                 big_sur:        "d3fd5dd366f9b3553831aaef3c65da7c8fd889a38ff8549bc26b4240c8de633e"
+    sha256 cellar: :any,                 catalina:       "c5da13092830a31cd7ad5f0d54bbab303ef80a781e53c5eeb6f3cfb01eaca0c6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2a87c712168a4ecccac6ba730000ed592915cffaf0fa1e8fd75e1d4d98eb99ae"
+  end
 
   depends_on "cmake" => :build
+  depends_on "cairo"
+  depends_on "fltk"
   depends_on "gcc" # for gfortran
   depends_on "open-mpi"
-  depends_on "fltk" => :optional
-  depends_on "cairo" if build.with? "fltk"
-  depends_on "opencascade" => :optional
+  depends_on "opencascade"
 
   def install
     args = std_cmake_args + %W[
@@ -34,16 +39,10 @@ class Gmsh < Formula
       -DENABLE_NATIVE_FILE_CHOOSER=ON
       -DENABLE_PETSC=OFF
       -DENABLE_SLEPC=OFF
+      -DENABLE_OCC=ON
     ]
 
-    if build.with? "opencascade"
-      ENV["CASROOT"] = Formula["opencascade"].opt_prefix
-      args << "-DENABLE_OCC=ON"
-    else
-      args << "-DENABLE_OCC=OFF"
-    end
-
-    args << "-DENABLE_FLTK=OFF" if build.without? "fltk"
+    ENV["CASROOT"] = Formula["opencascade"].opt_prefix
 
     mkdir "build" do
       system "cmake", "..", *args
@@ -56,11 +55,7 @@ class Gmsh < Formula
     end
   end
 
-  def caveats
-    "To use onelab.py set your PYTHONDIR to #{libexec}"
-  end
-
   test do
-    system "#{bin}/gmsh", "#{share}/doc/gmsh/tutorial/t1.geo", "-parse_and_exit"
+    system "#{bin}/gmsh", "#{share}/doc/gmsh/examples/simple_geo/tower.geo", "-parse_and_exit"
   end
 end

@@ -1,19 +1,25 @@
 class Dict < Formula
   desc "Dictionary Server Protocol (RFC2229) client"
   homepage "http://www.dict.org/"
-  url "https://downloads.sourceforge.net/project/dict/dictd/dictd-1.12.1/dictd-1.12.1.tar.gz"
-  sha256 "a237f6ecdc854ab10de5145ed42eaa2d9b6d51ffdc495f7daee59b05cc363656"
+  url "https://downloads.sourceforge.net/project/dict/dictd/dictd-1.13.1/dictd-1.13.1.tar.gz"
+  sha256 "e4f1a67d16894d8494569d7dc9442c15cc38c011f2b9631c7f1cc62276652a1b"
+  license "GPL-2.0"
 
   bottle do
-    sha256 "1b2d9a8cdc3d4aabf73b44c74518d2362c3ec8411cc717fe68e4366f0f5f2d3b" => :high_sierra
-    sha256 "741517b409486d621c4a99d397c786c2969c9c65f321b002dc7cf07890a624e8" => :sierra
-    sha256 "1179c34c302af33595d7f6890b081496591437ea5f9497c048779fdc03058942" => :el_capitan
-    sha256 "e54952913d23f81def2cec2b65ac94c5385180fa8970f613843546740435adfd" => :yosemite
-    sha256 "b41fe59b8db4eb263ca23398ca8a52f6a23893ddfeb1b26f2e7ce9fdd8b08bf5" => :mavericks
+    sha256 arm64_monterey: "78b07272ca6147d7bf00f0952d2c5a9692fd2de372d850e0ce3aed8f2acffc1d"
+    sha256 arm64_big_sur:  "e09d115b6d78be9f257b943de096aa09ae616733776e9b9e9825f1124cb8da4e"
+    sha256 monterey:       "360dfa6fe899696ef4ddda448bdd904348dd02f147c3a0f5b7433c894773d214"
+    sha256 big_sur:        "04cd15245ebd92063b552cc04a92cb5fa888ef9b1dbaeb3199abe3d3a68d8e0b"
+    sha256 catalina:       "da4b9f76b6e3bb5d18f5ac0abe43dea7dd4f571f9e41686ff45b3945ecd40e9a"
+    sha256 x86_64_linux:   "dc56eeb450b3ce327f27d2ef1ca74c74e2e3e0b3c28ed6cae1c0543ad736a148"
   end
 
   depends_on "libtool" => :build
   depends_on "libmaa"
+
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
+  uses_from_macos "zlib"
 
   def install
     ENV["LIBTOOL"] = "glibtool"

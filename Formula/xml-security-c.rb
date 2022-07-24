@@ -1,38 +1,43 @@
 class XmlSecurityC < Formula
   desc "Implementation of primary security standards for XML"
   homepage "https://santuario.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=/santuario/c-library/xml-security-c-1.7.3.tar.gz"
-  sha256 "e5226e7319d44f6fd9147a13fb853f5c711b9e75bf60ec273a0ef8a190592583"
+  url "https://www.apache.org/dyn/closer.lua?path=santuario/c-library/xml-security-c-2.0.2.tar.bz2"
+  mirror "https://archive.apache.org/dist/santuario/c-library/xml-security-c-2.0.2.tar.bz2"
+  sha256 "39e963ab4da477b7bda058f06db37228664c68fe68902d86e334614dd06e046b"
+  license "Apache-2.0"
   revision 1
 
   bottle do
-    cellar :any
-    sha256 "61e946e23456e4572fa15865bc8d113a8941a5831b9c1572d7ec871fff603098" => :high_sierra
-    sha256 "9c6fbd5beba054bfa6c023133f27efb2a5441bd7facc05682101045d96e78b21" => :sierra
-    sha256 "c0ae50ab8c6dff34a904a2419ac386f6da960d64b3ba745c0244cbfbd75bd1bc" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "236db0ab6ac9199864f10dae316b32f1574b9f21162975f6f4e887b2edb3e799"
+    sha256 cellar: :any,                 arm64_big_sur:  "5ac142618a6c4f97bd5c1b554a69a9668f36e1b462910d9eaae8b8f3556fcbec"
+    sha256 cellar: :any,                 monterey:       "3a0c1493e7bc7822a8b3fddb5f4ebe0f0246b40d1c093094d5321303acd17113"
+    sha256 cellar: :any,                 big_sur:        "ed512d0c411b694e5835b4b33338e9e347ceea4e564a5caeecc9e41e26b5fc53"
+    sha256 cellar: :any,                 catalina:       "ce0f62697cff7004fa7498ebc0dcc917206be09847847fa2ec31285b81ed04ce"
+    sha256 cellar: :any,                 mojave:         "eec2216263c3bb21b52418d18232034aacc69335d3e14624225627fe5364347c"
+    sha256 cellar: :any,                 high_sierra:    "5ee66d19898cd50085e90392313d3a1f45204bd111f32019251af89ee84f1ca5"
+    sha256 cellar: :any,                 sierra:         "bd1e4d4b5768f869d28850ad440e32d417f6db5d182c6049afc87575bb36ccc9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b46c9746eebe86f9b8914ff605e857977c5c664c83a66f53f17331f5c03b9049"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "openssl@1.1"
   depends_on "xerces-c"
-  depends_on "openssl"
 
-  needs :cxx11
-
-  # See https://issues.apache.org/jira/browse/SANTUARIO-471
+  # Fix -flat_namespace being used on Big Sur and later.
   patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/master/xml-security-c/c%2B%2B11.patch"
-    sha256 "b8ced4b8b7977d7af0d13972e1a0c6623cbc29804ec9fea1eb588f0869503b1c"
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
   end
 
   def install
     ENV.cxx11
 
     system "./configure", "--prefix=#{prefix}", "--disable-dependency-tracking",
-                          "--with-openssl=#{Formula["openssl"].opt_prefix}"
+                          "--with-openssl=#{Formula["openssl@1.1"].opt_prefix}"
     system "make", "install"
   end
 
   test do
-    assert_match /All tests passed/, pipe_output("#{bin}/xtest 2>&1")
+    assert_match "All tests passed", pipe_output("#{bin}/xsec-xtest 2>&1")
   end
 end

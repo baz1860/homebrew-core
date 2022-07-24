@@ -3,14 +3,16 @@ class Mp3splt < Formula
   homepage "https://mp3splt.sourceforge.io"
   url "https://downloads.sourceforge.net/project/mp3splt/mp3splt/2.6.2/mp3splt-2.6.2.tar.gz"
   sha256 "3ec32b10ddd8bb11af987b8cd1c76382c48d265d0ffda53041d9aceb1f103baa"
+  license "GPL-2.0-or-later"
+  revision 2
 
   bottle do
-    sha256 "a5092d6dcce0af01d4a8194b29180b952350b4ddc3eaf15bfa87441280024c2b" => :high_sierra
-    sha256 "0a7e1ba09731532a013aa745232b345844876c3b707f91a359a0a4d5b2fe8773" => :sierra
-    sha256 "224f3690f93662a948b257c0129244fcb5f5127647efa31b63cc6d84b2c4bda9" => :el_capitan
-    sha256 "d30a89754b5e57a5fd0fff9f794e14ddd920d8f1169158d166e8cd427f85dcd1" => :yosemite
-    sha256 "d928c6cc582737877a1e6a1e074f1d9577595eac6ac4a0b52f533141f0e2c4af" => :mavericks
-    sha256 "acc0022ebbe437c18d4f3dfca1805a459081288f437101e1cd329a31ca81e522" => :mountain_lion
+    sha256 arm64_monterey: "49093f6c535038ac74f901f3ec328da4611621c554c9fd016170e7609b2bacac"
+    sha256 arm64_big_sur:  "991b32e34ed74df29e4fc4a5507079aade0cb8edd0dd32569ece51bda3a56be1"
+    sha256 monterey:       "6095cb447c23f8b7c736f858e3420c50b2b21134afea5c319873738c895debc6"
+    sha256 big_sur:        "2bf269ede24f7a0b067a510f355d503a1424b1fa5599a019093cc75efb10c7da"
+    sha256 catalina:       "8d020baec2beb1f7f24223ade4f40b758b2dee3329c71aa69929b7dde620bfac"
+    sha256 x86_64_linux:   "5827fe65a9230261acc5309197b66205d2c72492d58ac2ed2b6a4d38632fea66"
   end
 
   depends_on "pkg-config" => :build

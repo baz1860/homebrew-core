@@ -1,25 +1,28 @@
-require "language/haskell"
-
 class Hlint < Formula
-  include Language::Haskell::Cabal
-
   desc "Haskell source code suggestions"
   homepage "https://github.com/ndmitchell/hlint"
-  url "https://hackage.haskell.org/package/hlint-2.1/hlint-2.1.tar.gz"
-  sha256 "e979353de45ea77142e31d83b00146f0fbc1a03ad052377c14d605081ba8908d"
-  head "https://github.com/ndmitchell/hlint.git"
+  url "https://hackage.haskell.org/package/hlint-3.4.1/hlint-3.4.1.tar.gz"
+  sha256 "9f91a135c72452d5e856b7f027ef79a0ac80327909cd364e739b2998d800732e"
+  license "BSD-3-Clause"
+  head "https://github.com/ndmitchell/hlint.git", branch: "master"
 
   bottle do
-    sha256 "2a05b893ea59c2b85dba938f9e57940e96976327a5a117e0c99758ac121a85f9" => :high_sierra
-    sha256 "134a350b5c01298044b0a77dcaeee9dcaf52bcb96e0aa7540c8e04007b3b2157" => :sierra
-    sha256 "22ebf96e19749b60cb7774769ff5d4967c0de046d651849dca4642032c2abdd3" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "b773576b8d8b90b695c56cc790b4d5d0277e3c386ece4e80e6a6d928e5ce8343"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "491c77ec84e7d95128d51911cdc4eeeb83c5c9432b1d0e179949d50eca98a9be"
+    sha256 cellar: :any_skip_relocation, monterey:       "95ba606ac0274c30cb0a939dcf3328638bdcef24052bf936064712235aec958a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "56f4f58d3df7dbc7d9811a953bfa2deb202ff0322b2ed6c7e962483b6f68591d"
+    sha256 cellar: :any_skip_relocation, catalina:       "7aa24d8e75820b8510767112270b96774bff7a022efd228730ca56267197cbd2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "998213512ceb03b544463e840d55e067299218ed517ac1f7c898b669bb2969e2"
   end
 
   depends_on "cabal-install" => :build
   depends_on "ghc" => :build
 
+  uses_from_macos "ncurses"
+
   def install
-    install_cabal_package :using => "happy"
+    system "cabal", "v2-update"
+    system "cabal", "v2-install", *std_cabal_v2_args
     man1.install "data/hlint.1"
   end
 
@@ -27,6 +30,11 @@ class Hlint < Formula
     (testpath/"test.hs").write <<~EOS
       main = do putStrLn "Hello World"
     EOS
-    assert_match "Redundant do", shell_output("#{bin}/hlint test.hs", 1)
+    assert_match "No hints", shell_output("#{bin}/hlint test.hs")
+
+    (testpath/"test1.hs").write <<~EOS
+      main = do foo x; return 3; bar z
+    EOS
+    assert_match "Redundant return", shell_output("#{bin}/hlint test1.hs", 1)
   end
 end

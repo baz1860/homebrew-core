@@ -1,36 +1,39 @@
+require "language/node"
+
 class Autorest < Formula
   desc "Swagger (OpenAPI) Specification code generator"
   homepage "https://github.com/Azure/autorest"
-  url "https://api.nuget.org/packages/autorest.0.17.3.nupkg"
-  sha256 "b3f5b67ae1a8aa4f0fd6cf1e51df27ea1867f0c845dbb13c1c608b148bd86296"
+  url "https://registry.npmjs.org/autorest/-/autorest-3.6.2.tgz"
+  sha256 "0839e480b0ea800091c9b6005397ad34390c6bbcc74e2e9c0f347907e7922b42"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "63768f566900eee86561a21b495b3627183fb1c05db98220561d58dad0d7a5d2" => :high_sierra
-    sha256 "da1dc0e3a25b005db13ffbb95b145c060162648ad700998e4814a7969e17cbb1" => :sierra
-    sha256 "da1dc0e3a25b005db13ffbb95b145c060162648ad700998e4814a7969e17cbb1" => :el_capitan
-    sha256 "da1dc0e3a25b005db13ffbb95b145c060162648ad700998e4814a7969e17cbb1" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "2e9e1182c68ba32608d6a45d79e43b1623cafed5f9269aa68015fb97a19542e6"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "2e9e1182c68ba32608d6a45d79e43b1623cafed5f9269aa68015fb97a19542e6"
+    sha256 cellar: :any_skip_relocation, monterey:       "cf223680cfa0f57c55925beccd0596480b78f32fd73d8beada3dcc26f7c1bd89"
+    sha256 cellar: :any_skip_relocation, big_sur:        "cf223680cfa0f57c55925beccd0596480b78f32fd73d8beada3dcc26f7c1bd89"
+    sha256 cellar: :any_skip_relocation, catalina:       "cf223680cfa0f57c55925beccd0596480b78f32fd73d8beada3dcc26f7c1bd89"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2e9e1182c68ba32608d6a45d79e43b1623cafed5f9269aa68015fb97a19542e6"
   end
 
-  depends_on "mono"
+  depends_on "node"
 
-  resource "swagger" do
-    url "https://raw.githubusercontent.com/Azure/autorest/764d308b3b75ba83cb716708f5cef98e63dde1f7/Samples/petstore/petstore.json"
-    sha256 "8de4043eff83c71d49f80726154ca3935548bd974d915a6a9b6aa86da8b1c87c"
+  resource "homebrew-petstore" do
+    url "https://raw.githubusercontent.com/Azure/autorest/5c170a02c009d032e10aa9f5ab7841e637b3d53b/Samples/1b-code-generation-multilang/petstore.yaml"
+    sha256 "e981f21115bc9deba47c74e5c533d92a94cf5dbe880c4304357650083283ce13"
   end
 
   def install
-    libexec.install Dir["tools/*"]
-    (bin/"autorest").write <<~EOS
-      #!/bin/bash
-      mono #{libexec}/AutoRest.exe "$@"
-    EOS
+    system "npm", "install", *Language::Node.std_npm_install_args(libexec)
+    bin.install_symlink Dir["#{libexec}/bin/*"]
   end
 
   test do
-    resource("swagger").stage do
-      assert_match "Finished generating CSharp code for petstore.json.",
-        shell_output("#{bin}/autorest -n test -i petstore.json")
+    resource("homebrew-petstore").stage do
+      system (bin/"autorest"), "--input-file=petstore.yaml",
+                               "--typescript",
+                               "--output-folder=petstore"
+      assert_includes File.read("petstore/package.json"), "Microsoft Corporation"
     end
   end
 end

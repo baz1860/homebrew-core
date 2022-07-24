@@ -2,82 +2,96 @@ class Ford < Formula
   include Language::Python::Virtualenv
 
   desc "Automatic documentation generator for modern Fortran programs"
-  homepage "https://github.com/cmacmackin/ford/"
-  url "https://github.com/cmacmackin/ford/archive/v5.0.6.tar.gz"
-  sha256 "18d46dc4c6fec57ae0124b412d4db23a37d07a3849f41fa5bf4fb66deaed9615"
-  head "https://github.com/cmacmackin/ford.git"
+  homepage "https://github.com/Fortran-FOSS-Programmers/ford"
+  url "https://files.pythonhosted.org/packages/1c/80/a8750198772c8647aa2c8d1459d5d8dbedd317a2ba18fdad73802073e1d5/FORD-6.1.13.tar.gz"
+  sha256 "95b743ea25c5a9c6a9e13db3633e04f91e11d1debb69f48ca3ef7fefc51f0559"
+  license "GPL-3.0-or-later"
+  head "https://github.com/Fortran-FOSS-Programmers/ford.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "fdf7c838602b5d38b6f12293a8d36100a5c2e879bae2f1d86e14077fd7fa1b19" => :high_sierra
-    sha256 "c738a796ee8a8adfdcb8358eb93e3a87530523b6260151d82a5003a1ed8af532" => :sierra
-    sha256 "47599cea228882fef8c4efaa0e52e8135ab58d6d3c7bed9efc29a0bd72d46716" => :el_capitan
-    sha256 "af2a90e3a5af08077676bdcf241c4cf61525c90164b92c5dc137a78237cce3e3" => :yosemite
-    sha256 "2c47a80b78dfec14df17313c888c2828ace07b848859be62b459ff2d60403fcb" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "e30c75bc66985872ca061915d73c6a0fbb5acf8d2a357429c666b40cb7238796"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "4090c066a1046d91e2717929e3d934a852427b5e8e6932d5c58a1f149a2f0932"
+    sha256 cellar: :any_skip_relocation, monterey:       "97f6fc98e88524c1d6483501f4a80d59eff476510c6c3eab95ccb4f726af0b68"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d2202d8ab39f1aae07eceed1400e3fa002df838d84e41fcd8a6af62546803399"
+    sha256 cellar: :any_skip_relocation, catalina:       "7d56b3bc4f14b283ad116f2376e68b94e0dff0bf9ffb1b52571dd05e15987f9c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "12e38adb4a3d2b4eed5d9852a70d663ce6938e2d74ee86e7c586183266cc85a7"
   end
 
-  option "without-lxml", "Do not install lxml to improve the speed of search  database generation"
-
   depends_on "graphviz"
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.9"
+
+  uses_from_macos "libxml2"
+  uses_from_macos "libxslt"
 
   resource "beautifulsoup4" do
-    url "https://files.pythonhosted.org/packages/86/ea/8e9fbce5c8405b9614f1fd304f7109d9169a3516a493ce4f7f77c39435b7/beautifulsoup4-4.5.1.tar.gz"
-    sha256 "3c9474036afda9136aac6463def733f81017bf9ef3510d25634f335b0c87f5e1"
+    url "https://files.pythonhosted.org/packages/e8/b0/cd2b968000577ec5ce6c741a54d846dfa402372369b8b6861720aa9ecea7/beautifulsoup4-4.11.1.tar.gz"
+    sha256 "ad9aa55b65ef2808eb405f46cf74df7fcb7044d5cbc26487f96eb2ef2e436693"
   end
 
   resource "graphviz" do
-    url "https://files.pythonhosted.org/packages/3a/ef/4be504e14ef8c96503aeb774937b1539aa2c6982e1edffd655ac3b7f2041/graphviz-0.5.1.zip"
-    sha256 "d8f8f369a5c109d3fc971bbc1860b6848515d210aee8f5019c460351dbb00a50"
+    url "https://files.pythonhosted.org/packages/43/ae/a0ee0dbddc06dbecfaece65c45c8c4729c394b5eb62e04e711e6495cdf64/graphviz-0.20.zip"
+    sha256 "76bdfb73f42e72564ffe9c7299482f9d72f8e6cb8d54bce7b48ab323755e9ba5"
+  end
+
+  resource "importlib-metadata" do
+    url "https://files.pythonhosted.org/packages/3e/1d/964b27278cfa369fbe9041f604ab09c6e99556f8b7910781b4584b428c2f/importlib_metadata-4.11.3.tar.gz"
+    sha256 "ea4c597ebf37142f827b8f39299579e31685c31d3a438b59f469406afd0f2539"
   end
 
   resource "Jinja2" do
-    url "https://files.pythonhosted.org/packages/f2/2f/0b98b06a345a761bec91a079ccae392d282690c2d8272e708f4d10829e22/Jinja2-2.8.tar.gz"
-    sha256 "bc1ff2ff88dbfacefde4ddde471d1417d3b304e8df103a7a9437d47269201bf4"
-  end
-
-  resource "lxml" do
-    url "https://files.pythonhosted.org/packages/4f/3f/cf6daac551fc36cddafa1a71ed48ea5fd642e5feabd3a0d83b8c3dfd0cb4/lxml-3.6.4.tar.gz"
-    sha256 "61d5d3e00b5821e6cda099b3b4ccfea4527bf7c595e0fb3a7a760490cedd6172"
+    url "https://files.pythonhosted.org/packages/7a/ff/75c28576a1d900e87eb6335b063fab47a8ef3c8b4d88524c4bf78f670cce/Jinja2-3.1.2.tar.gz"
+    sha256 "31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852"
   end
 
   resource "Markdown" do
-    url "https://files.pythonhosted.org/packages/9b/53/4492f2888408a2462fd7f364028b6c708f3ecaa52a028587d7dd729f40b4/Markdown-2.6.6.tar.gz"
-    sha256 "9a292bb40d6d29abac8024887bcfc1159d7a32dc1d6f1f6e8d6d8e293666c504"
+    url "https://files.pythonhosted.org/packages/d6/58/79df20de6e67a83f0d0bbfe6c19bb82adf68cdf362885257eb01099f930a/Markdown-3.3.7.tar.gz"
+    sha256 "cbb516f16218e643d8e0a95b309f77eb118cb138d39a4f27851e6a63581db874"
   end
 
   resource "markdown-include" do
-    url "https://files.pythonhosted.org/packages/ef/44/eb6e9b4fa1110b719abb876c9b6dd8b46af886a94536ec4e9117fe5e7b97/markdown-include-0.5.1.tar.gz"
-    sha256 "72a45461b589489a088753893bc95c5fa5909936186485f4ed55caa57d10250f"
+    url "https://files.pythonhosted.org/packages/34/ce/289d5d459c274a59379f79af95f3f36ae29cb9d787206ad9b45dda48e3ce/markdown-include-0.6.0.tar.gz"
+    sha256 "6f5d680e36f7780c7f0f61dca53ca581bd50d1b56137ddcd6353efafa0c3e4a2"
   end
 
   resource "MarkupSafe" do
-    url "https://files.pythonhosted.org/packages/c0/41/bae1254e0396c0cc8cf1751cb7d9afc90a602353695af5952530482c963f/MarkupSafe-0.23.tar.gz"
-    sha256 "a4ec1aff59b95a14b45eb2e23761a0179e98319da5a7eb76b56ea8cdc7b871c3"
-  end
-
-  resource "md-environ" do
-    url "https://files.pythonhosted.org/packages/68/a9/86666edbf0d3929d5b3be3347c153881139aa1e28af38f6496edcc034003/md-environ-0.1.0.tar.gz"
-    sha256 "fe3c2a255af523d6f522831c699336cd71f9d543714067d93206ed35836f1793"
+    url "https://files.pythonhosted.org/packages/1d/97/2288fe498044284f39ab8950703e88abbac2abbdf65524d576157af70556/MarkupSafe-2.1.1.tar.gz"
+    sha256 "7f91197cc9e48f989d12e4e6fbc46495c446636dfc81b9ccf50bb0ec74b91d4b"
   end
 
   resource "Pygments" do
-    url "https://files.pythonhosted.org/packages/b8/67/ab177979be1c81bc99c8d0592ef22d547e70bb4c6815c383286ed5dec504/Pygments-2.1.3.tar.gz"
-    sha256 "88e4c8a91b2af5962bfa5ea2447ec6dd357018e86e94c7d14bd8cacbc5b55d81"
+    url "https://files.pythonhosted.org/packages/59/0f/eb10576eb73b5857bc22610cdfc59e424ced4004fe7132c8f2af2cc168d3/Pygments-2.12.0.tar.gz"
+    sha256 "5eb116118f9612ff1ee89ac96437bb6b49e8f04d8a13b514ba26f620208e26eb"
+  end
+
+  resource "python-markdown-math" do
+    url "https://files.pythonhosted.org/packages/ec/17/e7e3f3fce951b8adec10987834f4b2fa721ebd9bd6651ce2a4f39c4c544d/python-markdown-math-0.8.tar.gz"
+    sha256 "8564212af679fc18d53f38681f16080fcd3d186073f23825c7ce86fadd3e3635"
+  end
+
+  resource "soupsieve" do
+    url "https://files.pythonhosted.org/packages/f3/03/bac179d539362319b4779a00764e95f7542f4920084163db6b0fd4742d38/soupsieve-2.3.2.post1.tar.gz"
+    sha256 "fc53893b3da2c33de295667a0e19f078c14bf86544af307354de5fcf12a3f30d"
   end
 
   resource "toposort" do
-    url "https://files.pythonhosted.org/packages/f6/f7/875e23067652488ae40603336fdd63510a1e1853672b5b829a78452fd31c/toposort-1.4.tar.gz"
-    sha256 "c190b9d9a9e53ae2835f4d524130147af601fbd63677d19381c65067a80fa903"
+    url "https://files.pythonhosted.org/packages/b2/be/67bec9a73041616dd359f06e997d56c9c99d252460a3f035411d97c96c48/toposort-1.7.tar.gz"
+    sha256 "ddc2182c42912a440511bd7ff5d3e6a1cabc3accbc674a3258c8c41cbfbb2125"
+  end
+
+  resource "tqdm" do
+    url "https://files.pythonhosted.org/packages/98/2a/838de32e09bd511cf69fe4ae13ffc748ac143449bfc24bb3fd172d53a84f/tqdm-4.64.0.tar.gz"
+    sha256 "40be55d30e200777a307a7585aee69e4eabb46b4ec6a4b4a5f2d9f11e7d5408d"
+  end
+
+  resource "zipp" do
+    url "https://files.pythonhosted.org/packages/cc/3c/3e8c69cd493297003da83f26ccf1faea5dd7da7892a0a7c965ac3bcba7bf/zipp-3.8.0.tar.gz"
+    sha256 "56bf8aadb83c24db6c4b577e13de374ccfb67da2078beba1d037c17980bf43ad"
   end
 
   def install
-    venv = virtualenv_create(libexec)
-    deps = build.with?("lxml") ? resources : resources - [resource("lxml")]
-    venv.pip_install deps
-    venv.pip_install_and_link buildpath
+    virtualenv_install_with_resources
     doc.install "2008standard.pdf", "2003standard.pdf"
-    pkgshare.install "example-project-file.md"
+    pkgshare.install "example/example-project-file.md"
   end
 
   test do

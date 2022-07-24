@@ -3,16 +3,24 @@ class AntlrAT2 < Formula
   homepage "https://www.antlr2.org/"
   url "https://www.antlr2.org/download/antlr-2.7.7.tar.gz"
   sha256 "853aeb021aef7586bda29e74a6b03006bcb565a755c86b66032d8ec31b67dbb9"
+  license "ANTLR-PD"
+  revision 4
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "98b9371fac8dee3fdd61d7691549d8689e2c2ef7f911977fe1ec32227d2d8300" => :high_sierra
-    sha256 "ec2e5dacbcbc0463cec0876b164de6f40b75443f51070b5c31755acf2ad6ffd4" => :sierra
-    sha256 "3c340537a171cdf7c87788cd6e507a403decaf864dc81249a2da01e4bac5b3f7" => :el_capitan
-    sha256 "90b75cee100dd1f98e50d3c858b5a54c5c676dca7fd22c81863be76504777180" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "26acb924f40645e50255ac11d6cd9ad1d6153c80ee089e5f758a093eae2432d0"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "130f56b4182f57e74a535c97948667ff1b1e13bd821562ef573d048676db1e3f"
+    sha256 cellar: :any_skip_relocation, monterey:       "5284f23a92d24e07f5e13a7564904b44b43b82552db78bb761bdad8e23b1118e"
+    sha256 cellar: :any_skip_relocation, big_sur:        "cc27645bb089a3ffc38aeeb4dcc7c5352d93472ac31d7e9853b0b5b90a695e64"
+    sha256 cellar: :any_skip_relocation, catalina:       "b3a7378ef4a657176107a37a6d5661b9eb3750f7407ebe081200aa8b45d6d480"
+    sha256 cellar: :any_skip_relocation, mojave:         "5642de8d8012c11705b3199f5daf8758d8029333ae9eb4ab113e80069e49ef57"
   end
 
-  depends_on :java
+  keg_only :versioned_formula
+
+  # ANTLR4 is the actively maintained successor provided by the `antlr` formula.
+  deprecate! date: "2022-06-20", because: :deprecated_upstream
+
+  depends_on "openjdk"
 
   def install
     # C Sharp is explicitly disabled because the antlr configure script will
@@ -23,17 +31,18 @@ class AntlrAT2 < Formula
     system "make"
 
     libexec.install "antlr.jar"
+    rm Dir["lib/cpp/antlr/Makefile*"]
     include.install "lib/cpp/antlr"
     lib.install "lib/cpp/src/libantlr.a"
 
-    (bin/"antlr2").write <<~EOS
+    (bin/"antlr").write <<~EOS
       #!/bin/sh
-      java -classpath #{libexec}/antlr.jar antlr.Tool "$@"
+      exec "#{Formula["openjdk"].opt_bin}/java" -classpath "#{libexec}/antlr.jar" antlr.Tool "$@"
     EOS
   end
 
   test do
     assert_match "ANTLR Parser Generator   Version #{version}",
-      shell_output("#{bin}/antlr2 --help 2>&1")
+      shell_output("#{bin}/antlr --help 2>&1")
   end
 end

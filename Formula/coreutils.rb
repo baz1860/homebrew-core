@@ -1,14 +1,18 @@
 class Coreutils < Formula
   desc "GNU File, Shell, and Text utilities"
   homepage "https://www.gnu.org/software/coreutils"
-  url "https://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz"
-  mirror "https://ftpmirror.gnu.org/coreutils/coreutils-8.29.tar.xz"
-  sha256 "92d0fa1c311cacefa89853bdb53c62f4110cdfda3820346b59cbd098f40f955e"
+  url "https://ftp.gnu.org/gnu/coreutils/coreutils-9.1.tar.xz"
+  mirror "https://ftpmirror.gnu.org/coreutils/coreutils-9.1.tar.xz"
+  sha256 "61a1f410d78ba7e7f37a5a4f50e6d1320aca33375484a3255eddf17a38580423"
+  license "GPL-3.0-or-later"
 
   bottle do
-    sha256 "20e12e8aaa50778db12accc12fc2ae5e29cdd58988064dbc912bcfb10a106272" => :high_sierra
-    sha256 "83cb185057a6add9b9289504801240f33020494c4b85af07272a85050cd99f65" => :sierra
-    sha256 "0c25b2cebfd54bf325360b6ab566df78a6711f5526fd44fc244558748bd27475" => :el_capitan
+    sha256 arm64_monterey: "6a9a4988eda436fb5bdb5969044579c2e618e21eee8c8bbe32614ad29fe56bd7"
+    sha256 arm64_big_sur:  "85ef910aa223d48c0e73fc187aba54b86930c86f906e3d079ed0b114762bb24e"
+    sha256 monterey:       "7c9f988b4f9207415a5c96efd32376bc8cf2b280a7a36fbebb0b8fc334a14056"
+    sha256 big_sur:        "e446ef889d70bc377d67fa2d7f6a1fbc9faaee444a9e9086a1f5bd484069e5c0"
+    sha256 catalina:       "0d2117fa63dfcbb678c4e499f9ca0413c2c5bfa0a1bbdefde620434f2ead93a0"
+    sha256 x86_64_linux:   "3c2fbec99344b50d620695d16197eb112cb8bee6d3f9e47cb682484755b91f38"
   end
 
   head do
@@ -19,69 +23,85 @@ class Coreutils < Formula
     depends_on "bison" => :build
     depends_on "gettext" => :build
     depends_on "texinfo" => :build
-    depends_on "xz" => :build
     depends_on "wget" => :build
+    depends_on "xz" => :build
   end
 
-  depends_on "gmp" => :optional
+  depends_on "gmp"
+  uses_from_macos "gperf" => :build
 
-  conflicts_with "ganglia", :because => "both install `gstat` binaries"
-  conflicts_with "gegl", :because => "both install `gcut` binaries"
-  conflicts_with "idutils", :because => "both install `gid` and `gid.1`"
-  conflicts_with "aardvark_shell_utils", :because => "both install `realpath` binaries"
+  on_linux do
+    depends_on "attr"
+  end
+
+  conflicts_with "aardvark_shell_utils", because: "both install `realpath` binaries"
+  conflicts_with "b2sum", because: "both install `b2sum` binaries"
+  conflicts_with "ganglia", because: "both install `gstat` binaries"
+  conflicts_with "gdu", because: "both install `gdu` binaries"
+  conflicts_with "gegl", because: "both install `gcut` binaries"
+  conflicts_with "idutils", because: "both install `gid` and `gid.1`"
+  conflicts_with "md5sha1sum", because: "both install `md5sum` and `sha1sum` binaries"
+  conflicts_with "truncate", because: "both install `truncate` binaries"
+  conflicts_with "uutils-coreutils", because: "coreutils and uutils-coreutils install the same binaries"
+
+  # https://github.com/Homebrew/homebrew-core/pull/36494
+  def breaks_macos_users
+    %w[dir dircolors vdir]
+  end
 
   def install
-    if MacOS.version == :el_capitan
-      # Work around unremovable, nested dirs bug that affects lots of
-      # GNU projects. See:
-      # https://github.com/Homebrew/homebrew/issues/45273
-      # https://github.com/Homebrew/homebrew/issues/44993
-      # This is thought to be an el_capitan bug:
-      # https://lists.gnu.org/archive/html/bug-tar/2015-10/msg00017.html
-      ENV["gl_cv_func_getcwd_abort_bug"] = "no"
-
-      # renameatx_np and RENAME_EXCL are available at compile time from Xcode 8
-      # (10.12 SDK), but the former is not available at runtime.
-      inreplace "lib/renameat2.c", "defined RENAME_EXCL", "defined UNDEFINED_GIBBERISH"
-    end
-
     system "./bootstrap" if build.head?
 
     args = %W[
       --prefix=#{prefix}
       --program-prefix=g
+      --with-gmp
+      --without-selinux
     ]
-    args << "--without-gmp" if build.without? "gmp"
+
     system "./configure", *args
     system "make", "install"
+
+    no_conflict = if OS.mac?
+      []
+    else
+      %w[
+        b2sum base32 basenc chcon dir dircolors factor hostid md5sum nproc numfmt pinky ptx realpath runcon
+        sha1sum sha224sum sha256sum sha384sum sha512sum shred shuf stdbuf tac timeout truncate vdir
+      ]
+    end
 
     # Symlink all commands into libexec/gnubin without the 'g' prefix
     coreutils_filenames(bin).each do |cmd|
       (libexec/"gnubin").install_symlink bin/"g#{cmd}" => cmd
+
+      # Find non-conflicting commands on macOS
+      which_cmd = which(cmd)
+      no_conflict << cmd if OS.mac? && (which_cmd.nil? || !which_cmd.to_s.start_with?(%r{(/usr)?/s?bin}))
     end
     # Symlink all man(1) pages into libexec/gnuman without the 'g' prefix
     coreutils_filenames(man1).each do |cmd|
       (libexec/"gnuman"/"man1").install_symlink man1/"g#{cmd}" => cmd
     end
+    libexec.install_symlink "gnuman" => "man"
 
+    no_conflict -= breaks_macos_users if OS.mac?
     # Symlink non-conflicting binaries
-    bin.install_symlink "grealpath" => "realpath"
-    man1.install_symlink "grealpath.1" => "realpath.1"
+    no_conflict.each do |cmd|
+      bin.install_symlink "g#{cmd}" => cmd
+      man1.install_symlink "g#{cmd}.1" => "#{cmd}.1"
+    end
   end
 
-  def caveats; <<~EOS
-    All commands have been installed with the prefix 'g'.
-
-    If you really need to use these commands with their normal names, you
-    can add a "gnubin" directory to your PATH from your bashrc like:
-
+  def caveats
+    msg = "Commands also provided by macOS and the commands #{breaks_macos_users.join(", ")}"
+    on_linux do
+      msg = "All commands"
+    end
+    <<~EOS
+      #{msg} have been installed with the prefix "g".
+      If you need to use these commands with their normal names, you can add a "gnubin" directory to your PATH with:
         PATH="#{opt_libexec}/gnubin:$PATH"
-
-    Additionally, you can access their man pages with normal names if you add
-    the "gnuman" directory to your MANPATH from your bashrc as well:
-
-        MANPATH="#{opt_libexec}/gnuman:$MANPATH"
-
     EOS
   end
 
@@ -89,6 +109,7 @@ class Coreutils < Formula
     filenames = []
     dir.find do |path|
       next if path.directory? || path.basename.to_s == ".DS_Store"
+
       filenames << path.basename.to_s.sub(/^g/, "")
     end
     filenames.sort

@@ -1,22 +1,33 @@
 class IrcdHybrid < Formula
   desc "High-performance secure IRC server"
-  homepage "http://www.ircd-hybrid.org/"
-  url "https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.2.22/ircd-hybrid-8.2.22.tgz"
-  sha256 "d7d8df4524d088132e928d3685f2f65bb7b1bf6c1f855fc9e16a3dc460d9b1c4"
+  homepage "https://www.ircd-hybrid.org/"
+  url "https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.2.41/ircd-hybrid-8.2.41.tgz"
+  sha256 "ce0ea69654601047bd86423ddc0023c0795570249990011eaa6c41d6372b0454"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/ircd-hybrid[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    sha256 "4dec65cb5a6b48e2fd47955ac68162ce6c8e588b1941313ba6c899f49128dac8" => :high_sierra
-    sha256 "cc93ca913142492805fe559b934b90faa291f3ec36563bce9e9687350f7a921f" => :sierra
-    sha256 "eee3efa1fd78d82aeff072c0d46a078b06919dfa0e7225ffe4d43e668f589cf2" => :el_capitan
-    sha256 "b9cbc2bd21180405b48865a3d4bc82d3dc534cb1936a4f9fe49148453e2eece4" => :yosemite
+    sha256 arm64_monterey: "268075f11e23a5d819d75d7dd98881c4c0441bbd44fa3ae8b3f799155206073a"
+    sha256 arm64_big_sur:  "a6d6a0a26185264577aa3f794fd2a90d215f0a2b63fa84f45b58a74955ca1156"
+    sha256 monterey:       "fc209d6f30c7a7ba30a7c856e4893ebe6be74d3c74eecb22e61b87b8606cc58f"
+    sha256 big_sur:        "e0de415a58502410f642497c3d857b0f9ccff5400457de66a07214836daf0229"
+    sha256 catalina:       "59a906eb2f528eb84ccbc18193ddfab0c47dedd3ca94f4c2b73cdaaa7d4453bb"
+    sha256 x86_64_linux:   "5c45e00bfae1c00c4909144592b46ce21755d20eb7287f179b69d0147b159ed5"
   end
+
+  depends_on "openssl@1.1"
+
+  uses_from_macos "libxcrypt"
+
+  conflicts_with "expect", because: "both install an `mkpasswd` binary"
+  conflicts_with "ircd-irc2", because: "both install an `ircd` binary"
 
   # ircd-hybrid needs the .la files
   skip_clean :la
-
-  depends_on "openssl"
-
-  conflicts_with "ircd-irc2", :because => "both install an `ircd` binary"
 
   def install
     ENV.deparallelize # build system trips over itself
@@ -25,41 +36,23 @@ class IrcdHybrid < Formula
                           "--prefix=#{prefix}",
                           "--localstatedir=#{var}",
                           "--sysconfdir=#{etc}",
-                          "--enable-openssl=#{Formula["openssl"].opt_prefix}"
+                          "--enable-openssl=#{Formula["openssl@1.1"].opt_prefix}"
     system "make", "install"
     etc.install "doc/reference.conf" => "ircd.conf"
   end
 
-  def caveats; <<~EOS
-    You'll more than likely need to edit the default settings in the config file:
-      #{etc}/ircd.conf
+  def caveats
+    <<~EOS
+      You'll more than likely need to edit the default settings in the config file:
+        #{etc}/ircd.conf
     EOS
   end
 
-  plist_options :manual => "ircd"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <false/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/ircd</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{HOMEBREW_PREFIX}</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/ircd.log</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run opt_bin/"ircd"
+    keep_alive false
+    working_dir HOMEBREW_PREFIX
+    error_log_path var/"ircd.log"
   end
 
   test do

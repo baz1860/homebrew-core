@@ -1,47 +1,44 @@
 class Brogue < Formula
   desc "Roguelike game"
   homepage "https://sites.google.com/site/broguegame/"
-  # The OS X version doesn't contain a Makefile, so we
-  # need to download the Linux version
-  url "https://sites.google.com/site/broguegame/brogue-1.7.4-linux-amd64.tbz2"
-  version "1.7.4"
-  sha256 "eba5f35fe317efad9c97876f117eaf7a26956c435fdd2bc1a5989f0a4f70cfd3"
+  url "https://github.com/tmewett/BrogueCE/archive/refs/tags/v1.11.1.tar.gz"
+  sha256 "dc562cf774f88b12b6aeebdac5a00e62e8598b3f84da2130a54a67a60c5debf2"
+  license "AGPL-3.0-or-later"
+  head "https://github.com/tmewett/BrogueCE.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "15ae767cca7777781ec2a6d89e63ffc1822b1ab982ea966e1082d625ed5172ca" => :high_sierra
-    sha256 "7843893c8f71ec2824a571324ada4818a24b9d0cdf3ee896a2fe986c2eb3d96e" => :sierra
-    sha256 "29b76f520e06b81094b7036d6c8bc1d9e259d2df18dc82514ed1156027dbfa87" => :el_capitan
+    sha256 arm64_monterey: "142084b08e652f1b4bac49bc2b4633a8da661e998d53cfe57a483d6f64af743b"
+    sha256 arm64_big_sur:  "d67f70b4f81e4d8e4824100ec04534a1148f09a1db240ebc412c4ece5506a3d6"
+    sha256 monterey:       "51bb16e0cce068f13d652da480b80d33cda96118cb0c94afa458c5cbc19c4411"
+    sha256 big_sur:        "34c616e203f1f35770c5a5d10c2c52a3351259e2b4ef7e99c59fcbeb28252e46"
+    sha256 catalina:       "05f07a50558b4e2731ba0989322d3354238d81d926eb54aabb1ecf5c91f085a8"
+    sha256 x86_64_linux:   "3f43f81206bac39b28fe2bbb162090eae354cadc2d3ef0919bc28f58f3a5fc06"
   end
 
-  # put the highscores file in HOMEBREW_PREFIX/var/brogue/ instead of a
-  # version-dependent location.
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/c999df7dff/brogue/1.7.4.patch"
-    sha256 "ac5f86930a0190146ca35856266e8e8af06ac925bc8ae4c73c202352f258669c"
-  end
+  depends_on "sdl2"
+  depends_on "sdl2_image"
+
+  uses_from_macos "ncurses"
 
   def install
-    (var/"brogue").mkpath
+    system "make", "bin/brogue", "RELEASE=YES", "TERMINAL=YES", "DATADIR=#{libexec}"
+    libexec.install "bin/brogue", "bin/keymap.txt", "bin/assets"
 
-    doc.install "Readme.rtf" => "README.rtf"
-    doc.install "agpl.txt" => "COPYING"
-
-    system "make", "clean", "curses"
-
-    # The files are installed in libexec
-    # and the provided `brogue` shell script,
-    # which is just a convenient way to launch the game,
-    # is placed in the `bin` directory.
-    inreplace "brogue", %r{`dirname \$0`/bin$}, libexec
-    bin.install "brogue"
-    libexec.install "bin/brogue", "bin/keymap"
+    # Use var directory to save highscores and replay files across upgrades
+    (bin/"brogue").write <<~EOS
+      #!/bin/bash
+      cd "#{var}/brogue" && exec "#{libexec}/brogue" "$@"
+    EOS
   end
 
-  def caveats; <<~EOS
-    If you are upgrading from 1.7.2, you need to copy your highscores file:
-        cp #{HOMEBREW_PREFIX}/Cellar/#{name}/1.7.2/BrogueHighScores.txt #{var}/brogue/
+  def post_install
+    (var/"brogue").mkpath
+  end
+
+  def caveats
+    <<~EOS
+      If you are upgrading from 1.7.2, you need to copy your highscores file:
+          cp #{HOMEBREW_PREFIX}/Cellar/#{name}/1.7.2/BrogueHighScores.txt #{var}/brogue/
     EOS
   end
 

@@ -1,42 +1,64 @@
 class Geos < Formula
   desc "Geometry Engine"
   homepage "https://trac.osgeo.org/geos"
-  url "https://download.osgeo.org/geos/geos-3.6.2.tar.bz2"
-  sha256 "045a13df84d605a866602f6020fc6cbf8bf4c42fb50de237a08926e1d7d7652a"
+  url "https://download.osgeo.org/geos/geos-3.11.0.tar.bz2"
+  sha256 "79ab8cabf4aa8604d161557b52e3e4d84575acdc0d08cb09ab3f7aaefa4d858a"
+  license "LGPL-2.1-or-later"
 
-  bottle do
-    cellar :any
-    sha256 "bd35ebbcc9d142b0ee4d1f1837520cd0e195e13e3ea1804c5cfd1cc99d660b9b" => :high_sierra
-    sha256 "a435dcf855256300793f56c3d0af6597f39958bde52adc29d07736f897b40c1b" => :sierra
-    sha256 "8fa4f17ee4b0f8c52bdb155f4264043f12245858e413975cfea4355d569db207" => :el_capitan
-    sha256 "5966c5ecea54189c67a3ffb5856176f4bb070ca72b3c3628ad7b76fb67e35de8" => :yosemite
+  livecheck do
+    url "https://download.osgeo.org/geos/"
+    regex(/href=.*?geos[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "without-python", "Do not build the Python extension"
-  option "with-ruby", "Build the ruby extension"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "25dce9a65e623bc866fc0fdf21be70d2939f33d8f23abc275932e5f3804470c7"
+    sha256 cellar: :any,                 arm64_big_sur:  "4adfc940062c8e534c9596ba2e932fe634e750d2ee53207db14a2949d8af3a4d"
+    sha256 cellar: :any,                 monterey:       "f8f1bd048260aa996c233a61f102f80c4eb045e9922a5c7896974f177fb24956"
+    sha256 cellar: :any,                 big_sur:        "6b4b5202a09fc1bb7d5a2ed971b15ea3af0f242da4c801d21e654a62b26bb469"
+    sha256 cellar: :any,                 catalina:       "cade2a003b9ca0de0c84874967653a4d8cc4fd7e20f19771a8d9badb36122102"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ff1f6210032d16af3456e9f3734028013688d6134d8920e30a5b16e7363bc842"
+  end
 
-  depends_on "swig" => :build if build.with?("python") || build.with?("ruby")
+  depends_on "cmake" => :build
 
   def install
-    # https://trac.osgeo.org/geos/ticket/771
-    inreplace "configure" do |s|
-      s.gsub! /PYTHON_CPPFLAGS=.*/, %Q(PYTHON_CPPFLAGS="#{`python-config --includes`.strip}")
-      s.gsub! /PYTHON_LDFLAGS=.*/, 'PYTHON_LDFLAGS="-Wl,-undefined,dynamic_lookup"'
-    end
-
-    args = [
-      "--disable-dependency-tracking",
-      "--prefix=#{prefix}",
-    ]
-
-    args << "--enable-python" if build.with?("python")
-    args << "--enable-ruby" if build.with?("ruby")
-
-    system "./configure", *args
-    system "make", "install"
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, "-DCMAKE_INSTALL_RPATH=#{rpath}"
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
+    system "cmake", "-S", ".", "-B", "static", *std_cmake_args, "-DBUILD_SHARED_LIBS=OFF"
+    system "cmake", "--build", "static"
+    lib.install Dir["static/lib/*.a"]
   end
 
   test do
-    system "#{bin}/geos-config", "--libs"
+    (testpath/"test.c").write <<~EOS
+      #include <stdio.h>
+      #include <stdarg.h>
+      #include <geos_c.h>
+      static void geos_message_handler(const char* fmt, ...) {
+          va_list ap;
+          va_start(ap, fmt);
+          vprintf (fmt, ap);
+          va_end(ap);
+      }
+      int main() {
+          initGEOS(geos_message_handler, geos_message_handler);
+          const char* wkt_a = "POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))";
+          const char* wkt_b = "POLYGON((5 5, 15 5, 15 15, 5 15, 5 5))";
+          GEOSWKTReader* reader = GEOSWKTReader_create();
+          GEOSGeometry* geom_a = GEOSWKTReader_read(reader, wkt_a);
+          GEOSGeometry* geom_b = GEOSWKTReader_read(reader, wkt_b);
+          GEOSGeometry* inter = GEOSIntersection(geom_a, geom_b);
+          GEOSWKTWriter* writer = GEOSWKTWriter_create();
+          GEOSWKTWriter_setTrim(writer, 1);
+          char* wkt_inter = GEOSWKTWriter_write(writer, inter);
+          printf("Intersection(A, B): %s\\n", wkt_inter);
+          return 0;
+      }
+    EOS
+    cflags = shell_output("#{bin}/geos-config --cflags").split
+    libs = shell_output("#{bin}/geos-config --clibs").split
+    system ENV.cc, *cflags, "test.c", *libs
+    assert_match "POLYGON ((10 10, 10 5, 5 5, 5 10, 10 10))", shell_output("./a.out")
   end
 end

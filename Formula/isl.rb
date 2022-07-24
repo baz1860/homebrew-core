@@ -1,26 +1,41 @@
 class Isl < Formula
   desc "Integer Set Library for the polyhedral model"
-  homepage "http://isl.gforge.inria.fr"
-  # Note: Always use tarball instead of git tag for stable version.
-  #
-  # Currently isl detects its version using source code directory name
-  # and update isl_version() function accordingly.  All other names will
-  # result in isl_version() function returning "UNKNOWN" and hence break
-  # package detection.
-  url "http://isl.gforge.inria.fr/isl-0.18.tar.xz"
-  mirror "https://mirrors.ocf.berkeley.edu/debian/pool/main/i/isl/isl_0.18.orig.tar.xz"
-  sha256 "0f35051cc030b87c673ac1f187de40e386a1482a0cfdf2c552dd6031b307ddc4"
+  homepage "https://libisl.sourceforge.io/"
+  license "MIT"
+
+  stable do
+    # NOTE: Always use tarball instead of git tag for stable version.
+    #
+    # Currently isl detects its version using source code directory name
+    # and update isl_version() function accordingly.  All other names will
+    # result in isl_version() function returning "UNKNOWN" and hence break
+    # package detection.
+    url "https://libisl.sourceforge.io/isl-0.25.tar.xz"
+    sha256 "be7b210647ccadf90a2f0b000fca11a4d40546374a850db67adb32fad4b230d9"
+
+    # Fix -flat_namespace being used on Big Sur and later.
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+      sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
+    end
+  end
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?isl[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "1430a6e91faca8d8a07dc16cb078ab80707f134f4a3f94853bf007c79d9cd68f" => :high_sierra
-    sha256 "1c2765a5766f8bc022dc49d77d7d32a9c3e92e82452bc63ab534f3c1f18a913c" => :sierra
-    sha256 "00c61068ede0e555b9d41126cfe773f93a1b5f3b4843bc34f001987f940d7796" => :el_capitan
-    sha256 "3f5c77443c140d387297d23056e86e07a9bb3a34328d42edcff7aef47410c1f0" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "764bde8aa0d015c13cbf53891489f3ef56a5951f617ad9906aea34382dc1f4d1"
+    sha256 cellar: :any,                 arm64_big_sur:  "24f86a50eea8a2d4dbc24ecb5f8b8ded61f6f7cd7054886b5dafcb82854b28ed"
+    sha256 cellar: :any,                 monterey:       "568dd08209728ad3a036cf45287ff8384b9ed821460a216a9a79fa80fdcfbf52"
+    sha256 cellar: :any,                 big_sur:        "be6456799bb670c16115d89feacf72cee9b444fe87aca6b1bd350bfb89ff6247"
+    sha256 cellar: :any,                 catalina:       "c2ccd96c92ab0bbfdb775ccd7c8f20c2057cbe976769cf078e728b6f5f5938bc"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c0244c95ed9cc89b826868de83bec3150fcc120add1265017176770150757083"
   end
 
   head do
-    url "http://repo.or.cz/r/isl.git"
+    url "https://repo.or.cz/isl.git"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -36,7 +51,7 @@ class Isl < Formula
                           "--prefix=#{prefix}",
                           "--with-gmp=system",
                           "--with-gmp-prefix=#{Formula["gmp"].opt_prefix}"
-    system "make", "check"
+    system "make"
     system "make", "install"
     (share/"gdb/auto-load").install Dir["#{lib}/*-gdb.py"]
   end

@@ -1,26 +1,32 @@
 class Aptly < Formula
   desc "Swiss army knife for Debian repository management"
   homepage "https://www.aptly.info/"
-  url "https://github.com/smira/aptly/archive/v1.2.0.tar.gz"
-  sha256 "e41ee52ba530b65ff5ec8b1ef3ee9c61882d1c44857d343b9a760e8a8e4230d7"
-  head "https://github.com/smira/aptly.git"
+  url "https://github.com/aptly-dev/aptly/archive/v1.5.0.tar.gz"
+  sha256 "07e18ce606feb8c86a1f79f7f5dd724079ac27196faa61a2cefa5b599bbb5bb1"
+  license "MIT"
+  head "https://github.com/aptly-dev/aptly.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "bc6eac38589d708fc99ec4dbe6d4b0f22765ed893f7f2ab19ccee50306d870f0" => :high_sierra
-    sha256 "fdc4509d1f83c16c4d4b1eec87e6cfe5bc517eec3a67ad515244eeb9eb994d3e" => :sierra
-    sha256 "5fbb7c41aeea6dbcc1c91e3bc1cf9c156e4d8820a828b8c935e07a9b3d3df942" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "692eb1a5b0cfdc72267072c38ec91ac0e09c3afda313318819f3e06f6de16840"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "f8e56fb7954c129c0879918c382b762a998d25eee9fab0b7c7fcb2f20d5a2807"
+    sha256 cellar: :any_skip_relocation, monterey:       "b0abc4e127dd981e976f725e56a06111fe7b120fa300d53cadd3230ace8f2ea4"
+    sha256 cellar: :any_skip_relocation, big_sur:        "bfa5263df4cf003ef7a928b5ac73da07337ba666929dceecd7c279b784d4bad4"
+    sha256 cellar: :any_skip_relocation, catalina:       "413b36d3c1512a089dff010cb3e39a71ebad07570fe7c87c8413709fb093e677"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "44c2015a999ea878b0b5714f1a261100974f3c8b4834cfe1406447f50821e3ec"
   end
 
   depends_on "go" => :build
 
   def install
     ENV["GOPATH"] = buildpath
+    ENV["GO111MODULE"] = "auto"
     ENV["GOBIN"] = bin
-    (buildpath/"src/github.com/smira/aptly").install buildpath.children
-    cd "src/github.com/smira/aptly" do
+    (buildpath/"src/github.com/aptly-dev/aptly").install buildpath.children
+    cd "src/github.com/aptly-dev/aptly" do
       system "make", "VERSION=#{version}", "install"
       prefix.install_metafiles
+      bash_completion.install "completion.d/aptly"
+      zsh_completion.install "completion.d/_aptly"
     end
   end
 

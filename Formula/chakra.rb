@@ -1,22 +1,58 @@
 class Chakra < Formula
-  desc "The core part of the JavaScript engine that powers Microsoft Edge"
-  homepage "https://github.com/Microsoft/ChakraCore"
-  url "https://github.com/Microsoft/ChakraCore/archive/v1.8.1.tar.gz"
-  sha256 "5c9ca5f4169bda73dba2fd3813f7747b89822a5942bbee775a93fb8879e24745"
+  desc "Core part of the JavaScript engine that powers Microsoft Edge"
+  homepage "https://github.com/chakra-core/ChakraCore"
+  url "https://github.com/chakra-core/ChakraCore/archive/v1.11.24.tar.gz"
+  sha256 "b99e85f2d0fa24f2b6ccf9a6d2723f3eecfe986a9d2c4d34fa1fd0d015d0595e"
+  license "MIT"
+  revision 3
 
   bottle do
-    cellar :any
-    sha256 "2c8e7bae5fb79b850142a62ac7152fc946a2528d5cfce50fb0a86ca65b3d5a0d" => :high_sierra
-    sha256 "f7bbd73201d15b2754912b32b290186c5c04c6ceab3defc0161e8f79e31cd7a6" => :sierra
-    sha256 "b34c2fbf1f23871eb19aac69bb908b157abcf5b43d1f1159abb5bb24bd068bb7" => :el_capitan
+    sha256 cellar: :any,                 monterey:     "ec25aaa2de73e2ba9c7977481ef2e79c01abe907ac59d156cccafc3366082742"
+    sha256 cellar: :any,                 big_sur:      "306cae3a82ea3a543d2881ae60be87ca57ec28aaa3e7faecf9348f28f38ac7bb"
+    sha256 cellar: :any,                 catalina:     "463875e46c4ed92c504a97ecbcb90381942b089d76cfbdba92a3e9495090e66b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "a48748d8f53394c96d7168e7b9c2f065f5ae8e0c4694784b9839596e71490172"
   end
 
   depends_on "cmake" => :build
+  depends_on "python@3.10" => :build
   depends_on "icu4c"
 
+  uses_from_macos "llvm" => [:build, :test]
+
+  # Currently requires Clang.
+  fails_with :gcc
+
+  # Fix build with modern compilers.
+  # Remove with 1.12.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/204ce95fb69a2cd523ccb0f392b7cce4f791273a/chakra/clang10.patch"
+    sha256 "5337b8d5de2e9b58f6908645d9e1deb8364d426628c415e0e37aa3288fae3de7"
+  end
+
+  # Support Python 3.
+  # Remove with 1.12.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/308bb29254605f0c207ea4ed67f049fdfe5ec92c/chakra/python3.patch"
+    sha256 "61c61c5376bc28ac52ec47e6d4c053eb27c04860aa4ba787a78266840ce57830"
+  end
+
   def install
-    system "./build.sh", "--lto-thin", "--static", "--icu=#{Formula["icu4c"].opt_include}", "-j=#{ENV.make_jobs}", "-y"
+    args = %W[
+      --icu=#{Formula["icu4c"].opt_include}
+      -j=#{ENV.make_jobs}
+      -y
+    ]
+    # LTO requires ld.gold, but Chakra has no way to specify to use that over regular ld.
+    args << "--lto-thin" if OS.mac?
+
+    # Build dynamically for the shared library
+    system "./build.sh", *args
+    # Then statically to get a usable binary
+    system "./build.sh", "--static", *args
+
     bin.install "out/Release/ch" => "chakra"
+    include.install Dir["out/Release/include/*"]
+    lib.install "out/Release/#{shared_library("libChakraCore")}"
   end
 
   test do

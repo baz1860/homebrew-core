@@ -1,38 +1,39 @@
 class Freediameter < Formula
   desc "Open source Diameter (Authentication) protocol implementation"
   homepage "http://www.freediameter.net"
-  url "http://www.freediameter.net/hg/freeDiameter/archive/1.2.1.tar.gz"
-  sha256 "bd7f105542e9903e776aa006c6931c1f5d3d477cb59af33a9162422efa477097"
-  head "http://www.freediameter.net/hg/freeDiameter", :using => :hg
+  url "http://www.freediameter.net/hg/freeDiameter/archive/1.5.0.tar.gz"
+  sha256 "2500f75b70d428ea75dd25eedcdddf8fb6a8ea809b02c82bf5e35fe206cbbcbc"
+  license "BSD-3-Clause"
+  head "http://www.freediameter.net/hg/freeDiameter", using: :hg
 
-  bottle do
-    sha256 "8a16e612b93ae8a1c55fe090f0301a7d778c858730a144c152aa6eb8080d8c68" => :high_sierra
-    sha256 "615bfb731e99779234533bed9f6def01487783e1b1b22f3f6d41efceef1899bb" => :sierra
-    sha256 "6d562bd62780a6b942b6ca3b4b1807a6ac3eef80209748b6748bcbc8b6b389b5" => :el_capitan
+  livecheck do
+    url "http://www.freediameter.net/hg/freeDiameter/json-tags"
+    regex(/["']tag["']:\s*?["']v?(\d+(?:\.\d+)+)["']/i)
   end
 
-  option "with-all-extensions", "Enable all extensions"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "ef01b2ee94b8f7b8794b6880188ec09d7a8458b0e10a2b6063b4dcc0f9b7c798"
+    sha256 cellar: :any,                 arm64_big_sur:  "a2fd2271af79fd86ec7162e0af3adbaf611f280563a84dc2a98af96b7b3a3a4d"
+    sha256 cellar: :any,                 monterey:       "506a0a7375314a874e8a04b4904d0fe9d7c83bda4c494171c4ceee242debd81d"
+    sha256 cellar: :any,                 big_sur:        "2c99cc840e0daebf52793d55e91ec616416c7fc7c4f4a8c332c6fe8c52fd181d"
+    sha256 cellar: :any,                 catalina:       "92933b4a5076f85098b784f47f3943065444b9dda243c6165d38aaffb9122b68"
+    sha256 cellar: :any,                 mojave:         "3d5aa2577193d90113f4deadd81c6db0b40384a4cf3cca096e6edeb76ee734e3"
+    sha256 cellar: :any,                 high_sierra:    "a242566b7096b737a094ebe7c792fe306ab6f06f28cded3b5c6660962b812610"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f1be75ed61dff3fcd06cd4c3516843ab0c516e59009d7767b7a38ded9a09431e"
+  end
 
   depends_on "cmake" => :build
   depends_on "gnutls"
   depends_on "libgcrypt"
   depends_on "libidn"
 
-  if build.with? "all-extensions"
-    depends_on "swig" => :build
-    depends_on "postgresql"
-    depends_on "mysql"
-  end
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
 
   def install
-    args = std_cmake_args + %W[
-      -DDEFAULT_CONF_PATH=#{etc}
-      -DDISABLE_SCTP=ON
-    ]
-    args << "-DALL_EXTENSIONS=ON" if build.with? "all-extensions"
-
     mkdir "build" do
-      system "cmake", "..", *args
+      system "cmake", "..", *std_cmake_args, "-DDEFAULT_CONF_PATH=#{etc}",
+                      "-DDISABLE_SCTP=ON"
       system "make"
       system "make", "install"
     end
@@ -47,39 +48,24 @@ class Freediameter < Formula
     cp doc/"freediameter.conf.sample", etc/"freeDiameter.conf"
   end
 
-  def caveats; <<~EOS
-    To configure freeDiameter, edit #{etc}/freeDiameter.conf to taste.
+  def caveats
+    <<~EOS
+      To configure freeDiameter, edit #{etc}/freeDiameter.conf to taste.
 
-    Sample configuration files can be found in #{doc}.
+      Sample configuration files can be found in #{doc}.
 
-    For more information about freeDiameter configuration options, read:
-      http://www.freediameter.net/trac/wiki/Configuration
+      For more information about freeDiameter configuration options, read:
+        http://www.freediameter.net/trac/wiki/Configuration
 
-    Other potentially useful files can be found in #{opt_pkgshare}/contrib.
+      Other potentially useful files can be found in #{opt_pkgshare}/contrib.
     EOS
   end
 
-  plist_options :startup => true
+  plist_options startup: true
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/freeDiameterd</string>
-        </array>
-        <key>KeepAlive</key>
-        <dict>
-          <key>NetworkState</key>
-          <true/>
-        </dict>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run opt_bin/"freeDiameterd"
+    keep_alive true
   end
 
   test do

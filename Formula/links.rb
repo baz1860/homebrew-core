@@ -1,23 +1,29 @@
 class Links < Formula
   desc "Lynx-like WWW browser that supports tables, menus, etc."
   homepage "http://links.twibright.com/"
-  url "http://links.twibright.com/download/links-2.14.tar.bz2"
-  sha256 "f70d0678ef1c5550953bdc27b12e72d5de86e53b05dd59b0fc7f07c507f244b8"
-  revision 1
+  url "http://links.twibright.com/download/links-2.27.tar.bz2"
+  sha256 "d8ddcbfcede7cdde80abeb0a236358f57fa6beb2bcf92e109624e9b896f9ebb4"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url "http://links.twibright.com/download.php"
+    regex(/Current version is v?(\d+(?:\.\d+)+)\. /i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "c5548c20d4e677218f870fb19c2275f51b3a737da1fd78532b88cf90af4e4dd5" => :high_sierra
-    sha256 "5a8045be375cb674122da0342e04f47ff14c3360e1f7eebe9f827284aba318ed" => :sierra
-    sha256 "3a74e6b5c260ee7ac380cf0e15e0c718fb6c06c113ac2311a0dae9b1be755fe3" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "d144ac3578be1db12a070229f46d39eb34d1cddb8bfc27b425d999be74908237"
+    sha256 cellar: :any,                 arm64_big_sur:  "d4cebe3bfc41563dc8f30bdce62b290d8e4ad014731ea86dcccfd0c0872f1710"
+    sha256 cellar: :any,                 monterey:       "c4c098ab932b778ea8d90eb7f6a9b1059f5d34458f0ea6de65751aaca62fd1fe"
+    sha256 cellar: :any,                 big_sur:        "6127bfa01abcbf37f597d52d8335a68f0a1ea7ef76aa5b304cc5c44bc14d17a6"
+    sha256 cellar: :any,                 catalina:       "b9a844178275ee01275c2f243aa474a2bd33e4f47eb058fb78d2ef1d640312e2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b911c32060a18c19ea4eeae549a60523dc068122ad3df059e4ece6c27d10ecbf"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "openssl" => :recommended
-  depends_on "libtiff" => :optional
-  depends_on "jpeg" => :optional
-  depends_on "librsvg" => :optional
-  depends_on :x11 => :optional
+  depends_on "jpeg"
+  depends_on "librsvg"
+  depends_on "libtiff"
+  depends_on "openssl@1.1"
 
   def install
     args = %W[
@@ -25,14 +31,9 @@ class Links < Formula
       --disable-dependency-tracking
       --prefix=#{prefix}
       --mandir=#{man}
-      --with-ssl=#{Formula["openssl"].opt_prefix}
+      --with-ssl=#{Formula["openssl@1.1"].opt_prefix}
       --without-lzma
     ]
-
-    args << "--enable-graphics" if build.with? "x11"
-    args << "--without-libtiff" if build.without? "libtiff"
-    args << "--without-libjpeg" if build.without? "jpeg"
-    args << "--without-librsvg" if build.without? "librsvg"
 
     system "./configure", *args
     system "make", "install"

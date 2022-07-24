@@ -1,25 +1,35 @@
 class Tepl < Formula
   desc "GNOME Text Editor Product Line"
-  homepage "https://wiki.gnome.org/Projects/Tepl"
-  url "https://download.gnome.org/sources/tepl/3.0/tepl-3.0.0.tar.xz"
-  sha256 "9eb6fceb0b521de7bf684508138a5b8428d9f575c395ba54f9e31597980fd0ef"
+  homepage "https://gitlab.gnome.org/swilmet/tepl"
+  url "https://gitlab.gnome.org/swilmet/tepl.git",
+      tag:      "6.1.2",
+      revision: "62aba5222f8512042285d65d29e455da56f67dc3"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "bb36835284be2fc7e44840e193f6b17bd71afd09c61781c00e5648d6db16bbb4" => :high_sierra
-    sha256 "35590abff6dc1a110a170382e584ab706f1cc552210aaa5cb2d5d546fb925a16" => :sierra
-    sha256 "d9043558401a3a9cf2188ffa7396b05c7c38cfa00ad1be4400cdb0de69dc633a" => :el_capitan
+    sha256 arm64_monterey: "7d56f260b4611183b3fc7b01fa1f28bacb42a82f0b719ca9c2a1ca64b5ce9d85"
+    sha256 arm64_big_sur:  "2c8df9d1f47f82511b50b3dd0bcfe9c88f50f3320ddbd6a035b4a6f7b0892f87"
+    sha256 monterey:       "b5648b6a9896189fe4c9d03121b793b34e1f3e6b2b778904d935607791799348"
+    sha256 big_sur:        "1cb57e720dc1dac92b54d56baad192550c2d397572d1ef7eda63fa85bda90168"
+    sha256 catalina:       "148d63d57bfdb37c4f7862581960c6df83ef6b5c87f95adfc10fa6847ed3ff73"
+    sha256 x86_64_linux:   "869fd24987a560c0ccb3bf06535cbdadcd921fc4905eaa3fd1b9d8586c7b65a9"
   end
 
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "gobject-introspection"
-  depends_on "gtksourceview3"
+  depends_on "amtk"
+  depends_on "gtksourceview4"
+  depends_on "icu4c"
   depends_on "uchardet"
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dgtk_doc=false", ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do
@@ -33,6 +43,7 @@ class Tepl < Formula
     EOS
     ENV.libxml2
     atk = Formula["atk"]
+    amtk = Formula["amtk"]
     cairo = Formula["cairo"]
     fontconfig = Formula["fontconfig"]
     freetype = Formula["freetype"]
@@ -40,7 +51,7 @@ class Tepl < Formula
     gettext = Formula["gettext"]
     glib = Formula["glib"]
     gtkx3 = Formula["gtk+3"]
-    gtksourceview3 = Formula["gtksourceview3"]
+    gtksourceview4 = Formula["gtksourceview4"]
     harfbuzz = Formula["harfbuzz"]
     libepoxy = Formula["libepoxy"]
     libpng = Formula["libpng"]
@@ -51,6 +62,7 @@ class Tepl < Formula
     flags = (ENV.cflags || "").split + (ENV.cppflags || "").split + (ENV.ldflags || "").split
     flags += %W[
       -I#{atk.opt_include}/atk-1.0
+      -I#{amtk.opt_include}/amtk-5
       -I#{cairo.opt_include}/cairo
       -I#{fontconfig.opt_include}
       -I#{freetype.opt_include}/freetype2
@@ -59,11 +71,10 @@ class Tepl < Formula
       -I#{glib.opt_include}/gio-unix-2.0/
       -I#{glib.opt_include}/glib-2.0
       -I#{glib.opt_lib}/glib-2.0/include
-      -I#{gtksourceview3.opt_include}/gtksourceview-3.0
+      -I#{gtksourceview4.opt_include}/gtksourceview-4
       -I#{gtkx3.opt_include}/gtk-3.0
       -I#{harfbuzz.opt_include}/harfbuzz
-      -I#{include}/tepl-3
-      -I#{include}/amtk-3
+      -I#{include}/tepl-#{version.major}
       -I#{libepoxy.opt_include}
       -I#{libpng.opt_include}/libpng16
       -I#{pango.opt_include}/pango-1.0
@@ -72,15 +83,17 @@ class Tepl < Formula
       -I#{uchardet.opt_include}/uchardet
       -D_REENTRANT
       -L#{atk.opt_lib}
+      -L#{amtk.opt_lib}
       -L#{cairo.opt_lib}
       -L#{gdk_pixbuf.opt_lib}
       -L#{gettext.opt_lib}
       -L#{glib.opt_lib}
-      -L#{gtksourceview3.opt_lib}
+      -L#{gtksourceview4.opt_lib}
       -L#{gtkx3.opt_lib}
       -L#{lib}
       -L#{pango.opt_lib}
       -latk-1.0
+      -lamtk-5
       -lcairo
       -lcairo-gobject
       -lgdk-3
@@ -88,14 +101,13 @@ class Tepl < Formula
       -lgio-2.0
       -lglib-2.0
       -lgobject-2.0
-      -ltepl-3
-      -lamtk-3
+      -ltepl-6
       -lgtk-3
-      -lgtksourceview-3.0
-      -lintl
+      -lgtksourceview-4
       -lpango-1.0
       -lpangocairo-1.0
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

@@ -1,16 +1,22 @@
 class Libusb < Formula
   desc "Library for USB device access"
-  homepage "http://libusb.info"
-  url "https://github.com/libusb/libusb/releases/download/v1.0.21/libusb-1.0.21.tar.bz2"
-  mirror "https://mirrors.ocf.berkeley.edu/debian/pool/main/libu/libusb-1.0/libusb-1.0_1.0.21.orig.tar.bz2"
-  sha256 "7dce9cce9a81194b7065ee912bcd55eeffebab694ea403ffb91b67db66b1824b"
+  homepage "https://libusb.info/"
+  url "https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2"
+  sha256 "12ce7a61fc9854d1d2a1ffe095f7b5fac19ddba095c259e6067a46500381b5a5"
+  license "LGPL-2.1-or-later"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "48008b8eadb1f42ab1b76182d26570f929fee23c6eaf93ceea1733e008cc27cf" => :high_sierra
-    sha256 "e42e21cc9b7cd4223eb8050680ada895bdfcaf9c7e33534002cd21af2f84baf8" => :sierra
-    sha256 "e4902b528d0ea0df0d433e349709d3708a9e08191fd2f3c6d5f5ab2989766b9f" => :el_capitan
-    sha256 "8831059f7585ed973d983dd82995e1732c240a78f4f7a82e5d5c7dfe27d49941" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "ab90516396d8dc99f96d31615bcbddfcfd2082fcc7494dabb9d22b275628e800"
+    sha256 cellar: :any,                 arm64_big_sur:  "d9121e56c7dbfad640c9f8e3c3cc621d88404dc1047a4a7b7c82fe06193bca1f"
+    sha256 cellar: :any,                 monterey:       "e79be7d4c611f0017567172771761b1df62d140e79ffa6d2538577eb24a48e44"
+    sha256 cellar: :any,                 big_sur:        "963720057ac56afd38f8d4f801f036231f08f5cf7db36cb470814cbc1b38e49c"
+    sha256 cellar: :any,                 catalina:       "72ed40aec0356157f3d5071ecb28c481b3f3502985a320ec1848cdc8cf8483c1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "4cae18b6a0315f7e3d8fa8039fd18d6d20fd7f8a0dbb9399e63c95ae0c52fb9d"
   end
 
   head do
@@ -21,27 +27,24 @@ class Libusb < Formula
     depends_on "libtool" => :build
   end
 
-  option "without-runtime-logging", "Build without runtime logging functionality"
-  option "with-default-log-level-debug", "Build with default runtime log level of debug (instead of none)"
-
-  deprecated_option "no-runtime-logging" => "without-runtime-logging"
+  on_linux do
+    depends_on "systemd"
+  end
 
   def install
     args = %W[--disable-dependency-tracking --prefix=#{prefix}]
-    args << "--disable-log" if build.without? "runtime-logging"
-    args << "--enable-debug-log" if build.with? "default-log-level-debug"
 
     system "./autogen.sh" if build.head?
     system "./configure", *args
     system "make", "install"
-    pkgshare.install "examples"
+    (pkgshare/"examples").install Dir["examples/*"] - Dir["examples/Makefile*"]
   end
 
   test do
     cp_r (pkgshare/"examples"), testpath
     cd "examples" do
-      system ENV.cc, "-lusb-1.0", "-L#{lib}", "-I#{include}/libusb-1.0",
-             "listdevs.c", "-o", "test"
+      system ENV.cc, "listdevs.c", "-L#{lib}", "-I#{include}/libusb-1.0",
+             "-lusb-1.0", "-o", "test"
       system "./test"
     end
   end

@@ -1,15 +1,26 @@
 class Scalariform < Formula
   desc "Scala source code formatter"
   homepage "https://github.com/scala-ide/scalariform"
-  url "https://github.com/scala-ide/scalariform/releases/download/0.2.6/scalariform.jar"
-  sha256 "0cd28ba1a8725527572f75f7b23bca8b9f55c945e01592d5968c1383113bf7a4"
+  url "https://github.com/scala-ide/scalariform/releases/download/0.2.10/scalariform.jar"
+  sha256 "59d7c26f26c13bdbc27e3011da244f01001d55741058062f49e4626862b7991e"
+  license "MIT"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
+
+  bottle do
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "0a155625340add1d947b67289ee0ebfad84655735801562fe67ed853840ec92a"
+  end
 
   head do
     url "https://github.com/scala-ide/scalariform.git"
     depends_on "sbt" => :build
   end
 
-  bottle :unneeded
+  depends_on "openjdk"
 
   def install
     if build.head?

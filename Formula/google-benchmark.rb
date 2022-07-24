@@ -1,27 +1,25 @@
 class GoogleBenchmark < Formula
   desc "C++ microbenchmark support library"
   homepage "https://github.com/google/benchmark"
-  url "https://github.com/google/benchmark/archive/v1.3.0.tar.gz"
-  sha256 "f19559475a592cbd5ac48b61f6b9cedf87f0b6775d1443de54cfe8f53940b28d"
-  head "https://github.com/google/benchmark.git"
+  url "https://github.com/google/benchmark/archive/v1.6.2.tar.gz"
+  sha256 "a9f77e6188c1cd4ebedfa7538bf5176d6acc72ead6f456919e5f464ef2f06158"
+  license "Apache-2.0"
+  head "https://github.com/google/benchmark.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "cd223b9dfaed9208c8c683e933525c46f0a871a3e4bad67b818577f3b1d761ab" => :high_sierra
-    sha256 "59851a02622cbb62c485cf9d42a7b364ded70c0b40ce11c133f79195e2ea9844" => :sierra
-    sha256 "5052dafe9ca883c844dcf1f85270851d4163d7a2d134b2ebb96a592b30c53590" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "7e4299672a9265bec364447860af566beea9e7bfa05d1d6a6eb25bbafe483b92"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "d9caff21145296947a9326b2d49d734c52f4603d0511c40ed7d8628ca9a907d9"
+    sha256 cellar: :any_skip_relocation, monterey:       "2cf32fec60d31acf3cf78175ad99fcaf3f534f9064a672f8d009942b32659538"
+    sha256 cellar: :any_skip_relocation, big_sur:        "1c0514cede4c77d154b0d57d2c5a32ff008358d4806dffbb6f1d564429f5f239"
+    sha256 cellar: :any_skip_relocation, catalina:       "82481a311f7b82a69f5403f6840ed8c40861bb39730cdf51cff1d1182f0aa888"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3fce145dd744794ebe89f68c9593d5d2d79a949be94ecfc497de591775722229"
   end
 
   depends_on "cmake" => :build
 
-  needs :cxx11
-
   def install
     ENV.cxx11
-
-    system "cmake", *std_cmake_args
-    system "make"
-    system "make", "test"
+    system "cmake", "-DBENCHMARK_ENABLE_GTEST_TESTS=OFF", *std_cmake_args
     system "make", "install"
   end
 
@@ -36,7 +34,7 @@ class GoogleBenchmark < Formula
       BENCHMARK(BM_StringCreation);
       BENCHMARK_MAIN();
     EOS
-    flags = ["-stdlib=libc++", "-I#{include}", "-L#{lib}", "-lbenchmark"] + ENV.cflags.to_s.split
+    flags = ["-I#{include}", "-L#{lib}", "-lbenchmark", "-pthread"] + ENV.cflags.to_s.split
     system ENV.cxx, "-o", "test", "test.cpp", *flags
     system "./test"
   end

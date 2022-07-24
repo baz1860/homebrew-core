@@ -1,36 +1,30 @@
 class Bibtexconv < Formula
   desc "BibTeX file converter"
   homepage "https://www.uni-due.de/~be0001/bibtexconv/"
-  url "https://www.uni-due.de/~be0001/bibtexconv/download/bibtexconv-1.1.11.tar.gz"
-  sha256 "1240c3011718d9ba95c165dbf908eab871153530b70bca0ef74dc2b9664e83f1"
+  url "https://github.com/dreibh/bibtexconv/archive/bibtexconv-1.3.2.tar.gz"
+  sha256 "6eb1c82a8287ae749ac129d48c241c558881385a792dcc800a30809caf2a2109"
+  license "GPL-3.0-or-later"
+  head "https://github.com/dreibh/bibtexconv.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "2b44b8dd4bf60b443c9318e056fdcffaed9218e75d7d907dd6ae5c4679a135e9" => :high_sierra
-    sha256 "81c4daa41ddb6837d40b66a883aceeb3470ca03148fcc6fd19386ff623776dd8" => :sierra
-    sha256 "397edcb9360918833774139e8cf9d11bcb53fc7c763e487a7bec325861b73cd6" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "eae3c4722d3b824dcaeb36ee02f1ab5fbd7e837ca540a98ac37a68a95ca66084"
+    sha256 cellar: :any,                 arm64_big_sur:  "32369759a62181680a6146a975b36f7712ca2dc96a2d645772903d20d1394eb2"
+    sha256 cellar: :any,                 monterey:       "0e738cb15ae6d4c43221401bba7501138159ca03b53f78271e73a0394729697a"
+    sha256 cellar: :any,                 big_sur:        "0e216e19ab0dc2b63c660892b8503f493f101437386da8239ea2c18b5b511ebf"
+    sha256 cellar: :any,                 catalina:       "d1a4b531a508711d1524b89ef21d2a1a1818453548c14d99c4ed09b1d05bbd09"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8d4960851c348c9a2bd2b981fd110ef2de2d1aa0ea6d2ea2a588ad1328a74c10"
   end
 
-  head do
-    url "https://github.com/dreibh/bibtexconv.git"
+  depends_on "bison" => :build
+  depends_on "cmake" => :build
+  depends_on "openssl@1.1"
 
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-    depends_on "libtool" => :build
-  end
-
-  depends_on "openssl"
+  uses_from_macos "flex" => :build
+  uses_from_macos "curl"
 
   def install
-    if build.head?
-      inreplace "bootstrap", "/usr/bin/glibtoolize", Formula["libtool"].bin/"glibtoolize"
-      system "./bootstrap"
-    end
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make"
-    ENV.deparallelize # serialize folder creation
+    system "cmake", *std_cmake_args,
+                    "-DCRYPTO_LIBRARY=#{Formula["openssl@1.1"].opt_lib}/#{shared_library("libcrypto")}"
     system "make", "install"
   end
 

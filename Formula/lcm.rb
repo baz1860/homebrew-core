@@ -1,72 +1,61 @@
 class Lcm < Formula
   desc "Libraries and tools for message passing and data marshalling"
   homepage "https://lcm-proj.github.io/"
-  url "https://github.com/lcm-proj/lcm/releases/download/v1.3.1/lcm-1.3.1.zip"
-  sha256 "3fd7c736cf218549dfc1bff1830000ad96f3d8a8d78d166904323b1df573ade1"
+  url "https://github.com/lcm-proj/lcm/releases/download/v1.4.0/lcm-1.4.0.zip"
+  sha256 "e249d7be0b8da35df8931899c4a332231aedaeb43238741ae66dc9baf4c3d186"
+  license "LGPL-2.1"
+  revision 6
+  head "https://github.com/lcm-proj/lcm.git", branch: "master"
 
   bottle do
-    cellar :any
     rebuild 1
-    sha256 "50c9a39de7592b1685e4072b0f53880751a5af7ccc5667d1b8c633e15ee474ff" => :high_sierra
-    sha256 "9dcbc09da69140c343224fa1851d4c03c90908254d882aad467e189e95cbd610" => :sierra
-    sha256 "58d75c428869f70200220e5948468805f61a4190ca775e1f693c42cce72edc9f" => :el_capitan
-    sha256 "41819c23b58c30b04c44864f2b820f0aa47b8805d78b39b5c6a023588c0cb1fb" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "b30cc36445aaa0c3b1f5c784608fb4bfcc5e9f2e1d3afa9c5d58c6185340c5e7"
+    sha256 cellar: :any,                 arm64_big_sur:  "c7ad845ea866ae04b14650ff23482f4093ba7ab0973bbb920180d201c3b31b80"
+    sha256 cellar: :any,                 monterey:       "a05d1bd7f4b43968e99c05f80f0ef707eed4179a5c511a80a5e3fad656b5d666"
+    sha256 cellar: :any,                 big_sur:        "0ee183d544cf79575e1d23b84109b3439ab1adf3fc9de53bb726b272658a9dc0"
+    sha256 cellar: :any,                 catalina:       "f54ed2743dd01a817b91e881695c5bab06b42123269e5e1586256fb70ab81c62"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "dc2ac51e1a23482d573e071493c49089c7de08be39be0002b523bbccfec4758b"
   end
 
-  head do
-    url "https://github.com/lcm-proj/lcm.git"
-
-    depends_on "xz" => :build
-    depends_on "libtool" => :build
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-  end
-
+  depends_on "cmake" => :build
   depends_on "pkg-config" => :build
   depends_on "glib"
-  depends_on :java => :recommended
-  depends_on "python" => :optional
-  depends_on "python3" => :optional
+  depends_on "lua"
+  depends_on "openjdk"
+  depends_on "python@3.9"
 
   def install
-    if build.head?
-      system "./bootstrap.sh"
-    else
-      # This deparallelize setting can be removed after an upstream release
-      # that includes the revised makefile for the java part of LCM.
-      #
-      # (see https://github.com/lcm-proj/lcm/pull/48)
-      #
-      # Note that the pull request has been merged with the upstream master,
-      # so it will be included in the next release of LCM.
-      ENV.deparallelize
-    end
+    # Adding RPATH in #{lib}/lua/X.Y/lcm.so and some #{bin}/*.
+    args = std_cmake_args + %W[
+      -DCMAKE_INSTALL_RPATH=#{lib}
+      -DLCM_ENABLE_EXAMPLES=OFF
+      -DLCM_ENABLE_TESTS=OFF
+      -DLCM_JAVA_TARGET_VERSION=8
+      -DPYTHON_EXECUTABLE=#{Formula["python@3.9"].opt_bin}/python3
+    ]
 
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    system "cmake", "-S", ".", "-B", "build", *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
     (testpath/"example_t.lcm").write <<~EOS
       package exlcm;
-
-      struct example_t
-      {
+      struct example_t {
           int64_t timestamp;
           double position[3];
           string name;
       }
     EOS
-    system "#{bin}/lcm-gen", "-c", "example_t.lcm"
+    system bin/"lcm-gen", "-c", "example_t.lcm"
     assert_predicate testpath/"exlcm_example_t.h", :exist?, "lcm-gen did not generate C header file"
     assert_predicate testpath/"exlcm_example_t.c", :exist?, "lcm-gen did not generate C source file"
-    system "#{bin}/lcm-gen", "-x", "example_t.lcm"
+    system bin/"lcm-gen", "-x", "example_t.lcm"
     assert_predicate testpath/"exlcm/example_t.hpp", :exist?, "lcm-gen did not generate C++ header file"
-    if build.with? "java"
-      system "#{bin}/lcm-gen", "-j", "example_t.lcm"
-      assert_predicate testpath/"exlcm/example_t.java", :exist?, "lcm-gen did not generate java file"
-    end
+    system bin/"lcm-gen", "-j", "example_t.lcm"
+    assert_predicate testpath/"exlcm/example_t.java", :exist?, "lcm-gen did not generate Java source file"
+    system bin/"lcm-gen", "-p", "example_t.lcm"
+    assert_predicate testpath/"exlcm/example_t.py", :exist?, "lcm-gen did not generate Python source file"
   end
 end

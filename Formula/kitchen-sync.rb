@@ -1,35 +1,50 @@
 class KitchenSync < Formula
   desc "Fast efficiently sync database without dumping & reloading"
   homepage "https://github.com/willbryant/kitchen_sync"
-  url "https://github.com/willbryant/kitchen_sync/archive/0.99.1.tar.gz"
-  sha256 "895b710f10e9399ce8e49efe1b24ca925b4a62510d817a0e4b60e11c4cefcaf6"
-  revision 2
-  head "https://github.com/willbryant/kitchen_sync.git"
+  url "https://github.com/willbryant/kitchen_sync/archive/v2.14.tar.gz"
+  sha256 "bcdcb1ea70ed29b6a298782513edd29b5f804b19c6a4c26defdaeaabc249165a"
+  license "MIT"
+  head "https://github.com/willbryant/kitchen_sync.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "49ad47bba862b6c73727cb6f0d0d72725c961e6003eca4a81633b31d1f0b5e99" => :high_sierra
-    sha256 "305a5c37197e113074c4ba61265ea28fde9c7560531032611e380ca3204d1d34" => :sierra
-    sha256 "30846fdf73486d98d69d3361a7329a89717e2cb81f3531241ebc4b2dfa2174a4" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b090e8487ec4755755e726638f6d23e1146c63bab3abdca1abfd9eb5729a9c9b"
+    sha256 cellar: :any,                 arm64_big_sur:  "b66ded8959d88193f30ed3bd7cb3dfbf81316f6cbef82e77fda85e227772cb40"
+    sha256 cellar: :any,                 monterey:       "5106166e0e08e91b0703c38bce5e864cefd09ce016f91e989a895daa22c4796d"
+    sha256 cellar: :any,                 big_sur:        "d02d2abaf4098fb1fa07bcf8a28193ebb762409a010d20be595706205d69a886"
+    sha256 cellar: :any,                 catalina:       "d452e4f3e29836a4919108df9209af24a58562c77dadc46e47900fd63c78e840"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a073dc3cf0f4db1a641de2931020ef4f27a4db5416e907ed53233ddd937a5f37"
   end
 
   depends_on "cmake" => :build
-  depends_on "pkg-config" => :build
-  depends_on "boost"
-  depends_on "yaml-cpp"
-  depends_on "mysql" => :recommended
-  depends_on "postgresql" => :optional
+  depends_on "libpq"
+  depends_on "mysql-client"
 
-  needs :cxx11
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
-    ENV.cxx11
-    system "cmake", ".", *std_cmake_args
+    system "cmake", ".",
+                    "-DMySQL_INCLUDE_DIR=#{Formula["mysql-client"].opt_include}/mysql",
+                    "-DMySQL_LIBRARY_DIR=#{Formula["mysql-client"].opt_lib}",
+                    "-DPostgreSQL_INCLUDE_DIR=#{Formula["libpq"].opt_include}",
+                    "-DPostgreSQL_LIBRARY_DIR=#{Formula["libpq"].opt_lib}",
+                    *std_cmake_args
+
     system "make", "install"
   end
 
   test do
-    output = shell_output("#{bin}/ks --from a://b/ --to c://d/ 2>&1")
-    assert_match "Finished Kitchen Syncing", output
+    output = shell_output("#{bin}/ks --from mysql://b/ --to mysql://d/ 2>&1", 1)
+
+    assert_match "Unknown MySQL server host", output
+    assert_match "Kitchen Syncing failed.", output
   end
 end

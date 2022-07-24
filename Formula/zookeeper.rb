@@ -1,42 +1,32 @@
 class Zookeeper < Formula
   desc "Centralized server for distributed coordination of services"
   homepage "https://zookeeper.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz"
-  mirror "https://archive.apache.org/dist/zookeeper/zookeeper-3.4.10/zookeeper-3.4.10.tar.gz"
-  sha256 "7f7f5414e044ac11fee2a1e0bc225469f51fb0cdf821e67df762a43098223f27"
+  url "https://www.apache.org/dyn/closer.lua?path=zookeeper/zookeeper-3.7.0/apache-zookeeper-3.7.0.tar.gz"
+  mirror "https://archive.apache.org/dist/zookeeper/zookeeper-3.7.0/apache-zookeeper-3.7.0.tar.gz"
+  sha256 "cb3980f61b66babe550dcb717c940160ba813512c0aca26c2b8a718fac5d465d"
+  license "Apache-2.0"
+  revision 1
+  head "https://gitbox.apache.org/repos/asf/zookeeper.git", branch: "master"
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "08431d9c2f04f5a735149f374975df4f2e0d8140b1cc901f505d379ef7e20fe0" => :high_sierra
-    sha256 "8c7304be183d4c28c0f5d88e22626188c76794bee004e1b330c3e79bf5ae9d53" => :sierra
-    sha256 "2d792cb3963a7caf57922635888ae4e3cf363ef5a81d23f13a11d0ee42a780cf" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "719a25b16ac0045b32a2d185b2f0f028eb820dedbdb88b6363da68516aac7706"
+    sha256 cellar: :any,                 arm64_big_sur:  "728afb970486c80614db060a47caf5a1e3b5786988ed1e341ff0dd5ee270e0c8"
+    sha256 cellar: :any,                 monterey:       "6345ff0c91566327755a61dd9bc5aa77ea76a41e40803e4d51c6798ba2f8dbfc"
+    sha256 cellar: :any,                 big_sur:        "7a09b012f9b2e0c6dde46dfebf2f66846ab86e154087310b99198572d4a37321"
+    sha256 cellar: :any,                 catalina:       "d48b7491b18e95751276fd57f4a3ffdf837f174dc43ae537da6f32f4d67d96d4"
+    sha256 cellar: :any,                 mojave:         "edf3e23f9959c9b8dbd0e4ddea4e659a3cfc32737d5e57b0333f60a2e47d51da"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "dcc5154ebfb3479ec0762842b789dab164c7278ca8376264bdedcb6345b5b2c5"
   end
 
-  head do
-    url "https://svn.apache.org/repos/asf/zookeeper/trunk"
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "cppunit" => :build
+  depends_on "libtool" => :build
+  depends_on "maven" => :build
+  depends_on "pkg-config" => :build
 
-    depends_on "ant" => :build
-    depends_on "cppunit" => :build
-    depends_on "libtool" => :build
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-  end
-
-  option "with-perl", "Build Perl bindings"
-
-  deprecated_option "perl" => "with-perl"
-
-  depends_on "python" => :optional
-
-  def shim_script(target)
-    <<~EOS
-      #!/usr/bin/env bash
-      . "#{etc}/zookeeper/defaults"
-      cd "#{libexec}/bin"
-      ./#{target} "$@"
-    EOS
-  end
+  depends_on "openjdk"
+  depends_on "openssl@1.1"
 
   def default_zk_env
     <<~EOS
@@ -56,51 +46,17 @@ class Zookeeper < Formula
   end
 
   def install
-    # Don't try to build extensions for PPC
-    if Hardware::CPU.is_32_bit?
-      ENV["ARCHFLAGS"] = "-arch #{Hardware::CPU.arch_32_bit}"
-    else
-      ENV["ARCHFLAGS"] = Hardware::CPU.universal_archs.as_arch_flags
-    end
+    system "mvn", "install", "-Pfull-build", "-DskipTests"
 
-    if build.head?
-      system "ant", "compile_jute"
-      system "autoreconf", "-fvi", "src/c"
-    end
+    system "tar", "-xf", "zookeeper-assembly/target/apache-zookeeper-#{version}-bin.tar.gz"
+    binpfx = "apache-zookeeper-#{version}-bin"
+    libexec.install binpfx+"/bin", binpfx+"/lib", "zookeeper-contrib"
+    rm_f Dir["build-bin/bin/*.cmd"]
 
-    cd "src/c" do
-      system "./configure", "--disable-dependency-tracking",
-                            "--prefix=#{prefix}",
-                            "--without-cppunit"
-      system "make", "install"
-    end
-
-    if build.with? "python"
-      cd "src/contrib/zkpython" do
-        system "python", "src/python/setup.py", "build"
-        system "python", "src/python/setup.py", "install", "--prefix=#{prefix}"
-      end
-    end
-
-    if build.with? "perl"
-      cd "src/contrib/zkperl" do
-        system "perl", "Makefile.PL", "PREFIX=#{prefix}",
-                                      "--zookeeper-include=#{include}",
-                                      "--zookeeper-lib=#{lib}"
-        system "make", "install"
-      end
-    end
-
-    rm_f Dir["bin/*.cmd"]
-
-    if build.head?
-      system "ant"
-      libexec.install "bin", "src/contrib", "src/java/lib"
-      libexec.install Dir["build/*.jar"]
-    else
-      libexec.install "bin", "contrib", "lib"
-      libexec.install Dir["*.jar"]
-    end
+    system "tar", "-xf", "zookeeper-assembly/target/apache-zookeeper-#{version}-lib.tar.gz"
+    libpfx = "apache-zookeeper-#{version}-lib"
+    include.install Dir[libpfx+"/usr/include/*"]
+    lib.install Dir[libpfx+"/usr/lib/*"]
 
     bin.mkpath
     (etc/"zookeeper").mkpath
@@ -109,54 +65,38 @@ class Zookeeper < Formula
 
     Pathname.glob("#{libexec}/bin/*.sh") do |path|
       next if path == libexec+"bin/zkEnv.sh"
+
       script_name = path.basename
       bin_name    = path.basename ".sh"
-      (bin+bin_name).write shim_script(script_name)
+      (bin+bin_name).write <<~EOS
+        #!/bin/bash
+        export JAVA_HOME="${JAVA_HOME:-#{Formula["openjdk"].opt_prefix}}"
+        . "#{etc}/zookeeper/defaults"
+        exec "#{libexec}/bin/#{script_name}" "$@"
+      EOS
     end
 
+    cp "conf/zoo_sample.cfg", "conf/zoo.cfg"
+    inreplace "conf/zoo.cfg",
+              /^dataDir=.*/, "dataDir=#{var}/run/zookeeper/data"
+    (etc/"zookeeper").install "conf/zoo.cfg"
+
+    (pkgshare/"examples").install "conf/log4j.properties", "conf/zoo_sample.cfg"
+  end
+
+  def post_install
     defaults = etc/"zookeeper/defaults"
     defaults.write(default_zk_env) unless defaults.exist?
 
     log4j_properties = etc/"zookeeper/log4j.properties"
     log4j_properties.write(default_log4j_properties) unless log4j_properties.exist?
-
-    inreplace "conf/zoo_sample.cfg",
-              /^dataDir=.*/, "dataDir=#{var}/run/zookeeper/data"
-    cp "conf/zoo_sample.cfg", "conf/zoo.cfg"
-    (etc/"zookeeper").install ["conf/zoo.cfg", "conf/zoo_sample.cfg"]
   end
 
-  plist_options :manual => "zkServer start"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>EnvironmentVariables</key>
-        <dict>
-           <key>SERVER_JVMFLAGS</key>
-           <string>-Dapple.awt.UIElement=true</string>
-        </dict>
-        <key>KeepAlive</key>
-        <dict>
-          <key>SuccessfulExit</key>
-          <false/>
-        </dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/zkServer</string>
-          <string>start-foreground</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>#{var}</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"zkServer", "start-foreground"]
+    environment_variables SERVER_JVMFLAGS: "-Dapple.awt.UIElement=true"
+    keep_alive successful_exit: false
+    working_dir var
   end
 
   test do

@@ -1,81 +1,81 @@
 class Rsyslog < Formula
   desc "Enhanced, multi-threaded syslogd"
   homepage "https://www.rsyslog.com/"
-  url "https://www.rsyslog.com/files/download/rsyslog/rsyslog-7.4.5.tar.gz"
-  sha256 "f5e46e9324e366f20368162b4f561cf7a76fecb4aa0570edcaaa49e9f8c2fe70"
+  url "https://www.rsyslog.com/files/download/rsyslog/rsyslog-8.2206.0.tar.gz"
+  sha256 "a1377218b26c0767a7a3f67d166d5338af7c24b455d35ec99974e18e6845ba27"
+  license all_of: ["Apache-2.0", "GPL-3.0-or-later", "LGPL-3.0-or-later"]
+  revision 1
+
+  livecheck do
+    url "https://www.rsyslog.com/downloads/download-v8-stable/"
+    regex(/href=.*?rsyslog[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "cf810ad399795d9a031783649e1f1d19df652d0e346d9c93b1569a6f8090a95e" => :high_sierra
-    sha256 "edf1c58262540bc3d4409d6a74a5784114ce31e9481064c6a147d299d61fa0b3" => :sierra
-    sha256 "fe4b4b7732000b54f6bcc09495920fa27d2f09f31b575d424b9f71b73e32ae6e" => :el_capitan
-    sha256 "a3434bafdb1c54eb0ea50fcbabbbf87f241dac07dd68be55c4de344db3daa114" => :yosemite
-    sha256 "2f41f4e354de6cb6cd95630ed396a2099753adef10a63e0304fba550097f6237" => :mavericks
+    sha256 arm64_monterey: "fe1ddb1079eff2990189bfd9fe42ef73d23da5632469c975edf5f5fda485533f"
+    sha256 arm64_big_sur:  "df837498be1b1076a9be313d9ecc8b6a3fe9112888263bacc692bcfe07c2d8a9"
+    sha256 monterey:       "a3a67b29caf18c88c5e270c4fe20b46ef76b28bc36b5ca2a0b5b8ada41aac699"
+    sha256 big_sur:        "208cb1aadcabe729e8efd79f8c8525d1cfbff51fc621e195fa209595643b0446"
+    sha256 catalina:       "66943603d3a17f0b53b634b0597674c2c713a00e95dada6d34dfb3a4b7aea92a"
+    sha256 x86_64_linux:   "3a3ce732fe9ca2c455999d140a2915326acbcb927a2f8776e5f7027777ef22d4"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "gnutls"
   depends_on "libestr"
-  depends_on "json-c"
 
-  patch :DATA
+  uses_from_macos "curl"
+  uses_from_macos "zlib"
+
+  resource "libfastjson" do
+    url "https://download.rsyslog.com/libfastjson/libfastjson-0.99.9.tar.gz"
+    sha256 "a330e1bdef3096b7ead53b4bad1a6158f19ba9c9ec7c36eda57de7729d84aaee"
+  end
 
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --disable-dependency-tracking
-      --enable-imfile
-      --enable-usertools
-      --enable-diagtools
-      --enable-cached-man-pages
-      --disable-uuid
-      --disable-libgcrypt
-    ]
+    resource("libfastjson").stage do
+      system "./configure", "--disable-dependency-tracking",
+                            "--disable-silent-rules",
+                            "--prefix=#{libexec}"
+      system "make", "install"
+    end
 
-    system "./configure", *args
+    ENV.prepend_path "PKG_CONFIG_PATH", libexec/"lib/pkgconfig"
+
+    system "./configure", "--prefix=#{prefix}",
+                          "--disable-dependency-tracking",
+                          "--enable-imfile",
+                          "--enable-usertools",
+                          "--enable-diagtools",
+                          "--disable-uuid",
+                          "--disable-libgcrypt",
+                          "--enable-gnutls"
     system "make"
     system "make", "install"
-  end
 
-  plist_options :manual => "rsyslogd -f #{HOMEBREW_PREFIX}/etc/rsyslog.conf -i #{HOMEBREW_PREFIX}/var/run/rsyslogd.pid"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>KeepAlive</key>
-        <true/>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_sbin}/rsyslogd</string>
-          <string>-n</string>
-          <string>-f</string>
-          <string>#{etc}/rsyslog.conf</string>
-          <string>-i</string>
-          <string>#{var}/run/rsyslogd.pid</string>
-        </array>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/rsyslogd.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/rsyslogd.log</string>
-      </dict>
-    </plist>
+    (etc/"rsyslog.conf").write <<~EOS
+      # minimal config file for receiving logs over UDP port 10514
+      $ModLoad imudp
+      $UDPServerRun 10514
+      *.* /usr/local/var/log/rsyslog-remote.log
     EOS
   end
-end
 
-__END__
-diff --git i/grammar/parserif.h w/grammar/parserif.h
-index aa271ec..03c4db9 100644
---- i/grammar/parserif.h
-+++ w/grammar/parserif.h
-@@ -3,7 +3,7 @@
- #include "rainerscript.h"
- int cnfSetLexFile(char*);
- int yyparse();
--char *cnfcurrfn;
-+extern char *cnfcurrfn;
- void dbgprintf(char *fmt, ...) __attribute__((format(printf, 1, 2)));
- void parser_errmsg(char *fmt, ...) __attribute__((format(printf, 1, 2)));
- void tellLexEndParsing(void);
+  def post_install
+    mkdir_p var/"run"
+  end
+
+  plist_options manual: "rsyslogd -f #{HOMEBREW_PREFIX}/etc/rsyslog.conf -i #{HOMEBREW_PREFIX}/var/run/rsyslogd.pid"
+
+  service do
+    run [opt_sbin/"rsyslogd", "-n", "-f", etc/"rsyslog.conf", "-i", var/"run/rsyslogd.pid"]
+    keep_alive true
+    error_log_path var/"log/rsyslogd.log"
+    log_path var/"log/rsyslogd.log"
+  end
+
+  test do
+    result = shell_output("#{opt_sbin}/rsyslogd -f #{etc}/rsyslog.conf -N 1 2>&1")
+    assert_match "End of config validation run", result
+  end
+end

@@ -1,22 +1,30 @@
 class Libuninameslist < Formula
   desc "Library of Unicode names and annotation data"
   homepage "https://github.com/fontforge/libuninameslist"
-  url "https://github.com/fontforge/libuninameslist/releases/download/20170807/libuninameslist-dist-20170807.tar.gz"
-  sha256 "0afa78c09468738fe92b83bdfda3f1b4b773a57e67f676f6a5203e64de0d1aa4"
+  url "https://github.com/fontforge/libuninameslist/releases/download/20211114/libuninameslist-dist-20211114.tar.gz"
+  sha256 "f5f69090de4a483721207a9df7de5327c13c812a1d23de074d8f0496bc2b740d"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url :stable
+    regex(%r{href=.*?/tag/v?(\d+(?:\.\d+)*)["' >]}i)
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "0f820ddf294e33745db93afd36b4c22eb2d4e61f1e9a470a8ff0ed6be6755828" => :high_sierra
-    sha256 "7acb853a3dfee07369af31362838b5197f3209ecbf8615bde22bbd101be23bc8" => :sierra
-    sha256 "4e6851ee1829cfddda282d2b818af28995555955db064f5cc5a90dabdde50ba7" => :el_capitan
-    sha256 "d23db374f7e2b07ac1996f461fcf900b48bfdfc79abd70e60f77f60a9ac0df49" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "52a867309170da4f022177dedcacd778d93822952333408ee7e9df1e32e9ab34"
+    sha256 cellar: :any,                 arm64_big_sur:  "08d9a0329d057e4dc9cc1211a70409b2816241b093500c2ed2712320bbe162da"
+    sha256 cellar: :any,                 monterey:       "d4ce52bf3926b9cf5f1c1bfec702706ea7516744f8d76706cb0880fb1c272127"
+    sha256 cellar: :any,                 big_sur:        "12309abb98a5e23b712d583cced9d25a2f0b0aabd7499cb6a561458440c36576"
+    sha256 cellar: :any,                 catalina:       "f9eb6d104a3b0e20751b6dc3ffc8c63552ae46a367135b48ca3191280e7c0787"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "135de398275c32165030df5b3af15e49172e498fda65271f85facf396e4df527"
   end
 
   head do
     url "https://github.com/fontforge/libuninameslist.git"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 

@@ -1,28 +1,37 @@
 class Sleepwatcher < Formula
   desc "Monitors sleep, wakeup, and idleness of a Mac"
-  homepage "http://www.bernhard-baehr.de/"
-  url "http://www.bernhard-baehr.de/sleepwatcher_2.2.tgz"
-  sha256 "c04ac1c49e2b5785ed5d5c375854c9c0b9e959affa46adab57985e4123e8b6be"
+  homepage "https://www.bernhard-baehr.de/"
+  url "https://www.bernhard-baehr.de/sleepwatcher_2.2.1.tgz"
+  sha256 "4bf1656702167871141fbc119a844d1363d89994e1a67027f0e773023ae9643e"
+  license "GPL-3.0-or-later"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?sleepwatcher[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f9683fbee55fd410cd2650b2e12a01a322e316ceaf39484e5faa4ca3bec25ea3" => :high_sierra
-    sha256 "b9ebee67696518e4d79efee6e8d564de9b6ccc67fbfea07f68b264b8c6a2a80a" => :sierra
-    sha256 "d1abbc5f4752f77a01b1dfbadf831f58affc245137535d030992bd5cd3b1dd9c" => :el_capitan
-    sha256 "e4e3d7f9802dcf14431334c3187108c554c5315b3e34bc03dcb76e8f181158f5" => :yosemite
-    sha256 "b59893325808df64d3944f9aef6c66f6420d16cba36a2a1934bb8260bc27fe2f" => :mavericks
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "84f1c692fe19acb2929dd41746c3a184efb36146039b3b9c4554a4ca7a3e0d55"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "01c66d5808a4c8defb52bb8c9acf2584dbe542940bf758a53cae0c4d68229c3e"
+    sha256 cellar: :any_skip_relocation, monterey:       "5a6a9cf80d062199423619e15c9c32be29b1822cb49669ea89f107b6a58cd973"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ad8d8729a86763e64a3f555c4197ad6048ee5b8c6589ce4f2763d60b9826bb13"
+    sha256 cellar: :any_skip_relocation, catalina:       "6752791ceaab316af2e61c45a6ee5e1a7c05f326be64f31e4bfad412a216b413"
+    sha256 cellar: :any_skip_relocation, mojave:         "651f17a7622a05db38a14b133c15e20f441028c2f540af104421f204a766238d"
   end
+
+  depends_on :macos
 
   def install
     # Adjust Makefile to build native binary only
     inreplace "sources/Makefile" do |s|
-      s.gsub! /^(CFLAGS)_PPC.*$/, "\\1 = #{ENV.cflags} -prebind"
-      s.gsub! /^(CFLAGS_X86)/, "#\\1"
+      s.gsub!(/^(CFLAGS)_PPC.*$/, "\\1 = #{ENV.cflags} -prebind")
+      s.gsub!(/^(CFLAGS_I386|CFLAGS_X86_64)/, "#\\1")
       s.change_make_var! "BINDIR", "$(PREFIX)/sbin"
       s.change_make_var! "MANDIR", "$(PREFIX)/share/man"
-      s.gsub! /^(.*?)CFLAGS_PPC(.*?)[.]ppc/, "\\1CFLAGS\\2"
-      s.gsub! /^(.*?CFLAGS_X86.*?[.]x86)/, "#\\1"
-      s.gsub! /^(\t(lipo|rm).*?[.](ppc|x86))/, "#\\1"
+      s.gsub!(/^(.*?)CFLAGS_I386(.*?)[.]i386/, "\\1CFLAGS\\2")
+      s.gsub!(/^(.*?CFLAGS_X86_64.*?[.]x86_64)/, "#\\1")
+      s.gsub!(/^(\t(lipo|rm).*?[.](i386|x86_64))/, "#\\1")
       s.gsub! "-o root -g wheel", ""
     end
 
@@ -31,31 +40,21 @@ class Sleepwatcher < Formula
       mv "../sleepwatcher.8", "."
       system "make", "install", "PREFIX=#{prefix}"
     end
-
-    # Write the sleep/wakeup scripts
-    (prefix + "etc/sleepwatcher").install Dir["config/rc.*"]
-
-    # Write the launchd scripts
-    inreplace Dir["config/*.plist"], "/usr/local/sbin", HOMEBREW_PREFIX/"sbin"
-
-    inreplace "config/de.bernhard-baehr.sleepwatcher-20compatibility.plist",
-      "/etc", etc/"sleepwatcher"
-
-    prefix.install Dir["config/*.plist"]
   end
 
-  def caveats; <<~EOS
-    For SleepWatcher to work, you will need to read the following:
+  service do
+    run [opt_sbin/"sleepwatcher", "-V", "-s", "#{Dir.home}/.sleep", "-w", "#{Dir.home}/.wakeup"]
+    run_type :immediate
+    keep_alive true
+  end
 
-      #{prefix}/ReadMe.rtf
+  def caveats
+    <<~EOS
+      For SleepWatcher to work, you will need to write sleep and
+      wakeup scripts, located here when using brew services:
 
-    Ignore information about installing the binary and man page,
-    but read information regarding setup of the launchd files which
-    are installed here:
-
-      #{Dir["#{prefix}/*.plist"].join("\n      ")}
-
-    These are the examples provided by the author.
+        ~/.sleep
+        ~/.wakeup
     EOS
   end
 end

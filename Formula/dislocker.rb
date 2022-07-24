@@ -3,22 +3,44 @@ class Dislocker < Formula
   homepage "https://github.com/Aorimn/dislocker"
   url "https://github.com/Aorimn/dislocker/archive/v0.7.1.tar.gz"
   sha256 "742fb5c1b3ff540368ced54c29eae8b488ae5a5fcaca092947e17c2d358a6762"
-  revision 1
+  license "GPL-2.0-only"
+  revision 6
 
   bottle do
-    sha256 "9c42e7c3d2cd45e53a81aa6d19c927dbc24a069daf31c159e2f5cf7c2faca775" => :high_sierra
-    sha256 "d26f58de47cb27f00f16282bb6be058e90be87f83125468ba4b7ab6cc980a3e2" => :sierra
-    sha256 "d3310d4ddd7ed225fd8f821448fa2edabd3956e637755498c0d7ee4b74ed4aa3" => :el_capitan
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "56e7885d22b62ad21f3a021f07c9942a39aeb04adf9244bf4815a1196993b7a0"
   end
 
   depends_on "cmake" => :build
-  depends_on "mbedtls"
-  depends_on :osxfuse
+  depends_on "mbedtls@2"
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse@2"
+  end
 
   def install
-    system "cmake", "-DCMAKE_DISABLE_FIND_PACKAGE_Ruby=TRUE", *std_cmake_args
+    args = std_cmake_args + %w[
+      -DCMAKE_DISABLE_FIND_PACKAGE_Ruby=TRUE
+    ]
+
+    system "cmake", *args, "."
     system "make"
     system "make", "install"
+  end
+
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
+
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
   end
 
   test do

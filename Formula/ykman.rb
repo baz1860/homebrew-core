@@ -3,88 +3,72 @@ class Ykman < Formula
 
   desc "Tool for managing your YubiKey configuration"
   homepage "https://developers.yubico.com/yubikey-manager/"
-  url "https://developers.yubico.com/yubikey-manager/Releases/yubikey-manager-0.6.0.tar.gz"
-  sha256 "ab04a20832eed4312873fb25abaed7fe3040484e33a6a97ec33053ba37d1942c"
+  url "https://files.pythonhosted.org/packages/f8/67/734ba60a918822d2f35d5120e81a277f1f0274fcbd8e02ff7486ef9157cc/yubikey-manager-4.0.9.tar.gz"
+  sha256 "384e3a2a66df4ce417aede734eb8c5d0c1b7981290e9bc940c85cc000ef833b4"
+  license "BSD-2-Clause"
+  head "https://github.com/Yubico/yubikey-manager.git", branch: "main"
 
   bottle do
-    cellar :any
-    sha256 "000f113c1aa2a2c328feda7bcdf6dba11ae492d251d667d3815c0219bbe6df66" => :high_sierra
-    sha256 "6d209faf6f8d1c59943555f9e9d8b38ff8a3a2e2a6b9937c356a43b5dc8f0e9e" => :sierra
-    sha256 "5e7113da111aba22e1a2c4441915b9535cddd77e5d95f7f117087d317dfb35b2" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "15df54911e49fb6587f25a118ac7298f12b23d52d353c03b3a025e13f723db0f"
+    sha256 cellar: :any,                 arm64_big_sur:  "a5fe7a9b79cb4aa376e6252e00e581eb7240249724531aa2fc24ae4ec3a12bfc"
+    sha256 cellar: :any,                 monterey:       "047fef4ac134412addc87edd7b7f86ec87c648b4acbb9a96ef8c6e138301a3c7"
+    sha256 cellar: :any,                 big_sur:        "451d0584cd81f4e2dae215d4eeb087b273b81c4187132c1c87eb51f23356bc3b"
+    sha256 cellar: :any,                 catalina:       "f7e5c72a377d524e1cd2428f7c620ed51da549465820e9ab8fe5398886dc59bc"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "41e8f8540b98f9fe6d1bf92bce80590f0be5c89c34b1f29a926b23aba4b26adc"
   end
 
-  head do
-    url "https://github.com/Yubico/yubikey-manager.git"
-  end
-
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "rust" => :build
   depends_on "swig" => :build
-  depends_on "ykpers"
-  depends_on "libu2f-host"
-  depends_on "libusb"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
+  depends_on "python@3.10"
 
-  resource "asn1crypto" do
-    url "https://files.pythonhosted.org/packages/fc/f1/8db7daa71f414ddabfa056c4ef792e1461ff655c2ae2928a2b675bfed6b4/asn1crypto-0.24.0.tar.gz"
-    sha256 "9d5c20441baf0cb60a4ac34cc447c6c189024b6b4c6cd7877034f4965c464e49"
+  uses_from_macos "libffi"
+
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "pcsc-lite"
   end
 
   resource "cffi" do
-    url "https://files.pythonhosted.org/packages/c9/70/89b68b6600d479034276fed316e14b9107d50a62f5627da37fafe083fde3/cffi-1.11.2.tar.gz"
-    sha256 "ab87dd91c0c4073758d07334c1e5f712ce8fe48f007b86f8238773963ee700a6"
+    url "https://files.pythonhosted.org/packages/00/9e/92de7e1217ccc3d5f352ba21e52398372525765b2e0c4530e6eb2ba9282a/cffi-1.15.0.tar.gz"
+    sha256 "920f0d66a896c2d99f0adbb391f990a84091179542c205fa53ce5787aff87954"
   end
 
   resource "click" do
-    url "https://files.pythonhosted.org/packages/95/d9/c3336b6b5711c3ab9d1d3a80f1a3e2afeb9d8c02a7166462f6cc96570897/click-6.7.tar.gz"
-    sha256 "f15516df478d5a56180fbf80e68f206010e6d160fc39fa508b65e035fd75130b"
+    url "https://files.pythonhosted.org/packages/59/87/84326af34517fca8c58418d148f2403df25303e02736832403587318e9e8/click-8.1.3.tar.gz"
+    sha256 "7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"
   end
 
   resource "cryptography" do
-    url "https://files.pythonhosted.org/packages/78/c5/7188f15a92413096c93053d5304718e1f6ba88b818357d05d19250ebff85/cryptography-2.1.4.tar.gz"
-    sha256 "e4d967371c5b6b2e67855066471d844c5d52d210c36c28d49a8507b96e2c5291"
+    url "https://files.pythonhosted.org/packages/51/05/bb2b681f6a77276fc423d04187c39dafdb65b799c8d87b62ca82659f9ead/cryptography-37.0.2.tar.gz"
+    sha256 "f224ad253cc9cea7568f49077007d2263efa57396a2f2f78114066fd54b5c68e"
   end
 
-  resource "enum34" do
-    url "https://files.pythonhosted.org/packages/bf/3e/31d502c25302814a7c2f1d3959d2a3b3f78e509002ba91aea64993936876/enum34-1.1.6.tar.gz"
-    sha256 "8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
-  end
-
-  resource "idna" do
-    url "https://files.pythonhosted.org/packages/f4/bd/0467d62790828c23c47fc1dfa1b1f052b24efdf5290f071c7a91d0d82fd3/idna-2.6.tar.gz"
-    sha256 "2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
-  end
-
-  resource "ipaddress" do
-    url "https://files.pythonhosted.org/packages/4e/13/774faf38b445d0b3a844b65747175b2e0500164b7c28d78e34987a5bfe06/ipaddress-1.0.18.tar.gz"
-    sha256 "5d8534c8e185f2d8a1fda1ef73f2c8f4b23264e8e30063feeb9511d492a413e1"
+  resource "fido2" do
+    url "https://files.pythonhosted.org/packages/cd/69/1af41955530255ca2337bab370a75b3dbbb8be8707f6280c9efedfb77a85/fido2-1.0.0.tar.gz"
+    sha256 "2509a4958b666d747fd5754dfa9357da2d81b52edc0ecff75b68cea939154c02"
   end
 
   resource "pycparser" do
-    url "https://files.pythonhosted.org/packages/8c/2d/aad7f16146f4197a11f8e91fb81df177adcc2073d36a17b1491fd09df6ed/pycparser-2.18.tar.gz"
-    sha256 "99a8ca03e29851d96616ad0404b4aad7d9ee16f25c9f9708a11faf2810f7b226"
+    url "https://files.pythonhosted.org/packages/5e/0b/95d387f5f4433cb0f53ff7ad859bd2c6051051cebbb564f139a999ab46de/pycparser-2.21.tar.gz"
+    sha256 "e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"
   end
 
   resource "pyOpenSSL" do
-    url "https://files.pythonhosted.org/packages/3b/15/a5d90ab1a41075e8f0fae334f13452549528f82142b3b9d0c9d86ab7178c/pyOpenSSL-17.5.0.tar.gz"
-    sha256 "2c10cfba46a52c0b0950118981d61e72c1e5b1aac451ca1bc77de1a679456773"
+    url "https://files.pythonhosted.org/packages/35/d3/d6a9610f19d943e198df502ae660c6b5acf84cc3bc421a2aa3c0fb6b21d1/pyOpenSSL-22.0.0.tar.gz"
+    sha256 "660b1b1425aac4a1bea1d94168a85d99f0b3144c869dd4390d27629d0087f1bf"
   end
 
   resource "pyscard" do
-    url "https://files.pythonhosted.org/packages/96/fa/b1dd66639f88ddc696523bbe7da64e2dd1b7033da935f6db9862e4d4bfa8/pyscard-1.9.6.tar.gz"
-    sha256 "6e28143c623e2b34200d2fa9178dbc80a39b9c068b693b2e6527cdae784c6c12"
-  end
-
-  resource "pyusb" do
-    url "https://files.pythonhosted.org/packages/5f/34/2095e821c01225377dda4ebdbd53d8316d6abb243c9bee43d3888fa91dd6/pyusb-1.0.2.tar.gz"
-    sha256 "4e9b72cc4a4205ca64fbf1f3fff39a335512166c151ad103e55c8223ac147362"
-  end
-
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz"
-    sha256 "70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
+    url "https://files.pythonhosted.org/packages/10/00/8dcf33f0695ea3b1eac265c95a6d61cae138eb60527d9f58d7dd7b8cc812/pyscard-2.0.3.tar.gz"
+    sha256 "13c3e108163fac4f1237804ed20c5b1eb1bd5d5ee3e96adb60bfb6b9122f528d"
   end
 
   def install
+    if OS.linux?
+      # Fixes: smartcard/scard/helpers.c:28:22: fatal error: winscard.h: No such file or directory
+      ENV.append "CFLAGS", "-I#{Formula["pcsc-lite"].opt_include}/PCSC"
+    end
     virtualenv_install_with_resources
   end
 

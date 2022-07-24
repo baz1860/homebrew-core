@@ -1,31 +1,32 @@
 class Wolfssl < Formula
   desc "Embedded SSL Library written in C"
-  homepage "https://www.wolfssl.com/wolfSSL/Home.html"
-  url "https://github.com/wolfSSL/wolfssl/archive/v3.13.0-stable.tar.gz"
-  version "3.13.0"
-  sha256 "3bafeb0cb7eaff80002ba3f7cbb70023757bcc35fc4d82181945b143f1f927c6"
-  head "https://github.com/wolfSSL/wolfssl.git"
+  homepage "https://www.wolfssl.com"
+  url "https://github.com/wolfSSL/wolfssl.git",
+      tag:      "v5.4.0-stable",
+      revision: "57aac1c50b45275c7a99eca32ad985998b292dc8"
+  license "GPL-2.0-or-later"
+  head "https://github.com/wolfSSL/wolfssl.git", branch: "master"
 
-  bottle do
-    cellar :any
-    sha256 "a69bca9ea961cbc8ab86726dc5fdf5fd1c3d78782dfca1032256d3d25b995f54" => :high_sierra
-    sha256 "3d975638a7ed02e35398d9ab7deb58cb9b3bbf3286f68e1cc0e9b0202b3278c9" => :sierra
-    sha256 "16a11f09ba8a10157561c6254a8ea48ad603bcbde66c69057cd42142f4a64618" => :el_capitan
+  livecheck do
+    url :stable
+    strategy :github_latest
+    regex(%r{href=.*?/tag/v?(\d+(?:\.\d+)+)[._-]stable["' >]}i)
   end
 
-  option "without-test", "Skip compile-time tests"
-
-  deprecated_option "without-check" => "without-test"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "dde40d1dde31b31fbefaf7199e7601da88368c3e7498533e39ec76a5117be5aa"
+    sha256 cellar: :any,                 arm64_big_sur:  "eb2370b57889ab6ec9e47ae0c5fb64b8d25d4b26e7d3ae518754fdbdbccb936b"
+    sha256 cellar: :any,                 monterey:       "418c31afa89bdc3e260377196461640eaa540bbe606aa3303036065ed7e3dedd"
+    sha256 cellar: :any,                 big_sur:        "ec9cd488f155d42caaa2b8dfb0dad8f18cba5cf7afaada1f54166425c9c94637"
+    sha256 cellar: :any,                 catalina:       "b54725c4ce968ad01a7fcb7cb46e0bb994449e298c3fe84ed5d7a167e1b94ba0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "133091fece0cf88bed521e40271630b7c0e0ede0ec8111f79b863d5c51021dea"
+  end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
 
   def install
-    # https://github.com/Homebrew/homebrew-core/pull/1046
-    # https://github.com/Homebrew/brew/pull/251
-    ENV.delete("SDKROOT")
-
     args = %W[
       --disable-silent-rules
       --disable-dependency-tracking
@@ -75,25 +76,22 @@ class Wolfssl < Formula
       --enable-sni
       --enable-supportedcurves
       --enable-tls13
+      --enable-sp
+      --enable-fastmath
+      --enable-fasthugemath
     ]
 
-    if MacOS.prefer_64_bit?
-      args << "--enable-fastmath" << "--enable-fasthugemath"
-    else
-      args << "--disable-fastmath" << "--disable-fasthugemath"
+    if OS.mac?
+      # Extra flag is stated as a needed for the Mac platform.
+      # https://www.wolfssl.com/docs/wolfssl-manual/ch2/
+      # Also, only applies if fastmath is enabled.
+      ENV.append_to_cflags "-mdynamic-no-pic"
     end
-
-    args << "--enable-aesni" if Hardware::CPU.aes? && !build.bottle?
-
-    # Extra flag is stated as a needed for the Mac platform.
-    # https://wolfssl.com/wolfSSL/Docs-wolfssl-manual-2-building-wolfssl.html
-    # Also, only applies if fastmath is enabled.
-    ENV.append_to_cflags "-mdynamic-no-pic" if MacOS.prefer_64_bit?
 
     system "./autogen.sh"
     system "./configure", *args
     system "make"
-    system "make", "check" if build.with? "test"
+    system "make", "check"
     system "make", "install"
   end
 

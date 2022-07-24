@@ -1,79 +1,62 @@
 class Gjs < Formula
   desc "JavaScript Bindings for GNOME"
-  homepage "https://wiki.gnome.org/Projects/Gjs"
-  url "https://download.gnome.org/sources/gjs/1.50/gjs-1.50.4.tar.xz"
-  sha256 "b336e8709347e3c94245f6cbc3465f9a49f3ae491a25f49f8a97268f5235b93a"
+  homepage "https://gitlab.gnome.org/GNOME/gjs/wikis/Home"
+  url "https://download.gnome.org/sources/gjs/1.72/gjs-1.72.1.tar.xz"
+  sha256 "17c0b1ec3f096671ff8bfaba6e4bbf14198c7013c604bfd677a9858da079c0ab"
+  license all_of: ["LGPL-2.0-or-later", "MIT"]
+  head "https://gitlab.gnome.org/GNOME/gjs.git", branch: "master"
 
   bottle do
-    sha256 "1ae796e16241d6279b1e544a6764849a18b34a8e606538163705468be9abcfcb" => :high_sierra
-    sha256 "08cc80f957768dff4345b5cc2cb4ddc582c3f91b650725f2843e1c4ebc9833d4" => :sierra
-    sha256 "a64eae5f4566c1d1f9e75841b7a4799a8bc83af8df322f825c1c7dbeabe0077d" => :el_capitan
+    sha256 arm64_monterey: "f87015a14aa3a783ae1625401d01c13468cfc8ee42a16e8e556697e0c7602fa3"
+    sha256 arm64_big_sur:  "4b735ead177cf2c0016cfdf6bddc501d7872bcd955c27d767c4ca91c21c589d4"
+    sha256 monterey:       "36af3b4b986008a88b64567b73410899823c370bc2130b9659a6ce72ba52ba58"
+    sha256 big_sur:        "fa3f7ac95c0ca3977f9c9e4fac7c6064a287eca183d13e00b8d9f51c02a6abf7"
+    sha256 catalina:       "909ce1eaf04173aaa4cb1b72de69f02014346b5bea14c7c5279c5bff607baa12"
+    sha256 x86_64_linux:   "3466f76c4f2c7e93c58908f7ee50612af7f124419a693f020604d49288280a23"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "autoconf@2.13" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "gobject-introspection"
-  depends_on "nspr"
   depends_on "readline"
-  depends_on "gtk+3" => :recommended
+  depends_on "spidermonkey"
 
-  needs :cxx11
-
-  resource "mozjs52" do
-    url "https://archive.mozilla.org/pub/firefox/releases/52.3.0esr/source/firefox-52.3.0esr.source.tar.xz"
-    sha256 "c16bc86d6cb8c2199ed1435ab80a9ae65f9324c820ea0eeb38bf89a97d253b5b"
+  on_linux do
+    depends_on "gcc"
   end
+
+  fails_with gcc: "5" # meson ERROR: SpiderMonkey sanity check: DID NOT COMPILE
 
   def install
-    ENV.cxx11
-    ENV["_MACOSX_DEPLOYMENT_TARGET"] = ENV["MACOSX_DEPLOYMENT_TARGET"]
+    # ensure that we don't run the meson post install script
+    ENV["DESTDIR"] = "/"
 
-    resource("mozjs52").stage do
-      inreplace "config/rules.mk", "-install_name $(_LOADER_PATH)/$(SHARED_LIBRARY) ", "-install_name #{lib}/$(SHARED_LIBRARY) "
-      inreplace "old-configure", "-Wl,-executable_path,${DIST}/bin", ""
-      mkdir("build") do
-        ENV["PYTHON"] = "python"
-        system "../js/src/configure", "--prefix=#{prefix}",
-                              "--with-system-nspr",
-                              "--with-system-zlib",
-                              "--with-system-icu",
-                              "--enable-readline",
-                              "--enable-shared-js",
-                              "--with-pthreads",
-                              "--enable-optimize",
-                              "--enable-pie",
-                              "--enable-release",
-                              "--without-intl-api"
-        system "make"
-        system "make", "install"
-        lib.install "./mozglue/build/libmozglue.dylib"
-        rm Dir["#{bin}/*"]
-      end
-      # headers were installed as softlinks, which is not acceptable
-      cd(include.to_s) do
-        `find . -type l`.chomp.split.each do |link|
-          header = File.readlink(link)
-          rm link
-          cp header, link
-        end
-      end
-      ENV.append_path "PKG_CONFIG_PATH", "#{lib}/pkgconfig"
-      # remove mozjs static lib
-      rm "#{lib}/libjs_static.ajs"
+    args = std_meson_args + %w[
+      -Dprofiler=disabled
+      -Dreadline=enabled
+      -Dinstalled_tests=false
+      -Dbsymbolic_functions=false
+      -Dskip_dbus_tests=true
+      -Dskip_gtk_tests=true
+    ]
+
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
+  end
 
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--without-dbus-tests",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+  def post_install
+    system "#{Formula["glib"].opt_bin}/glib-compile-schemas", "#{HOMEBREW_PREFIX}/share/glib-2.0/schemas"
   end
 
   test do
     (testpath/"test.js").write <<~EOS
       #!/usr/bin/env gjs
       const GLib = imports.gi.GLib;
+      if (31 != GLib.Date.get_days_in_month(GLib.DateMonth.JANUARY, 2000))
+        imports.system.exit(1)
     EOS
     system "#{bin}/gjs", "test.js"
   end

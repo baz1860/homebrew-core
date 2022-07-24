@@ -1,91 +1,83 @@
 class Upscaledb < Formula
   desc "Database for embedded devices"
   homepage "https://upscaledb.com/"
-  url "http://files.upscaledb.com/dl/upscaledb-2.2.0.tar.gz"
-  mirror "https://dl.bintray.com/homebrew/mirror/upscaledb-2.2.0.tar.gz"
-  sha256 "7d0d1ace47847a0f95a9138637fcaaf78b897ef682053e405e2c0865ecfd253e"
-  revision 7
+  license "Apache-2.0"
+  revision 1
+  head "https://github.com/cruppstahl/upscaledb.git", branch: "master"
+
+  stable do
+    url "https://github.com/cruppstahl/upscaledb.git",
+        tag:      "release-2.2.1",
+        revision: "60d39fc19888fbc5d8b713d30373095a41bf9ced"
+
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/31fa2b66ae637e8f1dc2864af869baa34604f8fe/upscaledb/2.2.1.diff"
+      sha256 "fc99845f15e87c8ba30598cfdd15f0f010efa45421462548ee56c8ae26a12ee5"
+    end
+  end
+
+  livecheck do
+    url "http://files.upscaledb.com/dl/"
+    regex(/href=.*?upscaledb[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "26d334d0ad7a36582834575895ee1dd04aeb9db13db52442cb60a2188807c268" => :high_sierra
-    sha256 "4d438ae443c577725d03b7dfceb1d6d078bc2037d4fa28799e662ed997326fbe" => :sierra
-    sha256 "0db006a03d8fc4e4952484d56fb4d59afffe4b7b225669effcb407f5cb12a6c4" => :el_capitan
+    sha256 cellar: :any,                 monterey:     "693a8a0ad4e8298847d25bb2ef348a39249f3c05cc9ccf578e7b7db57db0c8c3"
+    sha256 cellar: :any,                 big_sur:      "b6b0005cf98da8d3ecc3f762782d9129634023e53fd3303febf4e1bc145486d3"
+    sha256 cellar: :any,                 catalina:     "5731bf62beee7d010c92d841d69b93620865a5c048e0a6b52cd60a1e906d46c5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "17ba39ba89047d56cdab9a056cd541e2916447f8f3527bc22fae77354467d075"
   end
 
-  head do
-    url "https://github.com/cruppstahl/upscaledb.git"
-
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-    depends_on "libtool" => :build
-  end
-
-  option "without-java", "Do not build the Java wrapper"
-  option "without-protobuf", "Disable access to remote databases"
-
-  deprecated_option "without-remote" => "without-protobuf"
-
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
   depends_on "boost"
   depends_on "gnutls"
-  depends_on "openssl"
-  depends_on :java => :recommended
-  depends_on "protobuf" => :recommended
-
-  resource "libuv" do
-    url "https://github.com/libuv/libuv/archive/v0.10.37.tar.gz"
-    sha256 "4c12bed4936dc16a20117adfc5bc18889fa73be8b6b083993862628469a1e931"
-  end
-
-  fails_with :clang do
-    build 503
-    cause "error: member access into incomplete type 'const std::type_info"
-  end
+  depends_on "openjdk"
+  depends_on "openssl@1.1"
 
   def install
-    # Fix collision with isset() in <sys/params.h>
-    # See https://github.com/Homebrew/homebrew-core/pull/4145
-    inreplace "./src/5upscaledb/upscaledb.cc",
-      "#  include \"2protobuf/protocol.h\"",
-      "#  include \"2protobuf/protocol.h\"\n#define isset(f, b)       (((f) & (b)) == (b))"
+    ENV.cxx11
 
-    system "./bootstrap.sh" if build.head?
+    # Avoid references to Homebrew shims
+    ENV["SED"] = "sed"
 
-    args = %W[
-      --disable-debug
-      --disable-dependency-tracking
-      --prefix=#{prefix}
-    ]
+    system "./bootstrap.sh"
 
-    if build.with? "java"
-      args << "JDK=#{ENV["JAVA_HOME"]}"
-    else
-      args << "--disable-java"
-    end
-
-    if build.with? "protobuf"
-      resource("libuv").stage do
-        system "make", "libuv.dylib", "SO_LDFLAGS=-Wl,-install_name,#{libexec}/libuv/lib/libuv.dylib"
-        (libexec/"libuv/lib").install "libuv.dylib"
-        (libexec/"libuv").install "include"
-      end
-
-      ENV.prepend "LDFLAGS", "-L#{libexec}/libuv/lib"
-      ENV.prepend "CFLAGS", "-I#{libexec}/libuv/include"
-      ENV.prepend "CPPFLAGS", "-I#{libexec}/libuv/include"
-    else
-      args << "--disable-remote"
-    end
-
-    system "./configure", *args
+    system "./configure", "--disable-debug",
+                          "--disable-dependency-tracking",
+                          "--disable-remote", # upscaledb is not compatible with latest protobuf
+                          "--prefix=#{prefix}",
+                          "JDK=#{Formula["openjdk"].opt_prefix}"
     system "make", "install"
 
     pkgshare.install "samples"
+
+    unless OS.mac?
+      shim_reference_files = %w[
+        db1
+        db2
+        db3
+        db4
+        db5
+        db6
+        env1
+        env2
+        env3
+        uqi1
+        uqi2
+        Makefile
+      ]
+
+      shim_reference_files.each do |file|
+        inreplace pkgshare/"samples"/file, Superenv.shims_path, ""
+      end
+    end
   end
 
   test do
-    system ENV.cc, "-I#{include}", "-L#{lib}", "-lupscaledb",
-           pkgshare/"samples/db1.c", "-o", "test"
+    system ENV.cc, pkgshare/"samples/db1.c", "-I#{include}",
+           "-L#{lib}", "-lupscaledb", "-o", "test"
     system "./test"
   end
 end

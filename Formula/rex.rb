@@ -1,24 +1,231 @@
 class Rex < Formula
   desc "Command-line tool which executes commands on remote servers"
   homepage "https://www.rexify.org"
-  url "https://cpan.metacpan.org/authors/id/J/JF/JFRIED/Rex-1.5.0.tar.gz"
-  sha256 "c042a0ed4920070d4508b6e7d2c36d28b3a5691938f2e0a0d7717977b44b82d0"
-  revision 2
+  url "https://cpan.metacpan.org/authors/id/F/FE/FERKI/Rex-1.13.4.tar.gz"
+  sha256 "a86e9270159b41c9a8fce96f9ddc97c5caa68167ca4ed33e97908bfce17098cf"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "887d7eef9979e6b9933ea009fc1c97f922d73ca1d4317fb4636b51b5cf58b5cb" => :high_sierra
-    sha256 "f3ff192a1f3b7bdb43434af70d0f7a603d7e7790634b5b479735fbc049014ab8" => :sierra
-    sha256 "abb8c9c4549b4c73bfa84de1d5472ee89fb4203ff2abbdba7b98208b349b3bab" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "656a990a252550d057e8cea6994e1270081c7263b1978ebaf4dd21a5d59783f8"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "0cee1b2c63e0123547566a2e3faf8569d55708cca6a5617c8797b4980c124521"
+    sha256 cellar: :any_skip_relocation, monterey:       "bb2fbd2b2a675df48693d4c25287a9072904f0fe75e8fb3482028bd64f25472c"
+    sha256 cellar: :any_skip_relocation, big_sur:        "dfe95c2a7c71ad25c596a989b30294f24bcd8f7e17bb01b22d97d68ad73903e9"
+    sha256 cellar: :any_skip_relocation, catalina:       "de0ca43e439023982668c5563f41340a82d3ae8c45159b457749c1ab0f15d3c5"
+    sha256 cellar: :any_skip_relocation, mojave:         "24da3a602c3b434d0069244f546ed33f14e8bd3bbee1f7a99b91ca97a48b0c37"
+    sha256 cellar: :any_skip_relocation, high_sierra:    "dc0b2bb90327f2fc716eb95655366fd7a3ac36d7880f25a69777c9976260d508"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "84905c6bacd76ee95deacca3830ccbb2927bbb5d946e472a7b3f65e0e5ad7ecb"
   end
 
-  depends_on "perl" if MacOS.version <= :mountain_lion
+  uses_from_macos "perl"
 
-  resource "Module::Build" do
-    # AWS::Signature4 requires Module::Build v0.4205 and above, while standard
-    # MacOS Perl installation has 0.4003
-    url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Module-Build-0.4222.tar.gz"
-    sha256 "e74b45d9a74736472b74830599cec0d1123f992760f9cd97104f94bee800b160"
+  if MacOS.version < :big_sur
+    resource "Module::Build" do
+      # AWS::Signature4 requires Module::Build v0.4205 and above, while standard
+      # MacOS Perl installation has 0.4003
+      url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Module-Build-0.4231.tar.gz"
+      sha256 "7e0f4c692c1740c1ac84ea14d7ea3d8bc798b2fb26c09877229e04f430b2b717"
+    end
+
+    resource "Clone::Choose" do
+      url "https://cpan.metacpan.org/authors/id/H/HE/HERMES/Clone-Choose-0.010.tar.gz"
+      sha256 "5623481f58cee8edb96cd202aad0df5622d427e5f748b253851dfd62e5123632"
+    end
+
+    resource "Exporter::Tiny" do
+      url "https://cpan.metacpan.org/authors/id/T/TO/TOBYINK/Exporter-Tiny-1.002002.tar.gz"
+      sha256 "00f0b95716b18157132c6c118ded8ba31392563d19e490433e9a65382e707101"
+    end
+
+    resource "JSON::MaybeXS" do
+      url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/JSON-MaybeXS-1.004003.tar.gz"
+      sha256 "5bee3b17ff9dcffd6e99ab8cf7f35747650bfce1dc622e3ad10b85a194462fbf"
+    end
+
+    resource "Scalar::List::Utils" do
+      url "https://cpan.metacpan.org/authors/id/P/PE/PEVANS/Scalar-List-Utils-1.60.tar.gz"
+      sha256 "c685bad8021f008f321288b7c3182ec724ab198a77610e877c86f3fad4b85f07"
+    end
+
+    resource "YAML" do
+      url "https://cpan.metacpan.org/authors/id/T/TI/TINITA/YAML-1.30.tar.gz"
+      sha256 "5030a6d6cbffaf12583050bf552aa800d4646ca9678c187add649227f57479cd"
+    end
+
+    resource "ExtUtils::MakeMaker" do
+      url "https://cpan.metacpan.org/authors/id/B/BI/BINGOS/ExtUtils-MakeMaker-7.64.tar.gz"
+      sha256 "4a6ac575815c0413b1f58967043cc9f2e166446b73c687f9bc62b5eaed9464a0"
+    end
+
+    resource "File::ShareDir::Install" do
+      url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/File-ShareDir-Install-0.14.tar.gz"
+      sha256 "8f9533b198f2d4a9a5288cbc7d224f7679ad05a7a8573745599789428bc5aea0"
+    end
+  end
+
+  on_linux do
+    resource "Devel::Caller" do
+      url "https://cpan.metacpan.org/authors/id/R/RC/RCLAMP/Devel-Caller-2.06.tar.gz"
+      sha256 "6a73ae6a292834255b90da9409205425305fcfe994b148dcb6d2d6ef628db7df"
+    end
+
+    resource "Digest::HMAC" do
+      url "https://cpan.metacpan.org/authors/id/A/AR/ARODLAND/Digest-HMAC-1.04.tar.gz"
+      sha256 "d6bc8156aa275c44d794b7c18f44cdac4a58140245c959e6b19b2c3838b08ed4"
+    end
+
+    resource "Encode::Locale" do
+      url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/Encode-Locale-1.05.tar.gz"
+      sha256 "176fa02771f542a4efb1dbc2a4c928e8f4391bf4078473bd6040d8f11adb0ec1"
+    end
+
+    resource "ExtUtils::MakeMaker" do
+      url "https://cpan.metacpan.org/authors/id/B/BI/BINGOS/ExtUtils-MakeMaker-7.64.tar.gz"
+      sha256 "4a6ac575815c0413b1f58967043cc9f2e166446b73c687f9bc62b5eaed9464a0"
+    end
+
+    resource "File::Listing" do
+      url "https://cpan.metacpan.org/authors/id/P/PL/PLICEASE/File-Listing-6.15.tar.gz"
+      sha256 "46c4fb9f9eb9635805e26b7ea55b54455e47302758a10ed2a0b92f392713770c"
+    end
+
+    resource "File::ShareDir" do
+      url "https://cpan.metacpan.org/authors/id/R/RE/REHSACK/File-ShareDir-1.118.tar.gz"
+      sha256 "3bb2a20ba35df958dc0a4f2306fc05d903d8b8c4de3c8beefce17739d281c958"
+    end
+
+    resource "File::ShareDir::Install" do
+      url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/File-ShareDir-Install-0.14.tar.gz"
+      sha256 "8f9533b198f2d4a9a5288cbc7d224f7679ad05a7a8573745599789428bc5aea0"
+    end
+
+    resource "HTML::Parser" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTML-Parser-3.78.tar.gz"
+      sha256 "22564002f206af94c1dd8535f02b0d9735125d9ebe89dd0ff9cd6c000e29c29d"
+    end
+
+    resource "HTML::Tagset" do
+      url "https://cpan.metacpan.org/authors/id/P/PE/PETDANCE/HTML-Tagset-3.20.tar.gz"
+      sha256 "adb17dac9e36cd011f5243881c9739417fd102fce760f8de4e9be4c7131108e2"
+    end
+
+    resource "HTTP::Cookies" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Cookies-6.10.tar.gz"
+      sha256 "e36f36633c5ce6b5e4b876ffcf74787cc5efe0736dd7f487bdd73c14f0bd7007"
+    end
+
+    resource "ExtUtils::Config" do
+      url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/ExtUtils-Config-0.008.tar.gz"
+      sha256 "ae5104f634650dce8a79b7ed13fb59d67a39c213a6776cfdaa3ee749e62f1a8c"
+    end
+
+    resource "ExtUtils::Helpers" do
+      url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/ExtUtils-Helpers-0.026.tar.gz"
+      sha256 "de901b6790a4557cf4ec908149e035783b125bf115eb9640feb1bc1c24c33416"
+    end
+
+    resource "ExtUtils::InstallPaths" do
+      url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/ExtUtils-InstallPaths-0.012.tar.gz"
+      sha256 "84735e3037bab1fdffa3c2508567ad412a785c91599db3c12593a50a1dd434ed"
+    end
+
+    resource "Module::Build::Tiny" do
+      url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Module-Build-Tiny-0.039.tar.gz"
+      sha256 "7d580ff6ace0cbe555bf36b86dc8ea232581530cbeaaea09bccb57b55797f11c"
+    end
+
+    resource "HTTP::Daemon" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Daemon-6.14.tar.gz"
+      sha256 "f0767e7f3cbb80b21313c761f07ad8ed253bce9fa2d0ba806b3fb72d309b2e1d"
+    end
+
+    resource "HTTP::Date" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Date-6.05.tar.gz"
+      sha256 "365d6294dfbd37ebc51def8b65b81eb79b3934ecbc95a2ec2d4d827efe6a922b"
+    end
+
+    resource "HTTP::Message" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/HTTP-Message-6.37.tar.gz"
+      sha256 "0e59da0a85e248831327ebfba66796314cb69f1bfeeff7a9da44ad766d07d802"
+    end
+
+    resource "HTTP::Negotiate" do
+      url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTTP-Negotiate-6.01.tar.gz"
+      sha256 "1c729c1ea63100e878405cda7d66f9adfd3ed4f1d6cacaca0ee9152df728e016"
+    end
+
+    resource "IO::HTML" do
+      url "https://cpan.metacpan.org/authors/id/C/CJ/CJM/IO-HTML-1.004.tar.gz"
+      sha256 "c87b2df59463bbf2c39596773dfb5c03bde0f7e1051af339f963f58c1cbd8bf5"
+    end
+
+    resource "IO::String" do
+      url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/IO-String-1.08.tar.gz"
+      sha256 "2a3f4ad8442d9070780e58ef43722d19d1ee21a803bf7c8206877a10482de5a0"
+    end
+
+    resource "LWP::UserAgent" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/libwww-perl-6.67.tar.gz"
+      sha256 "96eec40a3fd0aa1bd834117be5eb21c438f73094d861a1a7e5774f0b1226b723"
+    end
+
+    resource "LWP::MediaTypes" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/LWP-MediaTypes-6.04.tar.gz"
+      sha256 "8f1bca12dab16a1c2a7c03a49c5e58cce41a6fec9519f0aadfba8dad997919d9"
+    end
+
+    resource "Net::HTTP" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/Net-HTTP-6.22.tar.gz"
+      sha256 "62faf9a5b84235443fe18f780e69cecf057dea3de271d7d8a0ba72724458a1a2"
+    end
+
+    resource "NetAddr::IP" do
+      url "https://cpan.metacpan.org/authors/id/M/MI/MIKER/NetAddr-IP-4.079.tar.gz"
+      sha256 "ec5a82dfb7028bcd28bb3d569f95d87dd4166cc19867f2184ed3a59f6d6ca0e7"
+    end
+
+    resource "PadWalker" do
+      url "https://cpan.metacpan.org/authors/id/R/RO/ROBIN/PadWalker-2.5.tar.gz"
+      sha256 "07b26abb841146af32072a8d68cb90176ffb176fd9268e6f2f7d106f817a0cd0"
+    end
+
+    resource "Term::ReadKey" do
+      url "https://cpan.metacpan.org/authors/id/J/JS/JSTOWE/TermReadKey-2.38.tar.gz"
+      sha256 "5a645878dc570ac33661581fbb090ff24ebce17d43ea53fd22e105a856a47290"
+    end
+
+    resource "Text::Glob" do
+      url "https://cpan.metacpan.org/authors/id/R/RC/RCLAMP/Text-Glob-0.11.tar.gz"
+      sha256 "069ccd49d3f0a2dedb115f4bdc9fbac07a83592840953d1fcdfc39eb9d305287"
+    end
+
+    resource "Try::Tiny" do
+      url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/Try-Tiny-0.31.tar.gz"
+      sha256 "3300d31d8a4075b26d8f46ce864a1d913e0e8467ceeba6655d5d2b2e206c11be"
+    end
+
+    resource "URI" do
+      url "https://cpan.metacpan.org/authors/id/O/OA/OALDERS/URI-5.10.tar.gz"
+      sha256 "16325d5e308c7b7ab623d1bf944e1354c5f2245afcfadb8eed1e2cae9a0bd0b5"
+    end
+
+    resource "WWW::RobotRules" do
+      url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/WWW-RobotRules-6.02.tar.gz"
+      sha256 "46b502e7a288d559429891eeb5d979461dd3ecc6a5c491ead85d165b6e03a51e"
+    end
+
+    resource "XML::NamespaceSupport" do
+      url "https://cpan.metacpan.org/authors/id/P/PE/PERIGRIN/XML-NamespaceSupport-1.12.tar.gz"
+      sha256 "47e995859f8dd0413aa3f22d350c4a62da652e854267aa0586ae544ae2bae5ef"
+    end
+
+    resource "XML::Parser" do
+      url "https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.46.tar.gz"
+      sha256 "d331332491c51cccfb4cb94ffc44f9cd73378e618498d4a37df9e043661c515d"
+    end
+
+    resource "XML::Simple" do
+      url "https://cpan.metacpan.org/authors/id/G/GR/GRANTM/XML-Simple-2.25.tar.gz"
+      sha256 "531fddaebea2416743eb5c4fdfab028f502123d9a220405a4100e68fc480dbf8"
+    end
   end
 
   resource "AWS::Signature4" do
@@ -26,144 +233,19 @@ class Rex < Formula
     sha256 "20bbc16cb3454fe5e8cf34fe61f1a91fe26c3f17e449ff665fcbbb92ab443ebd"
   end
 
-  resource "Clone" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GARU/Clone-0.38.tar.gz"
-    sha256 "9fb0534bb7ef6ca1f6cc1dc3f29750d6d424394d14c40efdc77832fad3cebde8"
-  end
-
-  resource "Date::Parse" do
-    url "https://cpan.metacpan.org/authors/id/G/GB/GBARR/TimeDate-2.30.tar.gz"
-    sha256 "75bd254871cb5853a6aa0403ac0be270cdd75c9d1b6639f18ecba63c15298e86"
-  end
-
-  resource "Devel::Caller" do
-    url "https://cpan.metacpan.org/authors/id/R/RC/RCLAMP/Devel-Caller-2.06.tar.gz"
-    sha256 "6a73ae6a292834255b90da9409205425305fcfe994b148dcb6d2d6ef628db7df"
-  end
-
-  resource "Encode::Locale" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/Encode-Locale-1.05.tar.gz"
-    sha256 "176fa02771f542a4efb1dbc2a4c928e8f4391bf4078473bd6040d8f11adb0ec1"
-  end
-
-  resource "Exporter::Tiny" do
-    url "https://cpan.metacpan.org/authors/id/T/TO/TOBYINK/Exporter-Tiny-0.042.tar.gz"
-    sha256 "8f1622c5ebbfbcd519ead81df7917e48cb16cc527b1c46737b0459c3908a023f"
-  end
-
-  resource "File::Listing" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/File-Listing-6.04.tar.gz"
-    sha256 "1e0050fcd6789a2179ec0db282bf1e90fb92be35d1171588bd9c47d52d959cf5"
-  end
-
-  resource "File::Remove" do
-    url "https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/File-Remove-1.57.tar.gz"
-    sha256 "b3becd60165c38786d18285f770b8b06ebffe91797d8c00cc4730614382501ad"
-  end
-
-  resource "HTML::Parser" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTML-Parser-3.72.tar.gz"
-    sha256 "ec28c7e1d9e67c45eca197077f7cdc41ead1bb4c538c7f02a3296a4bb92f608b"
-  end
-
-  resource "HTML::Tagset" do
-    url "https://cpan.metacpan.org/authors/id/P/PE/PETDANCE/HTML-Tagset-3.20.tar.gz"
-    sha256 "adb17dac9e36cd011f5243881c9739417fd102fce760f8de4e9be4c7131108e2"
-  end
-
-  resource "HTTP::Cookies" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTTP-Cookies-6.01.tar.gz"
-    sha256 "f5d3ade383ce6389d80cb0d0356b643af80435bb036afd8edce335215ec5eb20"
-  end
-
-  resource "HTTP::Daemon" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTTP-Daemon-6.01.tar.gz"
-    sha256 "43fd867742701a3f9fcc7bd59838ab72c6490c0ebaf66901068ec6997514adc2"
-  end
-
-  resource "HTTP::Date" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTTP-Date-6.02.tar.gz"
-    sha256 "e8b9941da0f9f0c9c01068401a5e81341f0e3707d1c754f8e11f42a7e629e333"
-  end
-
-  resource "HTTP::Message" do
-    url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/HTTP-Message-6.11.tar.gz"
-    sha256 "e7b368077ae6a188d99920411d8f52a8e5acfb39574d4f5c24f46fd22533d81b"
-  end
-
-  resource "HTTP::Negotiate" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/HTTP-Negotiate-6.01.tar.gz"
-    sha256 "1c729c1ea63100e878405cda7d66f9adfd3ed4f1d6cacaca0ee9152df728e016"
+  resource "Data::Validate::IP" do
+    url "https://cpan.metacpan.org/authors/id/D/DR/DROLSKY/Data-Validate-IP-0.30.tar.gz"
+    sha256 "fe2f7663e18b70d5510529c22f45fdd2bbdb4a5adb26d65c9050c5b9696e8a1c"
   end
 
   resource "Hash::Merge" do
-    url "https://cpan.metacpan.org/authors/id/R/RE/REHSACK/Hash-Merge-0.200.tar.gz"
-    sha256 "47f9f03330b7595c94e73bdd17dc6682ba59d1cc89e63f4e319617f4bb122a64"
-  end
-
-  resource "IO::HTML" do
-    url "https://cpan.metacpan.org/authors/id/C/CJ/CJM/IO-HTML-1.001.tar.gz"
-    sha256 "ea78d2d743794adc028bc9589538eb867174b4e165d7d8b5f63486e6b828e7e0"
-  end
-
-  resource "IO::String" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/IO-String-1.08.tar.gz"
-    sha256 "2a3f4ad8442d9070780e58ef43722d19d1ee21a803bf7c8206877a10482de5a0"
-  end
-
-  resource "Canary::Stability" do
-    url "https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/Canary-Stability-2012.tar.gz"
-    sha256 "fd240b111d834dbae9630c59b42fae2145ca35addc1965ea311edf0d07817107"
-  end
-
-  resource "JSON::XS" do
-    url "https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/JSON-XS-3.02.tar.gz"
-    sha256 "5f6a5944887d75f1d34440a2d9e69ef12e23f434af23acb143fb0241f40b02be"
-  end
-
-  resource "LWP" do
-    url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/libwww-perl-6.15.tar.gz"
-    sha256 "6f349d45c21b1ec0501c4437dfcb70570940e6c3d5bff783bd91d4cddead8322"
-  end
-
-  resource "LWP::MediaTypes" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/LWP-MediaTypes-6.02.tar.gz"
-    sha256 "18790b0cc5f0a51468495c3847b16738f785a2d460403595001e0b932e5db676"
-  end
-
-  resource "List::MoreUtils" do
-    url "https://cpan.metacpan.org/authors/id/R/RE/REHSACK/List-MoreUtils-0.419.tar.gz"
-    sha256 "5f8e65608f5dc583faa6a703d19d277ad46dfc1816e51f8ff34fb8322ed48615"
-  end
-
-  resource "Module::ScanDeps" do
-    url "https://cpan.metacpan.org/authors/id/R/RS/RSCHUPP/Module-ScanDeps-1.23.tar.gz"
-    sha256 "162b6f771197ad4662ac60c427d473b4c0a41cac476fa96b48556cce7fca040e"
-  end
-
-  resource "YAML::Tiny" do
-    url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/YAML-Tiny-1.70.tar.gz"
-    sha256 "bbce4b52b5eafdb04e3043975a08dbf394d00b7d2c958adb9d03d9f7e9291255"
-  end
-
-  resource "Module::Install" do
-    url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/Module-Install-1.18.tar.gz"
-    sha256 "29068ac33502cec959844c206516c09cc4a847cb57327d41015f605153ca645e"
-  end
-
-  resource "Net::HTTP" do
-    url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/Net-HTTP-6.09.tar.gz"
-    sha256 "52762b939d84806908ba544581c5708375f7938c3c0e496c128ca3fbc425e58d"
+    url "https://cpan.metacpan.org/authors/id/H/HE/HERMES/Hash-Merge-0.302.tar.gz"
+    sha256 "ae0522f76539608b61dde14670e79677e0f391036832f70a21f31adde2538644"
   end
 
   resource "Net::OpenSSH" do
-    url "https://cpan.metacpan.org/authors/id/S/SA/SALVA/Net-OpenSSH-0.74.tar.gz"
-    sha256 "bd06e66cef82b5a07585deeddc91a093b32f4d080ae6b5e8033231030a1c27b6"
-  end
-
-  resource "PadWalker" do
-    url "https://cpan.metacpan.org/authors/id/R/RO/ROBIN/PadWalker-2.2.tar.gz"
-    sha256 "fc1df2084522e29e892da393f3719d2c1be0da022fdd89cff4b814167aecfea3"
+    url "https://cpan.metacpan.org/authors/id/S/SA/SALVA/Net-OpenSSH-0.82.tar.gz"
+    sha256 "d41aa24dd53466753209f5a67c6392e6f3fa599709169342cbcc5f4871d97e83"
   end
 
   resource "Sort::Naturally" do
@@ -171,73 +253,10 @@ class Rex < Formula
     sha256 "eaab1c5c87575a7826089304ab1f8ffa7f18e6cd8b3937623e998e865ec1e746"
   end
 
-  resource "Term::ReadKey" do
-    url "https://cpan.metacpan.org/authors/id/J/JS/JSTOWE/TermReadKey-2.37.tar.gz"
-    sha256 "4a9383cf2e0e0194668fe2bd546e894ffad41d556b41d2f2f577c8db682db241"
-  end
-
-  resource "Text::Glob" do
-    url "https://cpan.metacpan.org/authors/id/R/RC/RCLAMP/Text-Glob-0.10.tar.gz"
-    sha256 "d0af0549a9dd1c70edcd3b1429ccc3702b79b873375b79cd2bdfe8870e337449"
-  end
-
-  resource "Types::Serialiser" do
-    url "https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/Types-Serialiser-1.0.tar.gz"
-    sha256 "7ad3347849d8a3da6470135018d6af5fd8e58b4057cd568c3813695f2a04730d"
-  end
-
-  resource "URI" do
-    url "https://cpan.metacpan.org/authors/id/E/ET/ETHER/URI-1.71.tar.gz"
-    sha256 "9c8eca0d7f39e74bbc14706293e653b699238eeb1a7690cc9c136fb8c2644115"
-  end
-
-  resource "WWW::RobotRules" do
-    url "https://cpan.metacpan.org/authors/id/G/GA/GAAS/WWW-RobotRules-6.02.tar.gz"
-    sha256 "46b502e7a288d559429891eeb5d979461dd3ecc6a5c491ead85d165b6e03a51e"
-  end
-
-  resource "XML::NamespaceSupport" do
-    url "https://cpan.metacpan.org/authors/id/P/PE/PERIGRIN/XML-NamespaceSupport-1.11.tar.gz"
-    sha256 "6d8151f0a3f102313d76b64bfd1c2d9ed46bfe63a16f038e7d860fda287b74ea"
-  end
-
-  resource "XML::Parser" do
-    url "https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.44.tar.gz"
-    sha256 "1ae9d07ee9c35326b3d9aad56eae71a6730a73a116b9fe9e8a4758b7cc033216"
-  end
-
-  resource "XML::Simple" do
-    url "https://cpan.metacpan.org/authors/id/G/GR/GRANTM/XML-Simple-2.22.tar.gz"
-    sha256 "b9450ef22ea9644ae5d6ada086dc4300fa105be050a2030ebd4efd28c198eb49"
-  end
-
-  resource "XSLoader" do
-    url "https://cpan.metacpan.org/authors/id/S/SA/SAPER/XSLoader-0.24.tar.gz"
-    sha256 "e819a35a6b8e55cb61b290159861f0dc00fe9d8c4f54578eb24f612d45c8d85f"
-  end
-
-  resource "YAML" do
-    url "https://cpan.metacpan.org/authors/id/T/TI/TINITA/YAML-1.18.tar.gz"
-    sha256 "c8c4ebf538b5c9b4f53bf3c80a436229b2f28ecd4dbde54e22b470791d04fd39"
-  end
-
-  resource "common::sense" do
-    url "https://cpan.metacpan.org/authors/id/M/ML/MLEHMANN/common-sense-3.74.tar.gz"
-    sha256 "771f7d02abd1ded94d9e37d3f66e795c8d2026d04defbeb5b679ca058116bbf3"
-  end
-
-  resource "inc::latest" do
-    url "https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/inc-latest-0.500.tar.gz"
-    sha256 "daa905f363c6a748deb7c408473870563fcac79b9e3e95b26e130a4a8dc3c611"
-  end
-
   def install
     ENV.prepend_create_path "PERL5LIB", libexec/"lib/perl5"
     ENV.prepend_path "PERL5LIB", libexec/"lib"
-
-    # Spare Perl v5.23+ users a long-winded gripe from JSON::XS module's author.
-    # See https://github.com/RexOps/Rex/issues/1153
-    ENV["PERL_CANARY_STABILITY_NOPROMPT"] = "1"
+    ENV["PERL_MM_USE_DEFAULT"] = "1"
 
     resources.each do |res|
       res.stage do
@@ -247,12 +266,13 @@ class Rex < Formula
 
     perl_build
     (libexec/"lib").install "blib/lib/Rex", "blib/lib/Rex.pm"
+    inreplace "bin/rex", "#!perl", "#!/usr/bin/env perl"
     inreplace "bin/rexify", "#!perl", "#!/usr/bin/env perl"
 
     %w[rex rexify].each do |cmd|
       libexec.install "bin/#{cmd}"
       chmod 0755, libexec/cmd
-      (bin/cmd).write_env_script(libexec/cmd, :PERL5LIB => ENV["PERL5LIB"])
+      (bin/cmd).write_env_script(libexec/cmd, PERL5LIB: ENV["PERL5LIB"])
       man1.install "blib/man1/#{cmd}.1"
     end
   end
@@ -260,20 +280,27 @@ class Rex < Formula
   test do
     assert_match "\(R\)\?ex #{version}", shell_output("#{bin}/rex -v"), "rex -v is expected to print out Rex version"
     system bin/"rexify", "brewtest"
-    assert_predicate testpath/"brewtest/Rexfile", :exist?, "rexify is expected to create a new Rex project and pre-populate its Rexfile"
+    assert_predicate testpath/"brewtest/Rexfile", :exist?,
+                     "rexify is expected to create a new Rex project and pre-populate its Rexfile"
   end
 
   private
 
   def perl_build
-    if File.exist? "Makefile.PL"
-      system "perl", "Makefile.PL", "INSTALL_BASE=#{libexec}"
-      system "make", "PERL5LIB=#{ENV["PERL5LIB"]}"
-      system "make", "install"
-    elsif File.exist? "Build.PL"
+    if File.exist? "Build.PL"
       system "perl", "Build.PL", "--install_base", libexec
       system "./Build", "PERL5LIB=#{ENV["PERL5LIB"]}"
       system "./Build", "install"
+    elsif File.exist? "Makefile.PL"
+      on_macos do
+        path = "#{MacOS.sdk_path}/System/Library/Perl/#{MacOS.preferred_perl_version}/darwin-thread-multi-2level/CORE"
+        system "perl", "Makefile.PL", "INSTALL_BASE=#{libexec}", "INC=-I#{path}"
+      end
+      on_linux do
+        system "perl", "Makefile.PL", "INSTALL_BASE=#{libexec}"
+      end
+      system "make", "PERL5LIB=#{ENV["PERL5LIB"]}"
+      system "make", "install"
     else
       raise "Unknown build system for #{res.name}"
     end

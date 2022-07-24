@@ -1,20 +1,31 @@
 class Googler < Formula
+  include Language::Python::Shebang
+
   desc "Google Search and News from the command-line"
   homepage "https://github.com/jarun/googler"
-  url "https://github.com/jarun/googler/archive/v3.5.tar.gz"
-  sha256 "55ff07648257f5d2d642d1f5d6bd682e6aa32605755d4040dac4ef787257cbea"
-  head "https://github.com/jarun/googler.git"
+  url "https://github.com/jarun/googler/archive/v4.3.2.tar.gz"
+  sha256 "bd59af407e9a45c8a6fcbeb720790cb9eccff21dc7e184716a60e29f14c68d54"
+  license "GPL-3.0-or-later"
+  revision 2
+  head "https://github.com/jarun/googler.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "e4325937b3b156751c2ee51aed335c455f63236e45c38b28b079818a9a01c4bf" => :high_sierra
-    sha256 "e4325937b3b156751c2ee51aed335c455f63236e45c38b28b079818a9a01c4bf" => :sierra
-    sha256 "e4325937b3b156751c2ee51aed335c455f63236e45c38b28b079818a9a01c4bf" => :el_capitan
+    sha256 cellar: :any_skip_relocation, all: "843e6394f80e096decffc6fa0f9089ab224889ae6e14ce96c82a56c854905d28"
   end
 
-  depends_on "python3"
+  deprecate! date: "2022-01-24", because: :repo_archived
+
+  depends_on "python@3.10"
+
+  # Upstream PROTOCOL_TLS patch, review for removal on next release (if any)
+  # https://github.com/jarun/googler/pull/426
+  patch do
+    url "https://github.com/jarun/googler/commit/52e2da672911cd9186bd3497fcdf81149071e72b.patch?full_index=1"
+    sha256 "d8d8a813b6c0645990b8b1849718b0fc406f4201068ca483f27498599fd86cbf"
+  end
 
   def install
+    rewrite_shebang detected_python_shebang, "googler"
     system "make", "disable-self-upgrade"
     system "make", "install", "PREFIX=#{prefix}"
     bash_completion.install "auto-completion/bash/googler-completion.bash"

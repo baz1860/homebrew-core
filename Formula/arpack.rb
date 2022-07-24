@@ -1,33 +1,46 @@
 class Arpack < Formula
   desc "Routines to solve large scale eigenvalue problems"
   homepage "https://github.com/opencollab/arpack-ng"
-  url "https://github.com/opencollab/arpack-ng/archive/3.5.0.tar.gz"
-  sha256 "50f7a3e3aec2e08e732a487919262238f8504c3ef927246ec3495617dde81239"
+  url "https://github.com/opencollab/arpack-ng/archive/3.8.0.tar.gz"
+  sha256 "ada5aeb3878874383307239c9235b716a8a170c6d096a6625bfd529844df003d"
+  license "BSD-3-Clause"
   revision 1
-  head "https://github.com/opencollab/arpack-ng.git"
+  head "https://github.com/opencollab/arpack-ng.git", branch: "master"
 
   bottle do
-    sha256 "79916ca5fe573b2a4394cfdef2ef29c7a7070728ea9d0001fc1b565d30de94e0" => :high_sierra
-    sha256 "cd4f84697d2e170fe14b9be297b1f95282b4f0c5631c2a89240e31a64b06c516" => :sierra
-    sha256 "a3fff906ab6a5da67d6e5b770818416d5c609efb217211e77b227895603f7ee3" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "22a5cd4369c7b53e2695f9474fca8d7c6b91971819fc3139f165f423a8de42af"
+    sha256                               arm64_big_sur:  "ce6c690e2da971fd3c2b1b481e2a1a63c74e45ab308abc8212d4e8622ab57fb3"
+    sha256 cellar: :any,                 monterey:       "40d92334e7068c36e33bafb51333157b75fc14322e44f271ab66a54627169a43"
+    sha256 cellar: :any,                 big_sur:        "d7e7dcfe9877c71a43edc35191855abab902424d99eb30835092e01d9bbb042d"
+    sha256 cellar: :any,                 catalina:       "42b2c8c8c61ff92e7c3c96d3735decfd5bb00b5741bc66ee7b77a4c10f338ad4"
+    sha256 cellar: :any,                 mojave:         "c77c3b77ef86bea4c18757c674af5775bc33463f1f59cf49ed7ad9fbb9b6d3b9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a5266781353da90fd500b49f0d583dc7f5c345b4c43522698f5f456d8a8c4298"
   end
-
-  option "with-mpi", "Enable parallel support"
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
 
+  depends_on "eigen"
   depends_on "gcc" # for gfortran
-  depends_on "veclibfort"
-  depends_on "open-mpi" if build.with? "mpi"
+  depends_on "open-mpi"
+  depends_on "openblas"
 
   def install
-    args = %W[ --disable-dependency-tracking
-               --prefix=#{libexec}
-               --with-blas=-L#{Formula["veclibfort"].opt_lib}\ -lvecLibFort ]
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{libexec}
+      --with-blas=-L#{Formula["openblas"].opt_lib}\ -lopenblas
+      F77=mpif77
+      --enable-mpi
+      --enable-icb
+      --enable-icb-exmm
+    ]
 
-    args << "F77=mpif77" << "--enable-mpi" if build.with? "mpi"
+    # Fix for GCC 10, remove with next version
+    # https://github.com/opencollab/arpack-ng/commit/ad82dcbc
+    args << "FFLAGS=-fallow-argument-mismatch"
 
     system "./bootstrap"
     system "./configure", *args
@@ -38,24 +51,14 @@ class Arpack < Formula
     (lib/"pkgconfig").install_symlink Dir["#{libexec}/lib/pkgconfig/*"]
     pkgshare.install "TESTS/testA.mtx", "TESTS/dnsimp.f",
                      "TESTS/mmio.f", "TESTS/debug.h"
-
-    if build.with? "mpi"
-      (libexec/"bin").install (buildpath/"PARPACK/EXAMPLES/MPI").children
-    end
   end
 
   test do
-    system "gfortran", "-o", "test", pkgshare/"dnsimp.f", pkgshare/"mmio.f",
-                       "-L#{lib}", "-larpack", "-lvecLibFort"
+    ENV.fortran
+    system ENV.fc, "-o", "test", pkgshare/"dnsimp.f", pkgshare/"mmio.f",
+                       "-L#{lib}", "-larpack",
+                       "-L#{Formula["openblas"].opt_lib}", "-lopenblas"
     cp_r pkgshare/"testA.mtx", testpath
     assert_match "reached", shell_output("./test")
-
-    if build.with? "mpi"
-      cp_r (libexec/"bin").children, testpath
-      %w[pcndrv1 pdndrv1 pdndrv3 pdsdrv1
-         psndrv1 psndrv3 pssdrv1 pzndrv1].each do |slv|
-        system "mpirun", "-np", "4", slv
-      end
-    end
   end
 end

@@ -3,24 +3,27 @@ class JujuWait < Formula
 
   desc "Juju plugin for waiting for deployments to settle"
   homepage "https://launchpad.net/juju-wait"
-  url "https://files.pythonhosted.org/packages/3d/c2/8cce9ec8386be418a76566fcd2e7dcbaa7138a92b0b9b463306d9191cfd7/juju-wait-2.6.2.tar.gz"
-  sha256 "86622804896e80f26a3ed15dff979584952ba484ccb5258d8bab6589e26dd46d"
-  revision 1
+  url "https://files.pythonhosted.org/packages/0c/2b/f4bd0138f941e4ba321298663de3f1c8d9368b75671b17aa1b8d41a154dc/juju-wait-2.8.4.tar.gz"
+  sha256 "9e84739056e371ab41ee59086313bf357684bc97aae8308716c8fe3f19df99be"
+  license "GPL-3.0-only"
+  revision 3
 
   bottle do
-    cellar :any
-    sha256 "57dcd12a654c9e80c54a7f02e026a8fd5cb52d70362abb7ee18dae10e0510270" => :high_sierra
-    sha256 "eaa602c6d8d83cbc91aedfa16156c10d58bd9b96e99b615822948f46cc4537c0" => :sierra
-    sha256 "defc99cf41da754a5d9e27ff4e8c0d69ac222e99d5e7d4e1a7aca2f5bc48f629" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "e04f8b657da7e878dda77d9c31306708e062f3f917c6f31426da41ecbc8dbad5"
+    sha256 cellar: :any,                 arm64_big_sur:  "755de97cf6751a7f122dab8c7333fc36010210f3e20a3869e6662a3686efac1c"
+    sha256 cellar: :any,                 monterey:       "110669824c007b0ad6a05f5b387711779377bf83e0e4e5229d7925b277c69310"
+    sha256 cellar: :any,                 big_sur:        "fadd2d52965a99d993bd11bf75de1b7e7373b4ce17c9af28118f8b211f1170d4"
+    sha256 cellar: :any,                 catalina:       "9d08ba7ec7decac831dc8d38137d028caa99f3545ffb2c75c7c1f7a51539618f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "53e1fa7c3e4fcaf849f6cdb515f63aeb5c12c2539b682b5cf3293b568ea35211"
   end
 
-  depends_on "python3"
-  depends_on "libyaml"
   depends_on "juju"
+  depends_on "libyaml"
+  depends_on "python@3.10"
 
-  resource "pyyaml" do
-    url "https://files.pythonhosted.org/packages/4a/85/db5a2df477072b2902b0eb892feb37d88ac635d36245a72a6a69b23b383a/PyYAML-3.12.tar.gz"
-    sha256 "592766c6303207a20efc445587778322d7f73b161bd994f227adaa341ba212ab"
+  resource "PyYAML" do
+    url "https://files.pythonhosted.org/packages/36/2b/61d51a2c4f25ef062ae3f74576b01638bebad5e045f747ff12643df63844/PyYAML-6.0.tar.gz"
+    sha256 "68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2"
   end
 
   def install
@@ -28,7 +31,7 @@ class JujuWait < Formula
   end
 
   test do
-    # Note: Testing this plugin requires a Juju environment that's in the
+    # NOTE: Testing this plugin requires a Juju environment that's in the
     # process of deploying big software. This plugin relies on those application
     # statuses to determine if an environment is completely deployed or not.
     system "#{bin}/juju-wait", "--version"

@@ -1,46 +1,37 @@
-require "language/go"
-
 class Vegeta < Formula
   desc "HTTP load testing tool and library"
   homepage "https://github.com/tsenart/vegeta"
-  url "https://github.com/tsenart/vegeta/archive/v6.3.0.tar.gz"
-  sha256 "b9eaf9dc748fa58360395641ff50a33e53c805bf8a45ba3d787133d97b2269c6"
+  url "https://github.com/tsenart/vegeta/archive/v12.8.4.tar.gz"
+  sha256 "418249d07f04da0a587df45abe34705166de9e54a836e27e387c719ebab3e357"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "db26954bbe7b4daa945ca7dbed49d629579416da33fe16333fd36a6e11bbce0d" => :high_sierra
-    sha256 "47e1b8f045671f42701a959baac1d37e967b6be0196dff6b8c088df5763a2a5f" => :sierra
-    sha256 "aadfb9ec8717221b59cad02eb1eec3464e75e8c05ff3f695f07291b8a9b87fdb" => :el_capitan
-    sha256 "4e449d903b750dbbe063b024cd06ba82edb1490db4774fdda9c4e228df8256be" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "81e5234d266674684d94f92e09fc70504a7c35ab70e89afe744fb93c6c334fda"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "7d95ea4ba41b01adc23e73959805a728a4d279cac33448685cced10e268e2965"
+    sha256 cellar: :any_skip_relocation, monterey:       "5326e65fbdc12cacad9fd86befe186e708f083dde5b0fdb730772bd096bb3438"
+    sha256 cellar: :any_skip_relocation, big_sur:        "1f2ea9a3a871ff2f93ee65f1a5977aece4479835d954026342ac0c5eb523db27"
+    sha256 cellar: :any_skip_relocation, catalina:       "63b383f4cdff26cc0bf4ba3e24a84ea6d7485a9a61fe49ac62b09f39c5f01e13"
+    sha256 cellar: :any_skip_relocation, mojave:         "76e2d89891ecee0bfa07e939619683cae2d954bca2c5524a6e87b84c105c6c25"
+    sha256 cellar: :any_skip_relocation, high_sierra:    "df3853752133b68c20a9d054c12d36d531779fe595bc6011bb1e2d3245e9df2d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5cf44f8e5a57caff8a709f86cf6abb1c4da290afcdddc1b6088658b424c644b9"
   end
 
   depends_on "go" => :build
 
-  go_resource "github.com/streadway/quantile" do
-    url "https://github.com/streadway/quantile.git",
-        :revision => "b0c588724d25ae13f5afb3d90efec0edc636432b"
-  end
-
-  go_resource "golang.org/x/net" do
-    url "https://go.googlesource.com/net.git",
-        :revision => "a6577fac2d73be281a500b310739095313165611"
-  end
-
   def install
-    ENV["GOPATH"] = buildpath
-    ENV["CGO_ENABLED"] = "0"
+    ldflags = %W[
+      -s -w
+      -X main.Version=#{version}
+      -X main.Date=#{time.iso8601}
+    ].join(" ")
 
-    (buildpath/"src/github.com/tsenart").mkpath
-    ln_s buildpath, buildpath/"src/github.com/tsenart/vegeta"
-    Language::Go.stage_deps resources, buildpath/"src"
-    system "go", "build", "-ldflags", "-X main.Version=#{version}",
-                          "-o", bin/"vegeta"
+    system "go", "build", *std_go_args(ldflags: ldflags)
   end
 
   test do
     input = "GET https://google.com"
     output = pipe_output("#{bin}/vegeta attack -duration=1s -rate=1", input, 0)
     report = pipe_output("#{bin}/vegeta report", output, 0)
-    assert_match /Success +\[ratio\] +100.00%/, report
+    assert_match(/Success +\[ratio\] +100.00%/, report)
   end
 end

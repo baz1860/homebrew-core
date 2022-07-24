@@ -1,41 +1,27 @@
 class Glog < Formula
   desc "Application-level logging library"
   homepage "https://github.com/google/glog"
-  url "https://github.com/google/glog/archive/v0.3.5.tar.gz"
-  sha256 "7580e408a2c0b5a89ca214739978ce6ff480b5e7d8d7698a2aa92fadc484d1e0"
-  revision 3
-  head "https://github.com/google/glog.git"
+  url "https://github.com/google/glog/archive/v0.6.0.tar.gz"
+  sha256 "8a83bf982f37bb70825df71a9709fa90ea9f4447fb3c099e1d720a439d88bad6"
+  license "BSD-3-Clause"
+  head "https://github.com/google/glog.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "2611ad281e7bf92bc8fb1480661ac1e28e7472d3eecad63572aa1f205f494722" => :high_sierra
-    sha256 "8f4b25fe4396b3f32c7a7d058260b453adf2506e1d3a607d0ff48e664489526d" => :sierra
-    sha256 "24561c61283ee126c107a5fbb2131ebcab0903df9f4af99bebf4fbf04a0fdf90" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "875364220b0fae1b16b63ff9811aa675d1fc55e47fd5ea64ecfb15ce063965b2"
+    sha256 cellar: :any,                 arm64_big_sur:  "8a33b84bd59fa19c00401e5540a41207f2364867783b85289a2153cc4da2b861"
+    sha256 cellar: :any,                 monterey:       "04b418eda3d8089e64ab902d265dd935245c815b19933173f670a28d8abbca81"
+    sha256 cellar: :any,                 big_sur:        "54cac16cc76e3594f3b61afa071ebb7890a1cc22122cab767ae540ced1f1a24b"
+    sha256 cellar: :any,                 catalina:       "53e6963a265a0af5d6982b91e423f432f0a130995cc7e2e2021a04edbbc8a88d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "04695a6df86ea26cadda86975bc9ad9c1ec112e8325e2bbc5f25939b42698463"
   end
 
   depends_on "cmake" => :build
   depends_on "gflags"
 
   def install
-    mkdir "build" do
-      system "cmake", "..", "-DBUILD_SHARED_LIBS=ON", *std_cmake_args
-      system "make", "install"
-    end
-
-    # Upstream PR from 30 Aug 2017 "Produce pkg-config file under cmake"
-    # See https://github.com/google/glog/pull/239
-    (lib/"pkgconfig/libglog.pc").write <<~EOS
-      prefix=#{prefix}
-      exec_prefix=${prefix}
-      libdir=${exec_prefix}/lib
-      includedir=${prefix}/include
-
-      Name: libglog
-      Description: Google Log (glog) C++ logging framework
-      Version: #{stable.version}
-      Libs: -L${libdir} -lglog
-      Cflags: -I${includedir}
-    EOS
+    system "cmake", "-S", ".", "-B", "build", "-DBUILD_SHARED_LIBS=ON", *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--build", "build", "--target", "install"
   end
 
   test do
@@ -49,7 +35,10 @@ class Glog < Formula
         LOG(INFO) << "test";
       }
     EOS
-    system ENV.cxx, "-std=c++11", "test.cpp", "-I#{include}", "-L#{lib}", "-lglog", "-lgflags", "-o", "test"
+    system ENV.cxx, "-std=c++11", "test.cpp", "-I#{include}", "-L#{lib}",
+                    "-lglog", "-I#{Formula["gflags"].opt_lib}",
+                    "-L#{Formula["gflags"].opt_lib}", "-lgflags",
+                    "-o", "test"
     system "./test"
   end
 end

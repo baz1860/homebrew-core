@@ -1,66 +1,29 @@
 class Einstein < Formula
   desc "Remake of the old DOS game Sherlock"
-  homepage "https://web.archive.org/web/20120621005109/games.flowix.com/en/index.html"
-  url "https://web.archive.org/web/20120621005109/games.flowix.com/files/einstein/einstein-2.0-src.tar.gz"
-  sha256 "0f2d1c7d46d36f27a856b98cd4bbb95813970c8e803444772be7bd9bec45a548"
+  homepage "https://github.com/lksj/einstein-puzzle"
+  url "https://github.com/lksj/einstein-puzzle/archive/refs/tags/v2.1.1.tar.gz"
+  sha256 "46cf0806c3792b995343e46bec02426065f66421c870781475d6d365522c10fc"
 
   bottle do
-    cellar :any
-    sha256 "faa76a6c3363ec2c5f814940560db5fb52d8d7af89149dae7bbdf14967c51e3a" => :high_sierra
-    sha256 "b2f4290bc28e3dd1c528b7c58fa363f8e5832c00283fa79f2f9243d8e5a02c4c" => :sierra
-    sha256 "d0424faaf640750ab3ff8e8e24216a93227b9ff40d33405e3a55a7bdf14d1a36" => :el_capitan
-    sha256 "e884bcdb8f1644707fceb03a8d7732a528495e9655216eff42336c64fdd90179" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "40ca9b96841289d975500232b4f60c89359b68d81837231f8fa8f363e13f1c9a"
+    sha256 cellar: :any,                 arm64_big_sur:  "febb782f0a81b23076ca4edc880ca0dd161b083370da8025950aff95e7f1a930"
+    sha256 cellar: :any,                 monterey:       "edb114fe30d3527c77c4896310d24569188f4bed430740c2e914f9e0a340ad4f"
+    sha256 cellar: :any,                 big_sur:        "80aaf55aa6e90c8122f2de289c62bc4419b9a4ec69f80bf4c3373462317aa311"
+    sha256 cellar: :any,                 catalina:       "8c085442e58bea866e93f786daf3eb4910146a7234046559c5dc85a1c5b7297c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7fa7dcdc2fdb1ed00d35a14215d27da414e32d94818c76cc15da63a293371f06"
   end
 
   depends_on "sdl"
-  depends_on "sdl_ttf"
   depends_on "sdl_mixer"
-
-  # Fixes a cast error on compilation
-  patch :p0, :DATA
+  depends_on "sdl_ttf"
 
   def install
-    system "make"
+    # Temporary Homebrew-specific work around for linker flag ordering problem in Ubuntu 16.04.
+    # Remove after migration to 18.04.
+    inreplace "Makefile", "$(LNFLAGS) $(OBJECTS)", "$(OBJECTS) $(LNFLAGS)" unless OS.mac?
+    system "make", "PREFIX=#{HOMEBREW_PREFIX}"
 
     bin.install "einstein"
     (pkgshare/"res").install "einstein.res"
   end
 end
-
-__END__
---- formatter.cpp
-+++ formatter.cpp
-@@ -58,7 +58,7 @@ Formatter::Formatter(unsigned char *data, int offset)
-             if ((c.type == INT_ARG) || (c.type == STRING_ARG) ||
-                     (c.type == FLOAT_ARG) || (c.type == DOUBLE_ARG))
-             {
--                int no = (int)c.data;
-+                int no = *((int*)(&c.data));
-                 args[no - 1] = c.type;
-             }
-         }
-@@ -135,7 +135,7 @@ std::wstring Formatter::format(std::vector<ArgValue*> &argValues) const
-
-             case STRING_ARG:
-             case INT_ARG:
--                no = (int)cmd->data - 1;
-+                no = *((int*)(&cmd->data)) - 1;
-                 if (no < (int)argValues.size())
-                     s += argValues[no]->format(cmd);
-                 break;
---- main.cpp
-+++ main.cpp
-@@ -61,13 +61,9 @@ static void loadResources(const std::wstring &selfPath)
- #ifdef WIN32
-     dirs.push_back(getStorage()->get(L"path", L"") + L"\\res");
- #else
--#ifdef __APPLE__
--    dirs.push_back(getResourcesPath(selfPath));
--#else
-     dirs.push_back(PREFIX L"/share/einstein/res");
-     dirs.push_back(fromMbcs(getenv("HOME")) + L"/.einstein/res");
- #endif
--#endif
-     dirs.push_back(L"res");
-     dirs.push_back(L".");
-     resources = new ResourcesCollection(dirs);

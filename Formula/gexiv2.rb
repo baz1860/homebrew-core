@@ -1,32 +1,38 @@
 class Gexiv2 < Formula
   desc "GObject wrapper around the Exiv2 photo metadata library"
   homepage "https://wiki.gnome.org/Projects/gexiv2"
-  url "https://download.gnome.org/sources/gexiv2/0.10/gexiv2-0.10.8.tar.xz"
-  sha256 "81c528fd1e5e03577acd80fb77798223945f043fd1d4e06920c71202eea90801"
+  url "https://download.gnome.org/sources/gexiv2/0.14/gexiv2-0.14.0.tar.xz"
+  sha256 "e58279a6ff20b6f64fa499615da5e9b57cf65ba7850b72fafdf17221a9d6d69e"
+  license "GPL-2.0-or-later"
 
   bottle do
-    sha256 "c6da6deffd67e16ee41a570d6b2393caa04764c077b972c8b1ab6b5bde040261" => :high_sierra
-    sha256 "ef19b3b862ba328ca17665f974355737389626e72075078a55a8bb00032bb9c9" => :sierra
-    sha256 "be2ec9b0a9a314e982626156bb1b262648332334e57a03bc6c45b4ef14e223a1" => :el_capitan
+    sha256 cellar: :any, arm64_monterey: "990b477bf1f0d51b110bb91a59d8a50f0953c5d2029b06383e6c203d544ead21"
+    sha256 cellar: :any, arm64_big_sur:  "031ba5ff86ee4d9c3eff73caa1810b198919d6202671c565e3542c4825d50c55"
+    sha256 cellar: :any, monterey:       "c6c54be9582a1f39bf560baf839c3949fd6e12c15336763ca6ae8455e754b2cd"
+    sha256 cellar: :any, big_sur:        "998ef3640d04fa7e5480d8a5ddb476c5a8bde6120b234854c315ebdceccc5d78"
+    sha256 cellar: :any, catalina:       "9f00ba7ae2da026d10e53c5ee3439a35ae8b2d9e6ec94c13efd16d756844b4f5"
+    sha256 cellar: :any, mojave:         "a5dbf41078b0b748aa002e07b11d4063e6d2079a1740534322102689d84344d5"
+    sha256               x86_64_linux:   "3d95b43c323ebc976f94527574ee81bbe061e632cd37789e0c9a64009d3fd3df"
   end
 
-  depends_on "pkg-config" => :build
   depends_on "gobject-introspection" => :build
-  depends_on "python" if MacOS.version <= :mavericks
-  depends_on "glib"
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
+  depends_on "pygobject3" => :build
+  depends_on "python@3.9" => :build
+  depends_on "vala" => :build
   depends_on "exiv2"
-
-  # bug report opened on 2017/12/25, closed on 2018/01/05, reopened on 2018/02/06
-  # https://bugzilla.gnome.org/show_bug.cgi?id=791941
-  patch :DATA
+  depends_on "glib"
 
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--enable-introspection",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    pyver = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dpython3_girdir=#{lib}/python#{pyver}/site-packages/gi/overrides", ".."
+      system "ninja"
+      system "ninja", "install"
+    end
   end
 
   test do
@@ -49,19 +55,3 @@ class Gexiv2 < Formula
     system "./test"
   end
 end
-
-__END__
-diff --git a/configure b/configure
-index 8980ac9..aa0872c 100755
---- a/configure
-+++ b/configure
-@@ -18635,7 +18635,7 @@ case "$target_or_host" in
- esac
- { $as_echo "$as_me:${as_lineno-$LINENO}: result: $platform_darwin" >&5
- $as_echo "$platform_darwin" >&6; }
-- if test "$platform_win32" = "yes"; then
-+ if test "$platform_darwin" = "yes"; then
-   PLATFORM_DARWIN_TRUE=
-   PLATFORM_DARWIN_FALSE='#'
- else
-

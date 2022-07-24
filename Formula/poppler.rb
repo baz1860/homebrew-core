@@ -1,84 +1,85 @@
 class Poppler < Formula
   desc "PDF rendering library (based on the xpdf-3.0 code base)"
   homepage "https://poppler.freedesktop.org/"
-  url "https://poppler.freedesktop.org/poppler-0.62.0.tar.xz"
-  sha256 "5b9a73dfd4d6f61d165ada1e4f0abd2d420494bf9d0b1c15d0db3f7b83a729c6"
+  url "https://poppler.freedesktop.org/poppler-22.06.0.tar.xz"
+  sha256 "a0f9aaa3918bad781039fc307a635652a14d1b391cd559b66edec4bedba3c5d7"
+  license "GPL-2.0-only"
+  revision 1
+  head "https://gitlab.freedesktop.org/poppler/poppler.git", branch: "master"
 
-  bottle do
-    sha256 "e7ef8133d2a55b7b9d060e1bb39e85daa421805315b78cdaac2eb74e6ee7e50b" => :high_sierra
-    sha256 "67553e08dc541aa5db51e480b768a289095cf236279fe46defb4061783967bf8" => :sierra
-    sha256 "3797b24ecd422d96b7418c942c26937dd14af4e4e0b135c15cb1164a109ab5af" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(/href=.*?poppler[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-qt", "Build Qt5 backend"
-  option "with-little-cms2", "Use color management system"
-  option "with-nss", "Use NSS library for PDF signature validation"
-
-  deprecated_option "with-qt4" => "with-qt"
-  deprecated_option "with-qt5" => "with-qt"
-  deprecated_option "with-lcms2" => "with-little-cms2"
+  bottle do
+    sha256 arm64_monterey: "14ced29b6c7d9c6e0f2d08c4b49a3e65268d01bbec2218f97ebd67a9316b23f8"
+    sha256 arm64_big_sur:  "9465fb3af40332c03f0c5a280ee99aca991e4c9980c7d0b99032560560157228"
+    sha256 monterey:       "4a1167be001a77ffc4e75e0fe0d57508f8273e02181d8fdbfaca3fa2357b31a6"
+    sha256 big_sur:        "a7275fe3a98b6d0766cf530e6e3530f5748a1543611d7f850ec696ab5b35d704"
+    sha256 catalina:       "2f1587d91535a047d2e640ffcc8a544df7a3a433df768e7ab977d3b461fda81c"
+    sha256 x86_64_linux:   "5878e292c4da8ac666353b4c635fa0c8b1a108e3965fe03ad78e096981472a5c"
+  end
 
   depends_on "cmake" => :build
+  depends_on "gobject-introspection" => :build
   depends_on "pkg-config" => :build
   depends_on "cairo"
   depends_on "fontconfig"
   depends_on "freetype"
   depends_on "gettext"
   depends_on "glib"
-  depends_on "gobject-introspection"
   depends_on "jpeg"
   depends_on "libpng"
   depends_on "libtiff"
+  depends_on "little-cms2"
+  depends_on "nspr"
+  depends_on "nss"
   depends_on "openjpeg"
-  depends_on "qt" => :optional
-  depends_on "little-cms2" => :optional
-  depends_on "nss" => :optional
 
-  conflicts_with "pdftohtml", "pdf2image", "xpdf",
-    :because => "poppler, pdftohtml, pdf2image, and xpdf install conflicting executables"
+  uses_from_macos "gperf" => :build
+  uses_from_macos "curl"
+  uses_from_macos "zlib"
 
-  resource "font-data" do
-    url "https://poppler.freedesktop.org/poppler-data-0.4.8.tar.gz"
-    sha256 "1096a18161f263cccdc6d8a2eb5548c41ff8fcf9a3609243f1b6296abdf72872"
+  on_linux do
+    depends_on "gcc"
   end
 
-  needs :cxx11 if build.with?("qt") || MacOS.version < :mavericks
+  conflicts_with "pdftohtml", "pdf2image", "xpdf",
+    because: "poppler, pdftohtml, pdf2image, and xpdf install conflicting executables"
+
+  fails_with gcc: "5"
+
+  resource "font-data" do
+    url "https://poppler.freedesktop.org/poppler-data-0.4.11.tar.gz"
+    sha256 "2cec05cd1bb03af98a8b06a1e22f6e6e1a65b1e2f3816cb3069bb0874825f08c"
+  end
 
   def install
-    ENV.cxx11 if build.with?("qt") || MacOS.version < :mavericks
+    ENV.cxx11
 
-    args = std_cmake_args + %w[
-      -DENABLE_XPDF_HEADERS=ON
-      -DENABLE_GLIB=ON
+    args = std_cmake_args + %W[
       -DBUILD_GTK_TESTS=OFF
+      -DENABLE_BOOST=OFF
+      -DENABLE_CMS=lcms2
+      -DENABLE_GLIB=ON
+      -DENABLE_QT5=OFF
+      -DENABLE_QT6=OFF
+      -DENABLE_UNSTABLE_API_ABI_HEADERS=ON
       -DWITH_GObjectIntrospection=ON
-      -DENABLE_QT4=OFF
+      -DCMAKE_INSTALL_RPATH=#{rpath}
     ]
-
-    if build.with? "qt"
-      args << "-DENABLE_QT5=ON"
-    else
-      args << "-DENABLE_QT5=OFF"
-    end
-
-    if build.with? "little-cms2"
-      args << "-DENABLE_CMS=lcms2"
-    else
-      args << "-DENABLE_CMS=none"
-    end
 
     system "cmake", ".", *args
     system "make", "install"
+    system "make", "clean"
+    system "cmake", ".", "-DBUILD_SHARED_LIBS=OFF", *args
+    system "make"
+    lib.install "libpoppler.a"
+    lib.install "cpp/libpoppler-cpp.a"
+    lib.install "glib/libpoppler-glib.a"
     resource("font-data").stage do
       system "make", "install", "prefix=#{prefix}"
-    end
-
-    libpoppler = (lib/"libpoppler.dylib").readlink
-    ["#{lib}/libpoppler-cpp.dylib", "#{lib}/libpoppler-glib.dylib",
-     *Dir["#{bin}/*"]].each do |f|
-      macho = MachO.open(f)
-      macho.change_dylib("@rpath/#{libpoppler}", "#{lib}/#{libpoppler}")
-      macho.write!
     end
   end
 

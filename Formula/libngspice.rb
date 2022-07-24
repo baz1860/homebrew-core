@@ -1,41 +1,58 @@
 class Libngspice < Formula
   desc "Spice circuit simulator as shared library"
   homepage "https://ngspice.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/27/ngspice-27.tar.gz"
-  sha256 "0c08c7d57a2e21cf164496f3237f66f139e0c78e38345fbe295217afaf150695"
+
+  stable do
+    url "https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/37/ngspice-37.tar.gz"
+    sha256 "9beea6741a36a36a70f3152a36c82b728ee124c59a495312796376b30c8becbe"
+
+    # Fix -flat_namespace being used on Big Sur and later.
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+      sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
+    end
+  end
+
+  livecheck do
+    formula "ngspice"
+  end
 
   bottle do
-    sha256 "f1470393444748a5fb604cdadc7974402753827cca715f1588508fd7305c8d30" => :high_sierra
-    sha256 "841be3e66bf1f3dd18a74f2dfd201b95acebfd32e1bd180d99037193e3437bf3" => :sierra
-    sha256 "ef9fab04fd5b79cc361fa14642b59d762c7f589ea37c22e41273e97841712537" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "570a9fc2cef0e38a6fc50413efff7cd1510fd5cfe45b418d9084f4500f00d443"
+    sha256 cellar: :any,                 arm64_big_sur:  "d6cc2b395086bdabcd8c82a8d80b0447abf14c5f54c1292c422a182f136c6cd3"
+    sha256 cellar: :any,                 monterey:       "f34f1c28d673e2a3f4a65eeaefe43d252823674cf5429f8db264a95f85b2b69c"
+    sha256 cellar: :any,                 big_sur:        "470615d662b09d1301509575e1d76ee703a086d08344acb0b53e22008ea31877"
+    sha256 cellar: :any,                 catalina:       "08e2cf42d85bc36c66b3c4fe5310354389ab72bc68fbe25c867e9e1136e5c8af"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d9f0287c2f22f2e517257128cdf3b5e37d1e5e44cb76fdc5df348b98cce0b188"
   end
 
   head do
-    url "https://git.code.sf.net/p/ngspice/ngspice.git"
+    url "https://git.code.sf.net/p/ngspice/ngspice.git", branch: "master"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "bison" => :build
     depends_on "flex" => :build
     depends_on "libtool" => :build
-
-    # Currently, headers don't get installed to include/*.
-    # There is a patch upstream that addresses this for HEAD.
-    # Upstream ticket: https://sourceforge.net/p/ngspice/bugs/327
-    patch :DATA
   end
 
   def install
     system "./autogen.sh" if build.head?
-    system "./configure", "--prefix=#{prefix}", "--disable-debug",
-      "--disable-dependency-tracking", "--with-ngshared", "--enable-cider",
-      "--enable-xspice"
+
+    args = %W[
+      --disable-debug
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-ngshared
+      --enable-cider
+      --enable-xspice
+    ]
+
+    system "./configure", *args
     system "make", "install"
 
-    # To avoid rerunning autogen.sh for stable builds, work around the
-    # includedir bug by symlinking.  Upstream ticket:
-    # https://sourceforge.net/p/ngspice/bugs/327
-    include.install_symlink Dir[share/"ngspice/include/*"] if build.stable?
+    # remove script files
+    rm_rf Dir[share/"ngspice/scripts"]
   end
 
   test do
@@ -53,22 +70,3 @@ class Libngspice < Formula
     system "./test"
   end
 end
-__END__
-diff --git a/src/include/ngspice/Makefile.am b/src/include/ngspice/Makefile.am
-index 216816e..fd7fec0 100644
---- a/src/include/ngspice/Makefile.am
-+++ b/src/include/ngspice/Makefile.am
-@@ -1,11 +1,9 @@
- ## Process this file with automake to produce Makefile.in
-
--includedir = $(pkgdatadir)/include/ngspice
--
--nodist_include_HEADERS = \
-+nodist_pkginclude_HEADERS = \
-	config.h
-
--include_HEADERS = \
-+pkginclude_HEADERS = \
-	tclspice.h	\
-	acdefs.h	\
-	bdrydefs.h	\

@@ -1,69 +1,62 @@
 class Bochs < Formula
   desc "Open source IA-32 (x86) PC emulator written in C++"
   homepage "https://bochs.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/bochs/bochs/2.6.9/bochs-2.6.9.tar.gz"
-  sha256 "ee5b677fd9b1b9f484b5aeb4614f43df21993088c0c0571187f93acb0866e98c"
-  revision 1
+  url "https://downloads.sourceforge.net/project/bochs/bochs/2.7/bochs-2.7.tar.gz"
+  sha256 "a010ab1bfdc72ac5a08d2e2412cd471c0febd66af1d9349bc0d796879de5b17a"
+  license "LGPL-2.0-or-later"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/bochs[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    sha256 "1acbd357ca0d7394d2ca6ac261a7cbecf4d42d73fac2f5a6e237e7b33a01e51d" => :high_sierra
-    sha256 "8dd191ff5085b435ff26cd53026d8afada7fa9e18d84a985da2a6a9d6b179a64" => :sierra
-    sha256 "395ce5d3047ee0b98c8eb2130a8661d319a0926c19e7ebf6b31fc01dee0e8edf" => :el_capitan
-    sha256 "b32844f457ead67e1a656a1a6d05c0a67d56cc1b68d0ffb60f86d3c8ec0f50cf" => :yosemite
+    sha256 arm64_monterey: "e148150828ea9d230cf350212dc8d415e3442ff04e285f4cdc358d0477d282b6"
+    sha256 arm64_big_sur:  "413baabcb17f8a7da9b41306215280ef7fe9e898477c31eed66f483cfb15475a"
+    sha256 monterey:       "7846c1280fc53365233026350c900bbc481de62b54bce1f454441331e82ce597"
+    sha256 big_sur:        "6e644ff1b857016a22941d01d7136a94c39a790dd6ce0f358da5b5b5ab14af78"
+    sha256 catalina:       "a903d4549d08e804de103c69866708ac5a993f7a4006687e9465e67991494cb4"
+    sha256 mojave:         "8428e13cd552af48b539231826a222f4b74801688aa0e74c2de40c201cb68e30"
+    sha256 x86_64_linux:   "e681cbd2cb984ea659bad90239ba755b4fca333be1a4831513b53f461974a98b"
   end
-
-  option "with-gdb-stub", "Enable GDB Stub"
-  option "without-sdl2", "Disable graphical support"
 
   depends_on "pkg-config" => :build
-  depends_on "sdl2" => :recommended
+  depends_on "libtool"
+  depends_on "sdl2"
 
-  # Fix pointer cast issue
-  # https://sourceforge.net/p/bochs/patches/537/
-  if DevelopmentTools.clang_build_version >= 900
-    patch do
-      url "https://raw.githubusercontent.com/Homebrew/formula-patches/e9b520dd4c/bochs/xcode9.patch"
-      sha256 "373c670083a3e96f4012cfe7356d8b3584e2f0d10196b4294d56670124f5e5e7"
-    end
-  end
+  uses_from_macos "ncurses"
 
   def install
     args = %W[
       --prefix=#{prefix}
-      --with-nogui
-      --enable-disasm
       --disable-docbook
-      --enable-x86-64
-      --enable-pci
-      --enable-all-optimizations
-      --enable-plugins
-      --enable-cdrom
       --enable-a20-pin
-      --enable-fpu
       --enable-alignment-check
-      --enable-large-ramfile
-      --enable-debugger-gui
-      --enable-readline
-      --enable-iodebug
-      --enable-show-ips
-      --enable-logging
-      --enable-usb
-      --enable-cpu-level=6
-      --enable-clgd54xx
+      --enable-all-optimizations
       --enable-avx
+      --enable-evex
+      --enable-cdrom
+      --enable-clgd54xx
+      --enable-cpu-level=6
+      --enable-debugger
+      --enable-debugger-gui
+      --enable-disasm
+      --enable-fpu
+      --enable-iodebug
+      --enable-large-ramfile
+      --enable-logging
+      --enable-long-phy-address
+      --enable-pci
+      --enable-plugins
+      --enable-readline
+      --enable-show-ips
+      --enable-usb
       --enable-vmx=2
-      --enable-smp
-      --enable-long-phy-addres
+      --enable-x86-64
+      --with-nogui
+      --with-sdl2
       --with-term
     ]
-
-    args << "--with-sdl2" if build.with? "sdl2"
-
-    if build.with? "gdb-stub"
-      args << "--enable-gdb-stub"
-    else
-      args << "--enable-debugger"
-    end
 
     system "./configure", *args
 
@@ -88,12 +81,11 @@ class Bochs < Formula
     EOS
 
     command = "#{bin}/bochs -qf bochsrc.txt"
-    if build.without? "gdb-stub"
-      # When the debugger is enabled, bochs will stop on a breakpoint early
-      # during boot. We can pass in a command file to continue when it is hit.
-      (testpath/"debugger.txt").write("c\n")
-      command << " -rc debugger.txt"
-    end
+
+    # When the debugger is enabled, bochs will stop on a breakpoint early
+    # during boot. We can pass in a command file to continue when it is hit.
+    (testpath/"debugger.txt").write("c\n")
+    command << " -rc debugger.txt"
 
     _, stderr, = Open3.capture3(command)
     assert_match(expected, stderr)

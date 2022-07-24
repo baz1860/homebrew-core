@@ -1,18 +1,26 @@
 class Latex2html < Formula
   desc "LaTeX-to-HTML translator"
-  homepage "https://www.ctan.org/pkg/latex2html"
-  url "http://mirrors.ctan.org/support/latex2html/latex2html-2018.tar.gz"
-  sha256 "09e37526d169e77c266c23122348998a0841c3d50866e45ff2550128157ad4e2"
+  homepage "https://www.latex2html.org"
+  url "https://github.com/latex2html/latex2html/archive/v2022.2.tar.gz"
+  sha256 "b1d5bba7bab7d0369d1241f2d8294137a52b7cb7df11239bfa15ec0a2546c093"
+  license "GPL-2.0-or-later"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "85d6f0725f609bcb997296d58304a466b8a0ae7a21440953f822feea0b34f05f" => :high_sierra
-    sha256 "f1ee587fcf18d7c94eff2e0cc377e255f7a6c3495558438227e74a51d66a71d8" => :sierra
-    sha256 "484dc0ebe2273a16cf1f35bd76a1ef551eee16406fd5927d551c86a7a788212e" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)*)$/i)
   end
 
-  depends_on "netpbm"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "fe79732ce4286367899079a9f454c57db16c65d46851093ea7b74cd7fcee070b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "6b8249d8a5645594a8514c0454bd4eabf2cc3e3ba4f2fbf0ee13acfde88a8bd6"
+    sha256 cellar: :any_skip_relocation, monterey:       "ca570902e67d6bed65c699855d3644e9601f24208788d4cf57b45b6be98c5fc5"
+    sha256 cellar: :any_skip_relocation, big_sur:        "2de5fd65a590c0ba97c992ae00d50138059b3dc0b25824d8de4c0d6cec0c1c03"
+    sha256 cellar: :any_skip_relocation, catalina:       "ec0a808f4b5e62f702f941849063f9290d05522b5039f006a8ba58e7ef029353"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e6eeb77576c366020b2c5a5b57a2255641632f9129b6491a3389f56d875bf7de"
+  end
+
   depends_on "ghostscript"
+  depends_on "netpbm"
 
   def install
     system "./configure", "--prefix=#{prefix}",
@@ -32,6 +40,6 @@ class Latex2html < Formula
       \\end{document}
     EOS
     system "#{bin}/latex2html", "test.tex"
-    assert_match /Experimental Setup/, File.read("test/test.html")
+    assert_match "Experimental Setup", File.read("test/test.html")
   end
 end

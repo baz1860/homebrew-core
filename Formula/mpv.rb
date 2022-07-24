@@ -1,49 +1,42 @@
 class Mpv < Formula
   desc "Media player based on MPlayer and mplayer2"
   homepage "https://mpv.io"
-  url "https://github.com/mpv-player/mpv/archive/v0.27.2.tar.gz"
-  sha256 "2ad104d83fd3b2b9457716615acad57e479fd1537b8fc5e37bfe9065359b50be"
-  head "https://github.com/mpv-player/mpv.git"
+  url "https://github.com/mpv-player/mpv/archive/v0.34.1.tar.gz"
+  sha256 "32ded8c13b6398310fa27767378193dc1db6d78b006b70dbcbd3123a1445e746"
+  license :cannot_represent
+  revision 1
+  head "https://github.com/mpv-player/mpv.git", branch: "master"
 
   bottle do
-    sha256 "3cb3aa2d010d926f979bd5a6543b6ddbfd1debd675090a9a5c73483ba1c26e5e" => :high_sierra
-    sha256 "953244c58784ce538d65e307cd07419fead23875f0055953f33e0dedb15ee30e" => :sierra
-    sha256 "4e2dd1b8c7b2e6e8e7b55cfe75de3fe685e0a1efbc376c86a0f5dd28c09e92e7" => :el_capitan
+    sha256 arm64_monterey: "09e223bc45b0968497077eacfe9eeb7e1143ecc782ccd18af454ef215b4c1483"
+    sha256 arm64_big_sur:  "47c1c8f8cd49e071be6cda0f729aeaef829ac941e26c87f5ba266d41da423c12"
+    sha256 monterey:       "60f51e9c67a707139b2cfa763a961c0778323eae81c1a5aec69c17840ce49e61"
+    sha256 big_sur:        "3ee4dfdaea28f1b0c4ebabba8eb677949d1462af4133d4f6b94a60661ab615e7"
+    sha256 catalina:       "aca6e4cfc8598dfbd88882622aaeb117f97f1f843c82b87a5308b3fe90740c68"
+    sha256 x86_64_linux:   "f61254f8629ce7d463d36db3bd0c5ad36a52ef3ac5989316756eb3703e86a300"
   end
 
-  option "with-bundle", "Enable compilation of the .app bundle."
-
+  depends_on "docutils" => :build
   depends_on "pkg-config" => :build
-  depends_on "python3" => :build
+  depends_on "python@3.9" => :build
+  depends_on xcode: :build
 
+  depends_on "ffmpeg@4"
+  depends_on "jpeg"
+  depends_on "libarchive"
   depends_on "libass"
-  depends_on "ffmpeg"
-  depends_on "lua@5.1"
+  depends_on "little-cms2"
+  depends_on "luajit-openresty"
+  depends_on "mujs"
+  depends_on "uchardet"
+  depends_on "vapoursynth"
+  depends_on "yt-dlp"
 
-  depends_on "jpeg" => :recommended
-  depends_on "little-cms2" => :recommended
-  depends_on "mujs" => :recommended
-  depends_on "youtube-dl" => :recommended
-
-  depends_on "jack" => :optional
-  depends_on "libaacs" => :optional
-  depends_on "libarchive" => :optional
-  depends_on "libbluray" => :optional
-  depends_on "libcaca" => :optional
-  depends_on "libdvdnav" => :optional
-  depends_on "libdvdread" => :optional
-  depends_on "pulseaudio" => :optional
-  depends_on "rubberband" => :optional
-  depends_on "uchardet" => :optional
-  depends_on "vapoursynth" => :optional
-  depends_on :x11 => :optional
-
-  depends_on :macos => :mountain_lion
-
-  resource "docutils" do
-    url "https://files.pythonhosted.org/packages/05/25/7b5484aca5d46915493f1fd4ecb63c38c333bd32aa9ad6e19da8d08895ae/docutils-0.13.1.tar.gz"
-    sha256 "718c0f5fb677be0f34b781e04241c4067cbd9327b66bdd8e763201130f5175be"
+  on_linux do
+    depends_on "alsa-lib"
   end
+
+  fails_with gcc: "5" # ffmpeg is compiled with GCC
 
   def install
     # LANG is unset by default on macOS and causes issues when calling getlocale
@@ -51,46 +44,34 @@ class Mpv < Formula
     # that's good enough for building the manpage.
     ENV["LC_ALL"] = "C"
 
-    # Prevents a conflict between python2 and python3 when
-    # gobject-introspection is using brewed python.
-    ENV.delete("PYTHONPATH") if MacOS.version <= :mavericks
-
-    ENV.prepend_create_path "PYTHONPATH", buildpath/"vendor/lib/python2.7/site-packages"
-    resource("docutils").stage do
-      system "python", *Language::Python.setup_install_args(buildpath/"vendor")
-    end
-    ENV.prepend_path "PATH", buildpath/"vendor/bin"
+    # libarchive is keg-only
+    ENV.prepend_path "PKG_CONFIG_PATH", Formula["libarchive"].opt_lib/"pkgconfig"
+    # luajit-openresty is keg-only
+    ENV.prepend_path "PKG_CONFIG_PATH", Formula["luajit-openresty"].opt_lib/"pkgconfig"
 
     args = %W[
       --prefix=#{prefix}
-      --enable-zsh-comp
-      --enable-libmpv-shared
       --enable-html-build
+      --enable-javascript
+      --enable-libmpv-shared
       --enable-lua
+      --enable-libarchive
+      --enable-uchardet
       --confdir=#{etc}/mpv
       --datadir=#{pkgshare}
       --mandir=#{man}
       --docdir=#{doc}
       --zshdir=#{zsh_completion}
+      --lua=luajit
     ]
-    args << "--enable-libarchive" if build.with? "libarchive"
-    args << "--enable-libbluray" if build.with? "libbluray"
-    args << "--enable-dvdnav" if build.with? "libdvdnav"
-    args << "--enable-dvdread" if build.with? "libdvdread"
-    args << "--enable-javascript" if build.with? "mujs"
-    args << "--enable-pulse" if build.with? "pulseaudio"
 
-    system "./bootstrap.py"
-    system "python3", "waf", "configure", *args
-    system "python3", "waf", "install"
-
-    if build.with? "bundle"
-      system "python3", "TOOLS/osxbundle.py", "build/mpv"
-      prefix.install "build/mpv.app"
-    end
+    system Formula["python@3.9"].opt_bin/"python3", "bootstrap.py"
+    system Formula["python@3.9"].opt_bin/"python3", "waf", "configure", *args
+    system Formula["python@3.9"].opt_bin/"python3", "waf", "install"
   end
 
   test do
-    system bin/"mpv", "--ao=null", test_fixtures("test.wav")
+    system bin/"mpv", "--ao=null", "--vo=null", test_fixtures("test.wav")
+    assert_match "vapoursynth", shell_output(bin/"mpv --vf=help")
   end
 end

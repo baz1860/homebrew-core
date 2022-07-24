@@ -1,18 +1,22 @@
 class Profanity < Formula
   desc "Console based XMPP client"
-  homepage "http://www.profanity.im/"
-  url "http://www.profanity.im/profanity-0.5.1.tar.gz"
-  sha256 "e3513713e74ec3363fbdbac2919bdc17e249988780cc5a4589d1425807a7feb8"
+  homepage "https://profanity-im.github.io"
+  url "https://profanity-im.github.io/tarballs/profanity-0.12.1.tar.gz"
+  sha256 "e344481e7bf3b16baf58a169d321b809c4700becffb70db6f1c39adc3fad306e"
+  license "GPL-3.0-or-later"
+  revision 1
 
   bottle do
-    rebuild 1
-    sha256 "927877fecb1306de71150281968d62ebc20d3e2fb70a43706d759d31f9b46d3d" => :high_sierra
-    sha256 "e1944f29f1fb1233f43c9beac4e4f6c4af247e64e94fa9c1c3b77fc4071124aa" => :sierra
-    sha256 "759ebf658a3a869b22da48f7c6a99dbad605c75af19931cef996ef3484df5d29" => :el_capitan
+    sha256 arm64_monterey: "4491270163d04d1d5874bf2b5e53867e68ba8dc1f9a3748b8a7b3e05c53d0446"
+    sha256 arm64_big_sur:  "5cec786d1d6f83c9f8891d9f43757c102b4d772b5f17f307b34b025bfdfcfdd4"
+    sha256 monterey:       "1f89863e738b50d2427fa6c5b26d2863415f61b9d1931513b91d26070986935c"
+    sha256 big_sur:        "1c0f9f141b56574353271d0f2cdbdd4651f15f7a118814cad0e385e6cb2acfe4"
+    sha256 catalina:       "7ffd16eed0fbded7d26779049fbfa5a509e1b7a265f6bb5ba93dad3e7c79dc3c"
+    sha256 x86_64_linux:   "7b3f6fd3f611ab122e580e497cd008278bf849706ba8191f28ccb296d6ca43e2"
   end
 
   head do
-    url "https://github.com/boothj5/profanity.git"
+    url "https://github.com/profanity-im/profanity.git"
 
     depends_on "autoconf" => :build
     depends_on "autoconf-archive" => :build
@@ -21,21 +25,33 @@ class Profanity < Formula
   end
 
   depends_on "pkg-config" => :build
-  depends_on "ossp-uuid"
-  depends_on "libstrophe"
-  depends_on "readline"
+  depends_on "curl"
   depends_on "glib"
-  depends_on "openssl"
   depends_on "gnutls"
-  depends_on "libotr" => :recommended
-  depends_on "gpgme" => :recommended
-  depends_on "terminal-notifier" => :optional
+  depends_on "gpgme"
+  depends_on "libotr"
+  depends_on "libsignal-protocol-c"
+  depends_on "libstrophe"
+  depends_on "openssl@1.1"
+  depends_on "python@3.9"
+  depends_on "readline"
+
+  on_macos do
+    depends_on "terminal-notifier"
+  end
 
   def install
+    ENV.prepend_path "PATH", Formula["python@3.9"].opt_libexec/"bin"
+
     system "./bootstrap.sh" if build.head?
+
+    # We need to pass `BREW` to `configure` to make sure it can be found inside the sandbox in non-default
+    # prefixes. `configure` knows to check `/opt/homebrew` and `/usr/local`, but the sanitised build
+    # environment will prevent any other `brew` installations from being found.
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+                          "--prefix=#{prefix}",
+                          "BREW=#{HOMEBREW_BREW_FILE}"
     system "make", "install"
   end
 

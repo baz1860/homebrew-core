@@ -1,38 +1,40 @@
 class Cmus < Formula
   desc "Music player with an ncurses based interface"
   homepage "https://cmus.github.io/"
-  url "https://github.com/cmus/cmus/archive/v2.7.1.tar.gz"
-  sha256 "8179a7a843d257ddb585f4c65599844bc0e516fe85e97f6f87a7ceade4eb5165"
-  revision 2
-  head "https://github.com/cmus/cmus.git"
+  url "https://github.com/cmus/cmus/archive/v2.10.0.tar.gz"
+  sha256 "ff40068574810a7de3990f4f69c9c47ef49e37bd31d298d372e8bcdafb973fff"
+  license "GPL-2.0-or-later"
+  head "https://github.com/cmus/cmus.git", branch: "master"
 
   bottle do
-    sha256 "7bd5e8f8d29efe7840caefc7f455a8e61bf02b467991a133a0b76cf89e8584fe" => :high_sierra
-    sha256 "48171d7e6cd31ec1451a14c1c5275249f872c68c493910b39b1fa1d49eda04ad" => :sierra
-    sha256 "deeed1d9ef93f0a8263b18a08239cab7a22983afe4278310f9944b79ab3df560" => :el_capitan
-    sha256 "150534ed291aeb39a6c1a84a6efa6f1e4b518c0e3eae4e18efac9a5496e826af" => :yosemite
-  end
-
-  devel do
-    url "https://github.com/cmus/cmus/archive/v2.8.0-rc0.tar.gz"
-    sha256 "b594087f16053f4db49e89d72b1c6dbb12e221373e806e62b3e97c327de1dac9"
+    sha256 arm64_monterey: "db4d3a8fc7365aebb2d04c00fab660995e17fd33e1e858d227320f0132c5f750"
+    sha256 arm64_big_sur:  "c5b09c75e7b2dba15327fd4d9e44558bc0e6349a38c812329930e5f699361f5b"
+    sha256 monterey:       "33b6f93095d734ad3b94662251373c97ffd089da3487cb63bd8aa25c68feb326"
+    sha256 big_sur:        "e45b48a6d19b61633897b73389c8c1648026543072735330018e85960f2b85cd"
+    sha256 catalina:       "3b5595c657158e338d4ee9665afbc7ba4691e0eb228637eb42fb147b7cc33aee"
+    sha256 x86_64_linux:   "7ee4112ba4f7a8c80b20a5edbee93bf01fae4c333bd24398023bc8d3c1e71f68"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "libao"
-  depends_on "mad"
+  depends_on "faad2"
+  depends_on "ffmpeg"
+  depends_on "flac"
+  depends_on "libcue"
   depends_on "libogg"
   depends_on "libvorbis"
-  depends_on "faad2"
-  depends_on "flac"
+  depends_on "mad"
   depends_on "mp4v2"
-  depends_on "libcue"
-  depends_on "ffmpeg" => :optional
-  depends_on "opusfile" => :optional
-  depends_on "jack" => :optional
+  depends_on "opusfile"
+
+  on_linux do
+    depends_on "alsa-lib"
+  end
+
+  fails_with gcc: "5" # ffmpeg is compiled with GCC
 
   def install
-    system "./configure", "prefix=#{prefix}", "mandir=#{man}"
+    system "./configure", "prefix=#{prefix}", "mandir=#{man}",
+                          "CONFIG_WAVPACK=n", "CONFIG_MPC=n"
     system "make", "install"
   end
 

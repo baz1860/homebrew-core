@@ -1,21 +1,34 @@
 class Ace < Formula
   desc "ADAPTIVE Communication Environment: OO network programming in C++"
   homepage "https://www.dre.vanderbilt.edu/~schmidt/ACE.html"
-  url "http://download.dre.vanderbilt.edu/previous_versions/ACE-6.4.6.tar.bz2"
-  sha256 "d263b2e0680ea24acd5ba05f8dbfdee0f4ceec18cf78fd5c09461750c4e46d77"
+  url "https://github.com/DOCGroup/ACE_TAO/releases/download/ACE%2BTAO-7_0_8/ACE+TAO-7.0.8.tar.bz2"
+  sha256 "a050ffef2b2780f8e4fbc7250c20460b48bec3ea80064575d554cc36eb666cf4"
+  license "DOC"
+
+  livecheck do
+    url :stable
+    regex(/^ACE(?:\+[A-Z]+)*?[._-]v?(\d+(?:[._]\d+)+)$/i)
+    strategy :git do |tags, regex|
+      tags.map { |tag| tag[regex, 1]&.tr("_", ".") }
+    end
+  end
 
   bottle do
-    cellar :any
-    sha256 "ed3ef2c7bd2a488b532e818b9af4dd27a84f82ed3176a6512f3264f74f149ab7" => :high_sierra
-    sha256 "96cee7cfac8bf6a32ff2e9791a7d19828fe607813c9c9b7c065d42ae496655ef" => :sierra
-    sha256 "aca5e697853ca50b40397224d80f3eae66a2011f9682b0fd980cbec6d227ebbd" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "1d7cdca57f5f17952a4fec4c8256bd12c3253334f8f33ff0e44085e822c37ba3"
+    sha256 cellar: :any,                 arm64_big_sur:  "80bf0478c8a50658d45af23dfc60407435386952670cd1d0fd4dc7db44a2f390"
+    sha256 cellar: :any,                 monterey:       "91e1921808d72dd92c2105909a32ec012777a3b4cc01c50e422169a4c2965e3e"
+    sha256 cellar: :any,                 big_sur:        "59e10285e1f0cea510ce248000dcc1dce05d6962778f549f74efcdaa6550024a"
+    sha256 cellar: :any,                 catalina:       "075c33922ec132c7cd0941e80f7e593a4fb48b3b9e163745fdba7734e0d88e29"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "fec7514588fe20d0c3150f9b935ce84925be69cd7de9e21857e658d862df0026"
   end
 
   def install
-    ln_sf "config-macosx.h", "ace/config.h"
-    ln_sf "platform_macosx.GNU", "include/makeinclude/platform_macros.GNU"
+    os = OS.mac? ? "macosx" : "linux"
+    ln_sf "config-#{os}.h", "ace/config.h"
+    ln_sf "platform_#{os}.GNU", "include/makeinclude/platform_macros.GNU"
 
     # Set up the environment the way ACE expects during build.
+    ENV.cxx11
     ENV["ACE_ROOT"] = buildpath
     ENV["DYLD_LIBRARY_PATH"] = "#{buildpath}/lib"
 
@@ -30,7 +43,8 @@ class Ace < Formula
                    "static_libs=0",
                    "install"
 
-    system "make", "-C", "examples"
+    ENV.append "LDFLAGS", "-Wl,-rpath,#{lib}" if OS.mac?
+    system "make", "-C", "examples/Log_Msg"
     pkgshare.install "examples"
   end
 

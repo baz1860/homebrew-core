@@ -1,22 +1,30 @@
 class Mujs < Formula
   desc "Embeddable Javascript interpreter"
-  homepage "http://dev.mujs.com/"
+  homepage "https://www.mujs.com/"
   # use tag not tarball so the version in the pkg-config file isn't blank
   url "https://github.com/ccxvii/mujs.git",
-      :tag => "1.0.2",
-      :revision => "2cb57c6e7188a8438c58e1e3fc452b7ad06bee33"
-  head "https://github.com/ccxvii/mujs.git"
+      tag:      "1.2.0",
+      revision: "dd0a0972b4428771e6a3887da2210c7c9dd40f9c"
+  license "ISC"
+  head "https://github.com/ccxvii/mujs.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "626374af292ec4ea2b31b6deadcda1604e31f0a8c827b16a621a44258a2a4098" => :high_sierra
-    sha256 "aae5886954d24c0dfa35f2a1802cdccd3afa37f368181e92f12d7e7009af5ab8" => :sierra
-    sha256 "e001713a3180f685919fe453748eabcc9560d4aa8fcba5058948ac0306909f6c" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "5a94e31250222ad2105bb9ada248540edf2709980dc7f160909416f067744647"
+    sha256 cellar: :any,                 arm64_big_sur:  "e7bb9ec701b195dc73bdcea8c888745811b3e1c5ea0db69fd6f5c13d4500b11e"
+    sha256 cellar: :any,                 monterey:       "e77cc955e112e39425ace8bc18456cb5271db4d1f8d1aa730fd8e60a5b1cbfd6"
+    sha256 cellar: :any,                 big_sur:        "0631602182949a2efaa1848b960d182099b426b22f4697744ef2a4708780af91"
+    sha256 cellar: :any,                 catalina:       "0548c920d09d53c3c3da0ecf98cc24e5b47491e41e4d9ccf1c00ebbd6a19083c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e8df7e22cd7528ce683daf23345ea3b0b1d32debcb190fad3236ef7ee0533a78"
+  end
+
+  on_linux do
+    depends_on "readline"
   end
 
   def install
     system "make", "release"
     system "make", "prefix=#{prefix}", "install"
+    system "make", "prefix=#{prefix}", "install-shared"
   end
 
   test do

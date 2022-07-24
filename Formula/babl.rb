@@ -1,31 +1,47 @@
 class Babl < Formula
   desc "Dynamic, any-to-any, pixel format translation library"
-  homepage "http://www.gegl.org/babl/"
-  url "https://download.gimp.org/pub/babl/0.1/babl-0.1.44.tar.bz2"
-  sha256 "f463fda0dec534c442234d1c374ea5d19abe0da942e11c9c5092dcc6b30cde7d"
+  homepage "https://www.gegl.org/babl/"
+  url "https://download.gimp.org/pub/babl/0.1/babl-0.1.92.tar.xz"
+  sha256 "f667735028944b6375ad18f160a64ceb93f5c7dccaa9d8751de359777488a2c1"
+  license "LGPL-3.0-or-later"
+  # Use GitHub instead of GNOME's git. The latter is unreliable.
+  head "https://github.com/GNOME/babl.git", branch: "master"
+
+  livecheck do
+    url "https://download.gimp.org/pub/babl/0.1/"
+    regex(/href=.*?babl[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "73c468fb9fd53012a6f611f154197a7c4a1818ee018975e80e93c32d0021711c" => :high_sierra
-    sha256 "7d6ec0effa8a598cd74f9626847f81b428c9da28a1b08b3f0a5f5793626b15d6" => :sierra
-    sha256 "739f3f0cb627c1d91dcadf1fda141afa5721aeaa410311246cdd358a0d6849e5" => :el_capitan
+    sha256                               arm64_monterey: "33d2559001ddbc2cc4063a36243d63d5a3bedbde4735259473248c54f661f9bd"
+    sha256                               arm64_big_sur:  "bcb2fdea80e000e6c464926068e118f62f853863e95a8e10d74d31abfa9ddd03"
+    sha256                               monterey:       "4720fb8e970fc98ca17f5e16606d56c4198015beb7569a6cd54ed5213e760a65"
+    sha256                               big_sur:        "4835558673e20b770f9d86e4be991e5cf3e28b9796a5f4f687a8a202834a37d5"
+    sha256                               catalina:       "193b0672fc31c02feb32100f3bfcdeb130877e65bbc96b874df2d50b4ac3c562"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0de13877cc45551c2c7e037401f9339a2bdc243ca134412dca77ac851c468674"
   end
 
-  head do
-    # Use Github instead of GNOME's git. The latter is unreliable.
-    url "https://github.com/GNOME/babl.git"
-
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-    depends_on "libtool" => :build
-  end
-
+  depends_on "glib" => :build # for gobject-introspection
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "vala" => :build
+  depends_on "little-cms2"
+
+  # https://gitlab.gnome.org/GNOME/babl/-/merge_requests/45
+  # Can be removed on next version
+  patch do
+    url "https://gitlab.gnome.org/GNOME/babl/-/commit/b05b2826365a7dbc6ca1bf0977b848055cd0cbb6.diff"
+    sha256 "e428f1f11ee1456f4b630c193dca7448059c160418cccbd0ec1d28105db7bfc6"
+  end
 
   def install
-    system "./autogen.sh" if build.head?
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dwith-docs=false", ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do
@@ -40,7 +56,7 @@ class Babl < Formula
         return 0;
       }
     EOS
-    system ENV.cc, "-I#{include}/babl-0.1", "-L#{lib}", "-lbabl-0.1", testpath/"test.c", "-o", "test"
+    system ENV.cc, "-I#{include}/babl-0.1", testpath/"test.c", "-L#{lib}", "-lbabl-0.1", "-o", "test"
     system testpath/"test"
   end
 end

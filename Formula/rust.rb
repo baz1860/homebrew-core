@@ -1,87 +1,90 @@
 class Rust < Formula
   desc "Safe, concurrent, practical language"
   homepage "https://www.rust-lang.org/"
+  license any_of: ["Apache-2.0", "MIT"]
 
   stable do
-    url "https://static.rust-lang.org/dist/rustc-1.24.0-src.tar.gz"
-    sha256 "bb8276f6044e877e447f29f566e4bbf820fa51fea2f912d59b73233ffd95639f"
+    url "https://static.rust-lang.org/dist/rustc-1.62.1-src.tar.gz"
+    sha256 "72acbe6ffcd94f598382a7430b0d85ee8f679e6d0b27f3f566ed1c16c978133f"
 
+    # From https://github.com/rust-lang/rust/tree/#{version}/src/tools
     resource "cargo" do
       url "https://github.com/rust-lang/cargo.git",
-          :tag => "0.25.0",
-          :revision => "8c93e089536467783957fec23b0f2627bb6ce357"
-    end
-
-    resource "racer" do
-      url "https://github.com/racer-rust/racer/archive/2.0.12.tar.gz"
-      sha256 "1fa063d90030c200d74efb25b8501bb9a5add7c2e25cbd4976adf7a73bf715cc"
+          tag:      "0.63.0",
+          revision: "a748cf5a3e666bc2dcdf54f37adef8ef22196452"
     end
   end
 
   bottle do
-    rebuild 1
-    sha256 "63523dc7db03a21de1fafbe242a22a144967b241efd50e2ea23d41fed88d0a31" => :high_sierra
-    sha256 "4c926f3cc88ce210ee85cde6d5c2c4b6251b6b84097fb48d488335ab43708a65" => :sierra
-    sha256 "480221c3dd7477de2f97dfa43a26d5a4069fd5e32c3cf5a1dfc0d710d341e102" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "a559acc618a575bd0e05b3a7f0dc5317556a77cd61ee71caf09eb7e79bf54c01"
+    sha256 cellar: :any,                 arm64_big_sur:  "6f57dd20872fd28875ee617c19bad45ed3604de9f5e165be41b56e2937842334"
+    sha256 cellar: :any,                 monterey:       "0f1491c1229a80bd1f2842e0015cb249ac8a60675e056539d7a578802ed5375e"
+    sha256 cellar: :any,                 big_sur:        "f4c49f6d04d67c4a1089c652bde624a2053d20801f5344964d7d100b55d8ce52"
+    sha256 cellar: :any,                 catalina:       "e7fa918240ffb72f1b067666995cab5325b603f3f1ff118868d555fe6fb7ffe4"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "29ce31caf9a4fc7c72a3a750f5946ff70db5feb3acd08c0ecf41124b5f50828f"
   end
 
   head do
-    url "https://github.com/rust-lang/rust.git"
+    url "https://github.com/rust-lang/rust.git", branch: "master"
 
     resource "cargo" do
-      url "https://github.com/rust-lang/cargo.git"
+      url "https://github.com/rust-lang/cargo.git", branch: "master"
     end
   end
 
-  option "with-llvm", "Build with brewed LLVM. By default, Rust's LLVM will be used."
-  option "with-racer", "Build Racer code completion tool, and retain Rust sources."
-
   depends_on "cmake" => :build
-  depends_on "pkg-config" => :run
-  depends_on "llvm" => :optional
-  depends_on "openssl"
+  depends_on "ninja" => :build
+  depends_on "python@3.10" => :build
   depends_on "libssh2"
+  depends_on "openssl@1.1"
+  depends_on "pkg-config"
 
-  conflicts_with "cargo-completion", :because => "both install shell completion for cargo"
-
-  # According to the official readme, GCC 4.7+ is required
-  fails_with :gcc_4_0
-  fails_with :gcc
-  ("4.3".."4.6").each do |n|
-    fails_with :gcc => n
-  end
+  uses_from_macos "curl"
+  uses_from_macos "zlib"
 
   resource "cargobootstrap" do
-    # From https://github.com/rust-lang/rust/blob/#{version}/src/stage0.txt
-    url "https://static.rust-lang.org/dist/2018-01-04/cargo-0.24.0-x86_64-apple-darwin.tar.gz"
-    sha256 "b6f7c662ea75a94f5a5e41c2fee95f09a5ba168429ac8cdd41f6ba2c78d1b07f"
+    on_macos do
+      # From https://github.com/rust-lang/rust/blob/#{version}/src/stage0.json
+      on_arm do
+        url "https://static.rust-lang.org/dist/2022-05-19/cargo-1.61.0-aarch64-apple-darwin.tar.gz"
+        sha256 "8099a35548e1ae4773dbbcbe797301c500ec10236435fde0073f52b4937be6c3"
+      end
+      on_intel do
+        url "https://static.rust-lang.org/dist/2022-05-19/cargo-1.61.0-x86_64-apple-darwin.tar.gz"
+        sha256 "f2b10ef8c56f37014d2f3e4c36d5e666e3be368d24c597e99cf2e4b21dc40455"
+      end
+    end
+
+    on_linux do
+      # From: https://github.com/rust-lang/rust/blob/#{version}/src/stage0.json
+      url "https://static.rust-lang.org/dist/2022-05-19/cargo-1.61.0-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "c6e108e13ef5e08e71d70685861590f8683090368cab1f4eacfe97677333b2c7"
+    end
   end
 
   def install
-    # Fix build failure for compiler_builtins "error: invalid deployment target
-    # for -stdlib=libc++ (requires OS X 10.7 or later)"
-    ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+    ENV.prepend_path "PATH", Formula["python@3.10"].opt_libexec/"bin"
 
-    # Prevent cargo from linking against a different library (like openssl@1.1)
-    # from libssh2 and causing segfaults
-    ENV["OPENSSL_INCLUDE_DIR"] = Formula["openssl"].opt_include
-    ENV["OPENSSL_LIB_DIR"] = Formula["openssl"].opt_lib
+    # Ensure that the `openssl` crate picks up the intended library.
+    # https://crates.io/crates/openssl#manual-configuration
+    ENV["OPENSSL_DIR"] = Formula["openssl@1.1"].opt_prefix
 
-    # Fix build failure for cmake v0.1.24 "error: internal compiler error:
-    # src/librustc/ty/subst.rs:127: impossible case reached" on 10.11, and for
-    # libgit2-sys-0.6.12 "fatal error: 'os/availability.h' file not found
-    # #include <os/availability.h>" on 10.11 and "SecTrust.h:170:67: error:
-    # expected ';' after top level declarator" among other errors on 10.12
-    ENV["SDKROOT"] = MacOS.sdk_path
+    if OS.mac? && MacOS.version <= :sierra
+      # Requires the CLT to be the active developer directory if Xcode is installed
+      ENV["SDKROOT"] = MacOS.sdk_path
+      # Fix build failure for compiler_builtins "error: invalid deployment target
+      # for -stdlib=libc++ (requires OS X 10.7 or later)"
+      ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version
+    end
 
-    args = ["--prefix=#{prefix}"]
-    args << "--disable-rpath" if build.head?
-    args << "--llvm-root=#{Formula["llvm"].opt_prefix}" if build.with? "llvm"
+    args = %W[--prefix=#{prefix} --enable-vendor --set rust.jemalloc]
     if build.head?
+      args << "--disable-rpath"
       args << "--release-channel=nightly"
     else
       args << "--release-channel=stable"
     end
+
     system "./configure", *args
     system "make"
     system "make", "install"
@@ -93,25 +96,15 @@ class Rust < Formula
 
     resource("cargo").stage do
       ENV["RUSTC"] = bin/"rustc"
-      system "cargo", "build", "--release", "--verbose"
-      bin.install "target/release/cargo"
+      args = %W[--root #{prefix} --path .]
+      args += %w[--features curl-sys/force-system-lib-on-osx] if OS.mac?
+      system "cargo", "install", *args
+      man1.install Dir["src/etc/man/*.1"]
+      bash_completion.install "src/etc/cargo.bashcomp.sh"
+      zsh_completion.install "src/etc/_cargo"
     end
 
-    if build.with? "racer"
-      resource("racer").stage do
-        ENV.prepend_path "PATH", bin
-        cargo_home = buildpath/"cargo_home"
-        cargo_home.mkpath
-        ENV["CARGO_HOME"] = cargo_home
-        system bin/"cargo", "build", "--release", "--verbose"
-        (libexec/"bin").install "target/release/racer"
-        (bin/"racer").write_env_script(libexec/"bin/racer", :RUST_SRC_PATH => pkgshare/"rust_src")
-      end
-      # Remove any binary files; as Homebrew will run ranlib on them and barf.
-      rm_rf Dir["src/{llvm,test,librustdoc,etc/snapshot.pyc}"]
-      (pkgshare/"rust_src").install Dir["src/*"]
-    end
-
+    (lib/"rustlib/src/rust").install "library"
     rm_rf prefix/"lib/rustlib/uninstall.sh"
     rm_rf prefix/"lib/rustlib/install.log"
   end
@@ -125,16 +118,15 @@ class Rust < Formula
   end
 
   test do
-    system "#{bin}/rustdoc", "-h"
+    system bin/"rustdoc", "-h"
     (testpath/"hello.rs").write <<~EOS
       fn main() {
         println!("Hello World!");
       }
     EOS
-    system "#{bin}/rustc", "hello.rs"
-    assert_equal "Hello World!\n", `./hello`
-    system "#{bin}/cargo", "new", "hello_world", "--bin"
-    assert_equal "Hello, world!",
-                 (testpath/"hello_world").cd { `#{bin}/cargo run`.split("\n").last }
+    system bin/"rustc", "hello.rs"
+    assert_equal "Hello World!\n", shell_output("./hello")
+    system bin/"cargo", "new", "hello_world", "--bin"
+    assert_equal "Hello, world!", cd("hello_world") { shell_output("#{bin}/cargo run").split("\n").last }
   end
 end

@@ -1,82 +1,29 @@
 class Bup < Formula
   desc "Backup tool"
-  homepage "https://github.com/bup/bup"
-  url "https://github.com/bup/bup/archive/0.29.1.tar.gz"
-  sha256 "d24b53c842d1edc907870aa69facbd45f68d778cc013b1c311b655d10d017250"
-  head "https://github.com/bup/bup.git"
+  homepage "https://bup.github.io/"
+  url "https://github.com/bup/bup/archive/0.32.tar.gz"
+  sha256 "a894cfa96c44b9ef48003b2c2104dc5fa6361dd2f4d519261a93178984a51259"
+  license all_of: ["BSD-2-Clause", "LGPL-2.0-only"]
+  revision 1
+  head "https://github.com/bup/bup.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "364b59cc6d16740e56d5295636670f1084f541027c72f0f4ba18e3a12dba8959" => :high_sierra
-    sha256 "ffe848617a641266d6915ce1c0fa6713dd02d978f47da33ffb9b91b15adbbe05" => :sierra
-    sha256 "d17a4b3cfa4233179a4828b23fdae5bf19a8bb605080c697b52d548354e797cb" => :el_capitan
-    sha256 "462b39a188a6fd32d9df4812a629b3bf8692f38439125d98e58e306261277903" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "c16e4a2f85d1e3eebbe77b466955cf0bba468a41fa6336b4f5889cdf708c5e1c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "c27f726b938b0d5958310ac1c068797759d883787d50233182290704690c4e07"
+    sha256 cellar: :any_skip_relocation, monterey:       "38791642448b41961ae0d08bb42b06cdafb87f61c10796886f8f8f1df5085862"
+    sha256 cellar: :any_skip_relocation, big_sur:        "86326ccc67782f09e5d4d83c848c6027609a394ae2de9456d74d5d192942c023"
+    sha256 cellar: :any_skip_relocation, catalina:       "0440daa882d222be41e6817735e5df52bbc8154c49623862a2f7fa1deaff8f73"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9d458aeba96d14ee8b561d58130951dbae1fea8e69e7c131ddaa5319d01fb750"
   end
 
-  option "with-pandoc", "Build and install the manpages"
-  option "with-test", "Run unit tests after compilation"
-  option "without-web", "Build without repository access via `bup web`"
-
-  deprecated_option "run-tests" => "with-test"
-  deprecated_option "with-tests" => "with-test"
-
-  depends_on "pandoc" => [:optional, :build]
-  depends_on "python" if MacOS.version <= :snow_leopard
-
-  resource "backports_abc" do
-    url "https://files.pythonhosted.org/packages/68/3c/1317a9113c377d1e33711ca8de1e80afbaf4a3c950dd0edfaf61f9bfe6d8/backports_abc-0.5.tar.gz"
-    sha256 "033be54514a03e255df75c5aee8f9e672f663f93abb723444caec8fe43437bde"
-  end
-
-  resource "certifi" do
-    url "https://files.pythonhosted.org/packages/b6/fa/ca682d5ace0700008d246664e50db8d095d23750bb212c0086305450c276/certifi-2017.1.23.tar.gz"
-    sha256 "81877fb7ac126e9215dfb15bfef7115fdc30e798e0013065158eed0707fd99ce"
-  end
-
-  resource "singledispatch" do
-    url "https://files.pythonhosted.org/packages/d9/e9/513ad8dc17210db12cb14f2d4d190d618fb87dd38814203ea71c87ba5b68/singledispatch-3.4.0.3.tar.gz"
-    sha256 "5b06af87df13818d14f08a028e42f566640aef80805c3b50c5056b086e3c2b9c"
-  end
-
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
-  end
-
-  resource "tornado" do
-    url "https://files.pythonhosted.org/packages/5c/0b/2e5cef0d30811532b27ece726fb66a41f63344af8b693c90cec9474d9022/tornado-4.4.3.tar.gz"
-    sha256 "f267acc96d5cf3df0fd8a7bfb5a91c2eb4ec81d5962d1a7386ceb34c655634a8"
-  end
+  depends_on "pandoc" => :build
+  depends_on "pkg-config" => :build
+  depends_on "python@3.10"
 
   def install
-    # `make test` gets stuck unless the Python Tornado module is installed
-    # Fix provided 12 Jun 2016 by upstream in #bup channel on IRC freenode
-    inreplace "t/test-web.sh", "if test -n \"$run_test\"; then", <<~EOS
-      if ! python -c 'import tornado'; then
-          WVSTART 'unable to import tornado; skipping test'
-          run_test=''
-      fi
+    ENV["PYTHON"] = Formula["python@3.10"].opt_bin/"python3"
 
-      if test -n \"$run_test\"; then
-    EOS
-
-    if build.with? "web"
-      ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
-      resources.each do |r|
-        r.stage do
-          system "python", *Language::Python.setup_install_args(libexec/"vendor")
-        end
-      end
-    end
-
-    system "make"
-    system "make", "test" if build.bottle? || build.with?("test")
-    system "make", "install", "DESTDIR=#{prefix}", "PREFIX="
-
-    if build.with? "web"
-      mv bin/"bup", libexec/"bup.py"
-      (bin/"bup").write_env_script libexec/"bup.py", :PYTHONPATH => ENV["PYTHONPATH"]
-    end
+    system "make", "PREFIX=#{prefix}", "install"
   end
 
   test do

@@ -1,53 +1,45 @@
 class Inspircd < Formula
   desc "Modular C++ Internet Relay Chat daemon"
   homepage "https://www.inspircd.org/"
-  url "https://github.com/inspircd/inspircd/archive/v2.0.25.tar.gz"
-  sha256 "c2488fafd04fcabbd8ddc8b9cdc6e0b57e942802b451c9cbccaf5d8483ebd251"
-  head "https://github.com/inspircd/inspircd.git", :branch => "insp20"
+  url "https://github.com/inspircd/inspircd/archive/v3.13.0.tar.gz"
+  sha256 "0a4534114f5db1602c53ca4cfbb5ad623b9f990737d8c8f85890d8de47165729"
+  license "GPL-2.0-only"
+
+  livecheck do
+    url "https://github.com/inspircd/inspircd.git"
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    sha256 "fa0c21347636bbcf3cdb50606bc993607a705d6fc740d7af61c3d637af21aa42" => :high_sierra
-    sha256 "cb4476a4883acb2a5d6aac17d7f8879fe1938ce34e8d37d97e5761e74ac4ce50" => :sierra
-    sha256 "b73cab6e0683569ce510aff2f6817174e1986d2fa468bf344c812222cfc0b7f7" => :el_capitan
+    sha256 arm64_monterey: "fe66b87be5c23dfdecb0258129e988c392e2b78fa85d3f2d916d74fd201863e6"
+    sha256 arm64_big_sur:  "23d268c3f11f4442f5f415844596a18dc5258e8b0d74e171507e55b6b4a6f81b"
+    sha256 monterey:       "6e224ab3cba8764b0f3a3f11231dbb979e8ffcaf3ac002da36ae4391074ef836"
+    sha256 big_sur:        "8b536ca9122bc746a3e7c81265e16b0177ec2cedc26f2d165a621eeb6a2c0eb5"
+    sha256 catalina:       "ade550484eb9a3cd30af97213f6af0876a80f4429be22942659f4e92c7afbc17"
+    sha256 x86_64_linux:   "9cf845bb42d80e23ee09b603248d586c5cbc86de3c393e3d376ba3e2e05c0ada"
   end
+
+  depends_on "pkg-config" => :build
+  depends_on "argon2"
+  depends_on "gnutls"
+  depends_on "libpq"
+  depends_on "mysql-client"
+
+  uses_from_macos "openldap"
 
   skip_clean "data"
   skip_clean "logs"
 
-  option "without-ldap", "Build without ldap support"
-
-  depends_on "pkg-config" => :build
-  depends_on "geoip" => :optional
-  depends_on "gnutls" => :optional
-  depends_on "mysql" => :optional
-  depends_on "openssl" => :optional
-  depends_on "pcre" => :optional
-  depends_on "postgresql" => :optional
-  depends_on "sqlite" => :optional
-  depends_on "tre" => :optional
-
   def install
-    modules = []
-    modules << "m_geoip.cpp" if build.with? "geoip"
-    modules << "m_ssl_gnutls.cpp" if build.with? "gnutls"
-    modules << "m_mysql.cpp" if build.with? "mysql"
-    modules << "m_ssl_openssl.cpp" if build.with? "openssl"
-    modules << "m_ldapauth.cpp" << "m_ldapoper.cpp" if build.with? "ldap"
-    modules << "m_regex_pcre.cpp" if build.with? "pcre"
-    modules << "m_pgsql.cpp" if build.with? "postgresql"
-    modules << "m_sqlite3.cpp" if build.with? "sqlite"
-    modules << "m_regex_tre.cpp" if build.with? "tre"
-
-    system "./configure", "--enable-extras=#{modules.join(",")}" unless modules.empty?
-    system "./configure", "--prefix=#{prefix}", "--with-cc=#{ENV.cc}"
+    system "./configure", "--enable-extras",
+                          "argon2 ldap mysql pgsql regex_posix regex_stdlib ssl_gnutls sslrehashsignal"
+    system "./configure", "--disable-auto-extras",
+                          "--distribution-label", "homebrew-#{revision}",
+                          "--prefix", prefix
     system "make", "install"
   end
 
-  def post_install
-    inreplace "#{prefix}/org.inspircd.plist", "ircdaemon", ENV["USER"]
-  end
-
   test do
-    system "#{bin}/inspircd", "--version"
+    assert_match("ERROR: Cannot open config file", shell_output("#{bin}/inspircd", 2))
   end
 end

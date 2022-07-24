@@ -1,15 +1,24 @@
 class GnuChess < Formula
-  desc "GNU Chess"
+  desc "Chess-playing program"
   homepage "https://www.gnu.org/software/chess/"
-  url "https://ftp.gnu.org/gnu/chess/gnuchess-6.2.5.tar.gz"
-  mirror "https://ftpmirror.gnu.org/chess/gnuchess-6.2.5.tar.gz"
-  sha256 "9a99e963355706cab32099d140b698eda9de164ebce40a5420b1b9772dd04802"
+  url "https://ftp.gnu.org/gnu/chess/gnuchess-6.2.9.tar.gz"
+  mirror "https://ftpmirror.gnu.org/chess/gnuchess-6.2.9.tar.gz"
+  sha256 "ddfcc20bdd756900a9ab6c42c7daf90a2893bf7f19ce347420ce36baebc41890"
+  license "GPL-3.0-or-later"
+
+  livecheck do
+    url :stable
+    regex(/href=.*?gnuchess[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "86d69dd816e2c3f4955c7f2af73df5a086c15879cde479f7657b9d2503c9c2b5" => :high_sierra
-    sha256 "1a741b2a6de01917968ed8074bd6f52153589d3269f833feebba819df80379ef" => :sierra
-    sha256 "f2e4587d4a42dbe78a4f7ec70fe5cfa54d46f93bad4a275c4759caa36cdc6688" => :el_capitan
-    sha256 "328ac0deafb88bcfaf23c8ef54d483f3f00ebd2f2e3dbe44f3205636a5f8db1e" => :yosemite
+    sha256 arm64_monterey: "b03db46e113c63c8d141181ca6f89626414827a3d0aa15dc88e7cb72f2fcaf69"
+    sha256 arm64_big_sur:  "8e356eccb6a541eee641342bc7f923b35271fd51c094ca6b83e8abdecd7226a1"
+    sha256 monterey:       "7e1eed30943db3dc80910b5f10ae6df5b65354e65748fff524dba044ea495da8"
+    sha256 big_sur:        "11997b7b97ab58380f07e491fc9b75649f52ab6d7edfdfbdbf025a3a12d81d3a"
+    sha256 catalina:       "d3dcc4bec287a4b09dbb0dba0f7fc51943812fed43eeda21a5f3d314ae77dbf6"
+    sha256 mojave:         "03d9103b7fbbfeaf487d3b6dbac291eaacd51299052b62ddd3564eaedc513f08"
+    sha256 x86_64_linux:   "ef91217fa368cd712df9a7c4c6def92eeb5a26b37d5c0e9ee51e13a3ab7cca26"
   end
 
   head do
@@ -20,8 +29,6 @@ class GnuChess < Formula
     depends_on "gettext"
   end
 
-  option "with-book", "Download the opening book (~25MB)"
-
   depends_on "readline"
 
   resource "book" do
@@ -30,6 +37,9 @@ class GnuChess < Formula
   end
 
   def install
+    #  Fix "install-sh: Permission denied" issue
+    chmod "+x", "install-sh"
+
     if build.head?
       system "autoreconf", "--install"
       chmod 0755, "install-sh"
@@ -39,20 +49,17 @@ class GnuChess < Formula
                           "--prefix=#{prefix}"
     system "make", "install"
 
-    if build.with? "book"
-      resource("book").stage do
-        doc.install "book_1.02.pgn"
-      end
+    resource("book").stage do
+      doc.install "book_1.02.pgn"
     end
   end
 
-  if build.with? "book"
-    def caveats; <<~EOS
+  def caveats
+    <<~EOS
       This formula also downloads the additional opening book.  The
       opening book is a PGN file located in #{doc} that can be added
       using gnuchess commands.
     EOS
-    end
   end
 
   test do

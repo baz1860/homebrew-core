@@ -1,39 +1,48 @@
 class Ffmpegthumbnailer < Formula
   desc "Create thumbnails for your video files"
   homepage "https://github.com/dirkvdb/ffmpegthumbnailer"
-  url "https://github.com/dirkvdb/ffmpegthumbnailer/releases/download/2.2.0/ffmpegthumbnailer-2.2.0.tar.bz2"
-  sha256 "e5c31299d064968198cd378f7488e52cd5e738fac998eea780bc77d7f32238c2"
-  revision 1
-  head "https://github.com/dirkvdb/ffmpegthumbnailer.git"
+  url "https://github.com/dirkvdb/ffmpegthumbnailer/archive/2.2.2.tar.gz"
+  sha256 "8c4c42ab68144a9e2349710d42c0248407a87e7dc0ba4366891905322b331f92"
+  license "GPL-2.0-or-later"
+  revision 7
+  head "https://github.com/dirkvdb/ffmpegthumbnailer.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "09715472732033ae65a2d26a3526bc5de60fcf44ad843349a9a57ba885845f86" => :high_sierra
-    sha256 "b0085442d2ba5a93c44b51870da1e5719459712366914883303bc4de2c601e3f" => :sierra
-    sha256 "84ad2c8ac398ced2d71cc0e2963e2eaf70c842ff22b4207dd4546ba3f2ff03b2" => :el_capitan
-    sha256 "be4a2d019541ca0a1d61b2eec0ed98b389c17a1d990c76d882c51590f8b32e10" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "692c0b3202acf1e7d3bb6e0dc49abfeb9eae91d87f7ace9f52fcce45caf77889"
+    sha256 cellar: :any,                 arm64_big_sur:  "044ab71c693e108bcc7734cee4377ee53400e95eedee527618e480d06e0f0caa"
+    sha256 cellar: :any,                 monterey:       "c3151551d8b47f7d7314cd08144a22214ef47ca9c079b14dc84a799ce4cd9a12"
+    sha256 cellar: :any,                 big_sur:        "a1ea81c204ac623893693f403375053eb8fce33ca9fddd1964630786147cc1e5"
+    sha256 cellar: :any,                 catalina:       "0bacb1352eb215908d5217433493d11867ec205f9364dfb33a2b62323f70090a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5b35981ab4fc303232a0602adceff292e014f8d6e248d2a60581891436affd1b"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
+  depends_on "ffmpeg@4"
   depends_on "jpeg"
   depends_on "libpng"
-  depends_on "ffmpeg"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5" # rubberband is built with GCC
 
   def install
-    ENV.cxx11 if MacOS.version < :mavericks
-
     args = std_cmake_args
     args << "-DENABLE_GIO=ON"
     args << "-DENABLE_THUMBNAILER=ON"
+    args << "-DCMAKE_INSTALL_RPATH=#{rpath}"
 
-    system "cmake", *args
-    system "make"
-    system "make", "install"
+    mkdir "build" do
+      system "cmake", "..", *args
+      system "make"
+      system "make", "install"
+    end
   end
 
   test do
-    f = Formula["ffmpeg"].opt_bin/"ffmpeg"
+    f = Formula["ffmpeg@4"].opt_bin/"ffmpeg"
     png = test_fixtures("test.png")
     system f.to_s, "-loop", "1", "-i", png.to_s, "-c:v", "libx264", "-t", "30",
                    "-pix_fmt", "yuv420p", "v.mp4"

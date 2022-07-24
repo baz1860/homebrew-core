@@ -1,33 +1,48 @@
 class Btfs < Formula
   desc "BitTorrent filesystem based on FUSE"
   homepage "https://github.com/johang/btfs"
-  url "https://github.com/johang/btfs/archive/v2.18.tar.gz"
-  sha256 "bb9679045540554232eff303fc4f615d28eb4023461eae3f65f08f2427ec9ef2"
-  revision 1
-  head "https://github.com/johang/btfs.git"
+  url "https://github.com/johang/btfs/archive/v2.24.tar.gz"
+  sha256 "d71ddefe3c572e05362542a0d9fd0240d8d4e1578ace55a8b3245176e7fd8935"
+  license "GPL-3.0-only"
+  head "https://github.com/johang/btfs.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "8d6304dcbbbd2ca488aa930f12afe2b392452c496cc79337d677a9569c8f2ea6" => :high_sierra
-    sha256 "d196daadfbfe1670faa9ec72a2071e44cfa5484eca8d018a255cf7223bf56105" => :sierra
-    sha256 "53f2962e4a4bad2e1b73eb373cb325655d217e55836ea31ae6f4f56bbdbf4bde" => :el_capitan
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "ffdfc0e854a9f980b9df510458c5baa0910e5d6fd74862f106ff97f2fc0fe2cc"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "pkg-config" => :build
-  depends_on :osxfuse
   depends_on "libtorrent-rasterbar"
+
+  uses_from_macos "curl"
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse@2"
+  end
 
   def install
     ENV.cxx11
     inreplace "configure.ac", "fuse >= 2.8.0", "fuse >= 2.7.3"
-    system "autoreconf", "--force", "--install"
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+    system "autoreconf", "--force", "--install", "--verbose"
+    system "./configure", *std_configure_args, "--disable-silent-rules"
     system "make", "install"
+  end
+
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
+
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
   end
 
   test do

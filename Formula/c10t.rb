@@ -3,13 +3,16 @@ class C10t < Formula
   homepage "https://github.com/udoprog/c10t"
   url "https://github.com/udoprog/c10t/archive/1.7.tar.gz"
   sha256 "0e5779d517105bfdd14944c849a395e1a8670bedba5bdab281a0165c3eb077dc"
+  license "BSD-3-Clause"
+  revision 2
 
   bottle do
-    cellar :any
-    sha256 "eaf300efd0b907d3cead85f0e2338b3ebc7162143d29874e841504a2645a126d" => :high_sierra
-    sha256 "81effa3d15bf65343a17befabbab5ddf9e40953336d4dec27b379e62fac98439" => :sierra
-    sha256 "a7e8fa78424c478351d68d8db77577b1d93208da645e975be9dfd5696d0cf851" => :el_capitan
-    sha256 "bcda91a0b11bf1fc75fa5235901ad0c43c22b058846f8b6785daf35fcc10e9af" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "5bcb225283ff1ef1517416ea63fd4531991694f295145be2c370d1d54d9b84da"
+    sha256 cellar: :any,                 arm64_big_sur:  "38cf0106eca82d542b1e3af46093b7ae8794e255352f40ce2bc380ff525088d7"
+    sha256 cellar: :any,                 monterey:       "cefe5abaf716636386a488aa4567bed7de4e83427f3e3cc65dc180a933245f7e"
+    sha256 cellar: :any,                 big_sur:        "f6549cf911df71c42423a42b0ea9ca7aaeabd45607c71b46cfa45f558041af6f"
+    sha256 cellar: :any,                 catalina:       "bb70f4cc507e90b5f72a44c0d0fa1a4beb500a44fd25b16681633e6521735871"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "fbec62e6c3534ee4fd7cdb676589ca41788015dad4facbf966d5a62c637c1548"
   end
 
   depends_on "cmake" => :build
@@ -20,8 +23,8 @@ class C10t < Formula
   # Can be removed for the next version of c10t after 1.7
   # See: https://github.com/udoprog/c10t/pull/153
   patch do
-    url "https://github.com/udoprog/c10t/commit/4a392b9f06d08c70290f4c7591e84ecdbc73d902.diff?full_index=1"
-    sha256 "5e1c6d9906c3cf2aaaceca2570236585d3404ab4107cfb9169697e9cab30072d"
+    url "https://github.com/udoprog/c10t/commit/4a392b9f06d08c70290f4c7591e84ecdbc73d902.patch?full_index=1"
+    sha256 "7197435e9384bf93f580fab01097be549c8c8f2c54a96ba4e2ae49a5d260e297"
   end
 
   # Fix freetype detection; adapted from this upstream commit:
@@ -33,13 +36,21 @@ class C10t < Formula
 
   # Ensure zlib header is included for libpng; fixed upstream
   patch do
-    url "https://github.com/udoprog/c10t/commit/800977bb23e6b4f9da3ac850ac15dd216ece0cda.diff?full_index=1"
-    sha256 "5275cb43178b2f6915b14d214ec47c9182e63ff23771426b71f3c0a5450721bf"
+    url "https://github.com/udoprog/c10t/commit/800977bb23e6b4f9da3ac850ac15dd216ece0cda.patch?full_index=1"
+    sha256 "c7a37f866b42ff352bb58720ad6c672cde940e1b8ab79de4b6fa0be968b97b66"
   end
 
   def install
     inreplace "test/CMakeLists.txt", "boost_unit_test_framework", "boost_unit_test_framework-mt"
-    system "cmake", ".", *std_cmake_args
+    args = std_cmake_args
+    unless OS.mac?
+      args += %W[
+        -DCMAKE_LINK_WHAT_YOU_USE=ON
+        -DZLIB_LIBRARY=#{Formula["zlib"].opt_lib}/libz.so.1
+        -DZLIB_INCLUDE_DIR=#{Formula["zlib"].include}
+      ]
+    end
+    system "cmake", ".", *args
     system "make"
     bin.install "c10t"
   end

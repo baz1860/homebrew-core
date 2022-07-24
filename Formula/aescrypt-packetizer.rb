@@ -1,40 +1,48 @@
 class AescryptPacketizer < Formula
   desc "Encrypt and decrypt using 256-bit AES encryption"
   homepage "https://www.aescrypt.com"
-  url "https://www.aescrypt.com/download/v3/linux/aescrypt-3.13.tgz"
-  sha256 "87cd6f6e15828a93637aa44f6ee4f01bea372ccd02ecf1702903f655fbd139a8"
+  url "https://www.aescrypt.com/download/v3/linux/aescrypt-3.16.tgz"
+  sha256 "e2e192d0b45eab9748efe59e97b656cc55f1faeb595a2f77ab84d44b0ec084d2"
+
+  livecheck do
+    url "https://www.aescrypt.com/download/"
+    regex(%r{href=.*?/linux/aescrypt[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "3b56b56d73a88af9e76128855d95ef3bd14146d8272fabfdcdc055ba07c97508" => :high_sierra
-    sha256 "c4505a05fa4145375adf5d5494a125e72efb090546ee967007a24a71a19fa3ea" => :sierra
-    sha256 "56a0020ab5bfb1a14ce0d941f217293a34ca8afbd3f8f83fe5f2aebfa21f5a21" => :el_capitan
-    sha256 "a04970668eed3e282d3d37a9b1fe4c4f73f3eb72732092f93a4897ed7dbe7336" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "823e51604fff46f1cb74a791f7a94c35092393352861fee84c9e5517df795395"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "3803d5d2dc8c254d7f68d95175e77dc62c5f4a0a6ee01d24e2a7c8a45049e33b"
+    sha256 cellar: :any_skip_relocation, monterey:       "3e96703d06fcb1ac6114af1929f87cba2c6d04cb65f2d44aa4f51b56d28c04ac"
+    sha256 cellar: :any_skip_relocation, big_sur:        "6ded6050675d0f771f473d5873bf897d0391859c9f9280362444f2189661ac3b"
+    sha256 cellar: :any_skip_relocation, catalina:       "d129279cb28702f27173f99338f5ffd08f042202f5cc3bf2fd71f9107155cc51"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3eddb8372fd630b7f93288f2fb19c3ec96a061b1de150918bee53d0a7a1d55ee"
   end
 
   head do
-    url "https://github.com/paulej/AESCrypt.git"
+    url "https://github.com/paulej/AESCrypt.git", branch: "master"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  option "with-default-names", "Build with the binaries named as expected upstream"
-
-  depends_on :xcode => :build
+  depends_on xcode: :build
 
   def install
     if build.head?
       cd "linux"
       system "autoreconf", "-ivf"
-      system "./configure", "prefix=#{prefix}", "--enable-iconv",
-              "--disable-gui"
+
+      args = %W[
+        prefix=#{prefix}
+        --disable-gui
+      ]
+      args << "--enable-iconv" if OS.mac?
+
+      system "./configure", *args
       system "make", "install"
     else
       cd "src" do
-        # https://www.aescrypt.com/mac_aes_crypt.html
-        inreplace "Makefile", "#LIBS=-liconv", "LIBS=-liconv"
         system "make"
 
         bin.install "aescrypt"
@@ -44,23 +52,15 @@ class AescryptPacketizer < Formula
     end
 
     # To prevent conflict with our other aescrypt, rename the binaries.
-    if build.without? "default-names"
-      mv "#{bin}/aescrypt", "#{bin}/paescrypt"
-      mv "#{bin}/aescrypt_keygen", "#{bin}/paescrypt_keygen"
-    end
+    mv "#{bin}/aescrypt", "#{bin}/paescrypt"
+    mv "#{bin}/aescrypt_keygen", "#{bin}/paescrypt_keygen"
   end
 
   def caveats
-    s = ""
-
-    if build.without? "default-names"
-      s += <<~EOS
-        To avoid conflicting with our other AESCrypt package the binaries
-        have been renamed paescrypt and paescrypt_keygen.
-      EOS
-    end
-
-    s
+    <<~EOS
+      To avoid conflicting with our other AESCrypt package the binaries
+      have been renamed paescrypt and paescrypt_keygen.
+    EOS
   end
 
   test do

@@ -1,24 +1,27 @@
 class Cfitsio < Formula
   desc "C access to FITS data files with optional Fortran wrappers"
   homepage "https://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html"
-  url "https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3420.tar.gz"
-  mirror "https://fossies.org/linux/misc/cfitsio3420.tar.gz"
-  version "3.420"
-  sha256 "6c10aa636118fa12d9a5e2e66f22c6436fb358da2af6dbf7e133c142e2ac16b8"
+  url "https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-4.1.0.tar.gz"
+  sha256 "b367c695d2831958e7166921c3b356d5dfa51b1ecee505b97416ba39d1b6c17a"
 
-  bottle do
-    cellar :any
-    sha256 "8b21e0a610d1caa8d8900546d2b2d9f83f74a9f1bd0d3e729f1ab1ad28b81813" => :high_sierra
-    sha256 "b2f55b8504d79e27d23b5fa93f77ff9bc2488eef4f5ed94c7a16757505df4462" => :sierra
-    sha256 "7681f60baee8d9a73639be3f54d7f4a1c71c9fc9f4ac7fd0e3ba20cb2a2c3c7b" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(/href=.*?cfitsio[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-reentrant", "Build with support for concurrency"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "0269cf18a5dd1ce217c799461fb5831db284edb3d05c2b144ce30a7a1566f246"
+    sha256 cellar: :any,                 arm64_big_sur:  "f95d18fe4f060505e6695bef0cf5ea228493b872e71052c68aa4d03c8378804e"
+    sha256 cellar: :any,                 monterey:       "62cf2942b05394dc7b906aba1fc6b2b27c24caf81fc85263d1697ed488fc230a"
+    sha256 cellar: :any,                 big_sur:        "708ad462a892a776bcc62a1e5c8627f6de9fa7bb83f9a107daffa0d099968837"
+    sha256 cellar: :any,                 catalina:       "7206c141ca07704be2485f297eaa44f6d6ed62edaeab41efe6356c78da10ddc6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ea728776b33a24f236b21ecedfc7430fee6bb4c551e94e772785b38994b93b99"
+  end
+
+  uses_from_macos "zlib"
 
   def install
-    args = ["--prefix=#{prefix}"]
-    args << "--enable-reentrant" if build.with? "reentrant"
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}", "--enable-reentrant"
     system "make", "shared"
     system "make", "install"
     (pkgshare/"testprog").install Dir["testprog*"]

@@ -1,39 +1,29 @@
 class GitIf < Formula
   desc "Glulx interpreter that is optimized for speed"
-  homepage "http://ifarchive.org/indexes/if-archiveXprogrammingXglulxXinterpretersXgit.html"
-  url "http://ifarchive.org/if-archive/programming/glulx/interpreters/git/git-135.zip"
-  version "1.3.5"
-  sha256 "4bdfae2e1ab085740efddf99d43ded6a044f1f2df274f753737e5f0e402fc4e9"
-  head "https://github.com/DavidKinder/Git.git"
+  homepage "https://ifarchive.org/indexes/if-archiveXprogrammingXglulxXinterpretersXgit.html"
+  url "https://ifarchive.org/if-archive/programming/glulx/interpreters/git/git-137.zip"
+  version "1.3.7"
+  sha256 "b4a9356482e83080e4e9008ea4d0d05412e64564256c6b21709d8e253f217bef"
+  license "MIT"
+  head "https://github.com/DavidKinder/Git.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "bedbf580c8b073c7dfcd6bbb470aee7c14fb31d2c3ec54b4be8fd2cf8545e577" => :high_sierra
-    sha256 "7c09116244a4c04a46337a0453d519523204233fc33d2d60c89c4b9469498380" => :sierra
-    sha256 "c38c41e66ca16a1ef9627112980fa49411b870c2438086db35f6dd9053f99850" => :el_capitan
-    sha256 "e727f112e350e8a12b87094715800e9c2abc03f2d45ad521c0d78e4c6bfff3ad" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "e276ffffb24bbdb9fe565c7c55f79aec5df8d3a4c7b64541bbe73c757e2e45b2"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "bb7f09ba2cb7c865b0ee80dd312e28250635a79173c0c2d3781acca03d519ee3"
+    sha256 cellar: :any_skip_relocation, monterey:       "a69998ddf6e70dacfbc12c9c17912fb7ece0e0dad9437201209554a50154f802"
+    sha256 cellar: :any_skip_relocation, big_sur:        "5d2791d14db4f96ff76532d537d12d9eda5298e1a7190bd538801cdc3813739f"
+    sha256 cellar: :any_skip_relocation, catalina:       "0188ac542b752d94d6b8b544ab5a95ac8608ec0261a40be55ca6fa87140d2e9f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f858e0ad782b54d8e630159b9be4dfc3e05a3a5e6f23e1a7378653bf1b54f1ec"
   end
 
-  option "with-glkterm", "Build with glkterm (without wide character support)"
+  depends_on "glktermw" => :build
 
-  depends_on "cheapglk" => [:build, :optional]
-  depends_on "glkterm" => [:build, :optional]
-  depends_on "glktermw" => :build if build.without?("cheapglk") && build.without?("glkterm")
+  uses_from_macos "ncurses"
 
   def install
-    if build.with?("cheapglk") && build.with?("glkterm")
-      odie "Options --with-cheapglk and --with-glkterm are mutually exclusive."
-    end
+    glk = Formula["glktermw"]
 
-    if build.with? "cheapglk"
-      glk = Formula["cheapglk"]
-    elsif build.with? "glkterm"
-      glk = Formula["glkterm"]
-    else
-      glk = Formula["glktermw"]
-    end
-
-    inreplace "Makefile", "GLK = cheapglk", "GLK = #{glk.name}" if build.without? "cheapglk"
+    inreplace "Makefile", "GLK = cheapglk", "GLK = #{glk.name}"
     inreplace "Makefile", "GLKINCLUDEDIR = ../$(GLK)", "GLKINCLUDEDIR = #{glk.include}"
     inreplace "Makefile", "GLKLIBDIR = ../$(GLK)", "GLKLIBDIR = #{glk.lib}"
     inreplace "Makefile", /^OPTIONS = /, "OPTIONS = -DUSE_MMAP -DUSE_INLINE"
@@ -43,10 +33,6 @@ class GitIf < Formula
   end
 
   test do
-    if build.with? "cheapglk"
-      assert shell_output("#{bin}/git-if").start_with? "usage: git gamefile.ulx"
-    else
-      assert pipe_output("#{bin}/git-if -v").start_with? "GlkTerm, library version"
-    end
+    assert pipe_output("#{bin}/git-if -v").start_with? "GlkTerm, library version"
   end
 end

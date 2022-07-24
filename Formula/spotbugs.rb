@@ -1,8 +1,13 @@
 class Spotbugs < Formula
   desc "Tool for Java static analysis (FindBugs's successor)"
   homepage "https://spotbugs.github.io/"
-  url "https://repo.maven.apache.org/maven2/com/github/spotbugs/spotbugs/3.1.2/spotbugs-3.1.2.tgz"
-  sha256 "528dacdd2d759ba041009301bbdc2ed775a911f7acc9edffc113bc7a6f5421a1"
+  url "https://repo.maven.apache.org/maven2/com/github/spotbugs/spotbugs/4.7.1/spotbugs-4.7.1.tgz"
+  sha256 "62195a43af19e998380ea5988dba3bdd5b927acd6a3a47a575578629313ce836"
+  license "LGPL-2.1-or-later"
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "d9146024e26194ee9eaf31aa331f70a14d83e008f7a089883d3c934d6a696949"
+  end
 
   head do
     url "https://github.com/spotbugs/spotbugs.git"
@@ -10,19 +15,21 @@ class Spotbugs < Formula
     depends_on "gradle" => :build
   end
 
-  bottle :unneeded
+  depends_on "openjdk"
 
-  depends_on :java => "1.8+"
+  conflicts_with "fb-client", because: "both install a `fb` binary"
 
   def install
+    ENV["JAVA_HOME"] = Formula["openjdk"].opt_prefix
     if build.head?
       system "gradle", "build"
       system "gradle", "installDist"
       libexec.install Dir["spotbugs/build/install/spotbugs/*"]
     else
       libexec.install Dir["*"]
+      chmod 0755, "#{libexec}/bin/spotbugs"
     end
-    bin.install_symlink "#{libexec}/bin/spotbugs"
+    (bin/"spotbugs").write_env_script "#{libexec}/bin/spotbugs", Language::Java.overridable_java_home_env
   end
 
   test do
@@ -37,9 +44,9 @@ class Spotbugs < Formula
         }
       }
     EOS
-    system "javac", "HelloWorld.java"
-    system "jar", "cvfe", "HelloWorld.jar", "HelloWorld", "HelloWorld.class"
+    system Formula["openjdk"].bin/"javac", "HelloWorld.java"
+    system Formula["openjdk"].bin/"jar", "cvfe", "HelloWorld.jar", "HelloWorld", "HelloWorld.class"
     output = shell_output("#{bin}/spotbugs -textui HelloWorld.jar")
-    assert_match /M V EI.*\nM C UwF.*\n/, output
+    assert_match(/M V EI.*\nM C UwF.*\n/, output)
   end
 end

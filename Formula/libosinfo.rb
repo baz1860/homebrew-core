@@ -1,94 +1,93 @@
 class Libosinfo < Formula
-  desc "The Operating System information database"
+  desc "Operating System information database"
   homepage "https://libosinfo.org/"
-  url "https://releases.pagure.org/libosinfo/libosinfo-1.1.0.tar.gz"
-  sha256 "600f43a4a8dae5086a01a3d44bcac2092b5fa1695121289806d544fb287d3136"
+  url "https://releases.pagure.org/libosinfo/libosinfo-1.10.0.tar.xz"
+  sha256 "a252e00fc580deb21da0da8c0aa03b8c31e8440b8448c8b98143fab477d32305"
+  license "LGPL-2.0-or-later"
 
-  bottle do
-    sha256 "02f47ab456f024842fc123d75733b3dbe11a57d4a4a306c21da83dbcb2ca0c86" => :high_sierra
-    sha256 "764ecf89e19d39bf7e6d15d41d22d466893afa462f475582a445ac622aa024f1" => :sierra
-    sha256 "d42abc1c79c3bf147bddcada54f1720bca29b18fa573f1d0dbf250ee894bcd97" => :el_capitan
-    sha256 "6f2ce2d0cb0725f846644a95bc4701330c1f920d4e1eb3c0683829c2baf5a937" => :yosemite
+  livecheck do
+    url "https://releases.pagure.org/libosinfo/?C=M&O=D"
+    regex(/href=.*?libosinfo[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "intltool" => :build
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 arm64_monterey: "2659892b2d277e688c8edc0f03875c1e518f5ab515a200d58698f717e9ed7dac"
+    sha256 arm64_big_sur:  "e8f42ab6e678acb61213692e472cc233112067f87b9d10744c4db4a10e14729c"
+    sha256 monterey:       "6fa3411b44dcdd8d33e73fa6d7b4e4d21828d0e00c52430c68684e9a0a2a45c6"
+    sha256 big_sur:        "494af85f0b66b208db81e2114e492c683028ebe8c1748c61bfaaaa5b8fc7892f"
+    sha256 catalina:       "ae3b5681f80d8a2fb8413b4d0e86ea64a4c6e48d809b9f96d2064ed1d7ecb570"
+    sha256 x86_64_linux:   "eb8f140219fb3208a0ee34a0e412a6a4d24581e622e2d81cd269c2b10a8312e3"
+  end
 
-  depends_on "check"
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
+  depends_on "vala" => :build
   depends_on "gettext"
   depends_on "glib"
   depends_on "libsoup"
-  depends_on "libxml2"
-  depends_on "pygobject3"
+  depends_on "osinfo-db"
+  depends_on "usb.ids"
 
-  depends_on "gobject-introspection" => :recommended
-  depends_on "vala" => :optional
+  uses_from_macos "pod2man" => :build
+  uses_from_macos "libxml2"
+  uses_from_macos "libxslt"
+
+  resource "pci.ids" do
+    url "https://raw.githubusercontent.com/pciutils/pciids/7d42acec647d327f0824260c2d4656410d48986a/pci.ids"
+    sha256 "7e6314c5ecab564af740b1a7da0b2839690716344504420f19ae21bb8cf7ae9e"
+  end
 
   def install
-    # avoid wget dependency
-    inreplace "Makefile.in", "wget -q -O", "curl -o"
+    (share/"misc").install resource("pci.ids")
 
-    args = %W[
-      --prefix=#{prefix}
-      --localstatedir=#{var}
-      --mandir=#{man}
-      --sysconfdir=#{etc}
-      --disable-silent-rules
-      --disable-udev
-      --enable-tests
-    ]
-
-    args << "--disable-introspection" if build.without? "gobject-introspection"
-    if build.with? "vala"
-      args << "--enable-vala"
-    else
-      args << "--disable-vala"
+    mkdir "build" do
+      flags = %W[
+        -Denable-gtk-doc=false
+        -Dwith-pci-ids-path=#{share/"misc/pci.ids"}
+        -Dwith-usb-ids-path=#{Formula["usb.ids"].opt_share/"misc/usb.ids"}
+        -Dsysconfdir=#{etc}
+      ]
+      system "meson", *std_meson_args, *flags, ".."
+      system "ninja", "install", "-v"
     end
-
-    system "./configure", *args
-
-    # Compilation of docs doesn't get done if we jump straight to "make install"
-    system "make"
-    system "make", "install"
+    share.install_symlink HOMEBREW_PREFIX/"share/osinfo"
   end
 
   test do
-    (testpath/"test.py").write <<~EOS
-      import gi
-      gi.require_version('Libosinfo', '1.0')
-      from gi.repository import Libosinfo as osinfo;
+    (testpath/"test.c").write <<~EOS
+      #include <stdio.h>
+      #include <osinfo/osinfo.h>
 
-      loader = osinfo.Loader()
-      loader.process_path("./")
-
-      db = loader.get_db()
-
-      devs = db.get_device_list()
-      print "All device IDs"
-      for dev in devs.get_elements():
-        print ("  Device " + dev.get_id())
-
-      names = db.unique_values_for_property_in_device("name")
-      print "All device names"
-      for name in names:
-        print ("  Name " + name)
-
-      osnames = db.unique_values_for_property_in_os("short-id")
-      osnames.sort()
-      print "All OS short IDs"
-      for name in osnames:
-        print ("  OS short id " + name)
-
-      hvnames = db.unique_values_for_property_in_platform("short-id")
-      hvnames.sort()
-      print "All HV short IDs"
-      for name in hvnames:
-        print ("  HV short id " + name)
+      int main(int argc, char *argv[]) {
+        GError *err = NULL;
+        OsinfoPlatformList *list = osinfo_platformlist_new();
+        OsinfoLoader *loader = osinfo_loader_new();
+        osinfo_loader_process_system_path(loader, &err);
+        if (err != NULL) {
+          fprintf(stderr, "%s", err->message);
+          return 1;
+        }
+        return 0;
+      }
     EOS
-    ENV.append_path "GI_TYPELIB_PATH", lib+"girepository-1.0"
-    ENV.append_path "GI_TYPELIB_PATH", Formula["gobject-introspection"].opt_lib+"girepository-1.0"
-    ENV.append_path "PYTHONPATH", lib+"python2.7/site-packages"
-    ENV.append_path "PYTHONPATH", Formula["pygobject3"].opt_lib+"python2.7/site-packages"
-    system "python", "test.py"
+    gettext = Formula["gettext"]
+    glib = Formula["glib"]
+    flags = %W[
+      -I#{gettext.opt_include}
+      -I#{glib.opt_include}/glib-2.0
+      -I#{glib.opt_lib}/glib-2.0/include
+      -I#{include}/libosinfo-1.0
+      -L#{gettext.opt_lib}
+      -L#{glib.opt_lib}
+      -L#{lib}
+      -losinfo-1.0
+      -lglib-2.0
+      -lgobject-2.0
+    ]
+    system ENV.cc, "test.c", "-o", "test", *flags
+    system "./test"
+    system bin/"osinfo-query", "device"
   end
 end

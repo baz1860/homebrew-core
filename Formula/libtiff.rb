@@ -1,48 +1,40 @@
 class Libtiff < Formula
   desc "TIFF library and utilities"
-  homepage "http://libtiff.maptools.org/"
-  url "https://download.osgeo.org/libtiff/tiff-4.0.9.tar.gz"
-  mirror "https://fossies.org/linux/misc/tiff-4.0.9.tar.gz"
-  sha256 "6e7bdeec2c310734e734d19aae3a71ebe37a4d842e0e23dbb1b8921c0026cfcd"
-  revision 2
+  homepage "https://libtiff.gitlab.io/libtiff/"
+  url "https://download.osgeo.org/libtiff/tiff-4.4.0.tar.gz"
+  mirror "https://fossies.org/linux/misc/tiff-4.4.0.tar.gz"
+  sha256 "917223b37538959aca3b790d2d73aa6e626b688e02dcda272aec24c2f498abed"
+  license "libtiff"
+
+  livecheck do
+    url "https://download.osgeo.org/libtiff/"
+    regex(/href=.*?tiff[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "b25a0893acdffc8fcbb1f9d0a2f1ef04c62f15168689fc64842cd7a36884d179" => :high_sierra
-    sha256 "4fbaa643a091abe7e6744ff8b04dcd94d35b559874dcdc9d733b10c41666c78a" => :sierra
-    sha256 "fdfeb67c92d2cb64628ba15c3ded9d840b90b5627e06e0864536fd66ea9d15f3" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "d2dfbad3fe68e070d0937c71b4de6ca110dda32599a2adfc2272f31064ae8652"
+    sha256 cellar: :any,                 arm64_big_sur:  "1b4a904ccd6042e3871194acf467dbfcd97096681d1c830331d1e807dfac924b"
+    sha256 cellar: :any,                 monterey:       "0498f901409378a7900653a581fba3f0779e37bd64337f45816764750ae90aa3"
+    sha256 cellar: :any,                 big_sur:        "fd49c31878df480848e8107055b88dfebb2d4eb6fab522837dd80f92783f452c"
+    sha256 cellar: :any,                 catalina:       "cda7e1362bdf822a2dcaa449edd2f03cf520d82c62f8f7ec82fe9cca35cde3fa"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "fa756f41864cae38e3c74b29b857f7c2f081a3b9eabd1c551cd6e39e12fd17bf"
   end
-
-  option "with-xz", "Include support for LZMA compression"
 
   depends_on "jpeg"
-  depends_on "xz" => :optional
 
-  # All of these have been reported upstream & should
-  # be fixed in the next release, but please check.
-  patch do
-    url "https://mirrors.ocf.berkeley.edu/debian/pool/main/t/tiff/tiff_4.0.9-4.debian.tar.xz"
-    mirror "https://mirrorservice.org/sites/ftp.debian.org/debian/pool/main/t/tiff/tiff_4.0.9-4.debian.tar.xz"
-    sha256 "f078da1da538109c1e5403dc1f44d23c91f5a5d6ddc5ffc41ff60de006cb2b2e"
-    apply "patches/CVE-2017-9935.patch",
-          "patches/CVE-2017-18013.patch",
-          "patches/CVE-2018-5784.patch"
-  end
+  uses_from_macos "zlib"
 
   def install
     args = %W[
-      --disable-dependency-tracking
       --prefix=#{prefix}
-      --without-x
+      --disable-dependency-tracking
+      --disable-lzma
+      --disable-webp
+      --disable-zstd
       --with-jpeg-include-dir=#{Formula["jpeg"].opt_include}
       --with-jpeg-lib-dir=#{Formula["jpeg"].opt_lib}
+      --without-x
     ]
-    if build.with? "xz"
-      args << "--with-lzma-include-dir=#{Formula["xz"].opt_include}"
-      args << "--with-lzma-lib-dir=#{Formula["xz"].opt_lib}"
-    else
-      args << "--disable-lzma"
-    end
     system "./configure", *args
     system "make", "install"
   end

@@ -1,15 +1,28 @@
 class Saxon < Formula
   desc "XSLT and XQuery processor"
   homepage "https://saxon.sourceforge.io"
-  url "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.8/SaxonHE9-8-0-4J.zip"
-  version "9.8.0.4"
-  sha256 "e19cdc64111af9e4c84b6d67bed792c3017775465cb42f6063af9f2d66ff5154"
+  url "https://downloads.sourceforge.net/project/saxon/Saxon-HE/11/Java/SaxonHE11-3J.zip"
+  version "11.3"
+  sha256 "c462e29994e1622d1cdc50514469fd4c9eb13cb7658abe129667b2be8df35fb4"
+  license all_of: ["BSD-3-Clause", "MIT", "MPL-2.0"]
 
-  bottle :unneeded
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/SaxonHE(\d+(?:[.-]\d+)+)J?\.(?:t|zip)}i)
+    strategy :sourceforge do |page, regex|
+      page.scan(regex).map { |match| match&.first&.gsub("-", ".") }
+    end
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "02139e73950876f495a8cacd3b177e94f9a12b49748550a921b98f6c4a3a89e2"
+  end
+
+  depends_on "openjdk"
 
   def install
-    libexec.install Dir["*.jar", "doc", "notices"]
-    bin.write_jar_script libexec/"saxon9he.jar", "saxon"
+    libexec.install Dir["*.jar", "doc", "lib", "notices"]
+    bin.write_jar_script libexec/"saxon-he-#{version.major_minor}.jar", "saxon"
   end
 
   test do
@@ -28,7 +41,7 @@ class Saxon < Formula
       </xsl:stylesheet>
     EOS
     assert_equal <<~EOS.chop, shell_output("#{bin}/saxon test.xml test.xsl")
-      <html>
+      <!DOCTYPE HTML><html>
          <body>
             <p>It works!</p>
          </body>

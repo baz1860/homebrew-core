@@ -1,38 +1,50 @@
 class Openimageio < Formula
   desc "Library for reading, processing and writing images"
-  homepage "http://openimageio.org/"
-  url "https://github.com/OpenImageIO/oiio/archive/Release-1.8.8.tar.gz"
-  sha256 "d7d529f1318b2ac8325f18b94f017d4d0bf878731178afb72eb5e75642873dc5"
-  head "https://github.com/OpenImageIO/oiio.git"
+  homepage "https://openimageio.org/"
+  url "https://github.com/OpenImageIO/oiio/archive/v2.3.17.0.tar.gz"
+  sha256 "22d38347b40659d218fcafcadc9258d3f6eda0be02029b11969361c9a6fa9f5c"
+  license "BSD-3-Clause"
+  head "https://github.com/OpenImageIO/oiio.git", branch: "master"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+    regex(%r{href=.*?/tag/(?:Release[._-])?v?(\d+(?:\.\d+)+)["' >]}i)
+  end
 
   bottle do
-    sha256 "863d3b40eeb3b65f6df486abd0b9cce6fd66dbdb114ff2fd44948b010b1720f4" => :high_sierra
-    sha256 "9f76e9b1d4f896e89bfe01accf010c277a487f6db2396c785eff7c4be02b70c2" => :sierra
-    sha256 "0abf5c6d67e3a6c61763c51e6bfe29369552fe86aa904d125e148ac2821097ca" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "72cab7a5f6afdcd23d3e01cc13af701589fded2d53d6c67c4c052e2102a568ef"
+    sha256 cellar: :any,                 arm64_big_sur:  "caa4da692e13ed13d69a05ec2c6ae76b7abd94d3b1f286f2daa1054fbc567c27"
+    sha256 cellar: :any,                 monterey:       "bd0df70d2c235361f413e5d90a5ed066fd653366e62abbeb9894fb09fa6db834"
+    sha256 cellar: :any,                 big_sur:        "a8758a87846c43e2141bd43ece5724f73a4a949d56d2dd1ed427c3e6d66ff4fb"
+    sha256 cellar: :any,                 catalina:       "2311002fe954ee837137c6c7180996a12764fe3735748f779d26ef64ba5487ca"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ba8d77a87e64bf0b842ed1ef8b15673f25741c1b417da69f786662b3207be32a"
   end
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
   depends_on "boost"
-  depends_on "boost-python"
   depends_on "boost-python3"
-  depends_on "ffmpeg"
+  depends_on "ffmpeg@4"
   depends_on "freetype"
   depends_on "giflib"
-  depends_on "ilmbase"
+  depends_on "imath"
   depends_on "jpeg"
+  depends_on "libheif"
   depends_on "libpng"
   depends_on "libraw"
   depends_on "libtiff"
   depends_on "opencolorio"
   depends_on "openexr"
-  depends_on "python3"
+  depends_on "pybind11"
+  depends_on "python@3.9"
   depends_on "webp"
 
+  fails_with gcc: "5" # ffmpeg is compiled with GCC
+
   def install
-    # -DUSE_OPENSSL=OFF can be removed in 1.9, see
-    # https://github.com/Homebrew/homebrew-core/pull/22522#issuecomment-364831533
     args = std_cmake_args + %w[
+      -DCCACHE_FOUND=
       -DEMBEDPLUGINS=ON
       -DUSE_FIELD3D=OFF
       -DUSE_JPEGTURBO=OFF
@@ -40,37 +52,26 @@ class Openimageio < Formula
       -DUSE_OPENCV=OFF
       -DUSE_OPENGL=OFF
       -DUSE_OPENJPEG=OFF
-      -DUSE_OPENSSL=OFF
       -DUSE_PTEX=OFF
       -DUSE_QT=OFF
     ]
 
-    mkdir "build-with-python2" do
-      system "cmake", "..", *args
-      system "make", "install"
+    # CMake picks up the system's python shared library, even if we have a brewed one.
+    py3ver = Language::Python.major_minor_version Formula["python@3.9"].opt_bin/"python3"
+    py3prefix = if OS.mac?
+      Formula["python@3.9"].opt_frameworks/"Python.framework/Versions/#{py3ver}"
+    else
+      Formula["python@3.9"].opt_prefix
     end
-
-    # CMake picks up the system's python dylib, even if we have a brewed one.
-    py3ver = Language::Python.major_minor_version "python3"
-    py3prefix = Formula["python3"].opt_frameworks/"Python.framework/Versions/#{py3ver}"
 
     ENV["PYTHONPATH"] = lib/"python#{py3ver}/site-packages"
 
-    args << "-DPYTHON_EXECUTABLE=#{py3prefix}/bin/python3"
-    args << "-DPYTHON_LIBRARY=#{py3prefix}/lib/libpython#{py3ver}.dylib"
-    args << "-DPYTHON_INCLUDE_DIR=#{py3prefix}/include/python#{py3ver}m"
+    args << "-DPython_EXECUTABLE=#{py3prefix}/bin/python3"
+    args << "-DPYTHON_LIBRARY=#{py3prefix}/lib/#{shared_library("libpython#{py3ver}")}"
+    args << "-DPYTHON_INCLUDE_DIR=#{py3prefix}/include/python#{py3ver}"
+    args << "-DPYTHON_VERSION=#{py3ver}"
 
-    # CMake picks up boost-python instead of boost-python3
-    args << "-DBOOST_ROOT=#{Formula["boost"].opt_prefix}"
-    args << "-DBoost_PYTHON_LIBRARIES=#{Formula["boost-python3"].opt_lib}/libboost_python3-mt.dylib"
-
-    # This is strange, but must be set to make the hack above work
-    args << "-DBoost_PYTHON_LIBRARY_DEBUG=''"
-    args << "-DBoost_PYTHON_LIBRARY_RELEASE=''"
-
-    # Need to make a second build dir, otherwise cmake picks up cached files
-    # and builds against `boost-python`
-    mkdir "build-with-python3" do
+    mkdir "build" do
       system "cmake", "..", *args
       system "make", "install"
     end
@@ -81,13 +82,11 @@ class Openimageio < Formula
     assert_match "#{test_image} :    1 x    1, 3 channel, uint8 jpeg",
                  shell_output("#{bin}/oiiotool --info #{test_image} 2>&1")
 
-    ["python", "python3"].each do |python|
-      output = <<~EOS
-        from __future__ import print_function
-        import OpenImageIO
-        print(OpenImageIO.VERSION_STRING)
-      EOS
-      assert_match version.to_s, pipe_output(python, output, 0)
-    end
+    output = <<~EOS
+      from __future__ import print_function
+      import OpenImageIO
+      print(OpenImageIO.VERSION_STRING)
+    EOS
+    assert_match version.major_minor_patch.to_s, pipe_output(Formula["python@3.9"].opt_bin/"python3", output, 0)
   end
 end

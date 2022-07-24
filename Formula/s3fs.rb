@@ -1,26 +1,31 @@
 class S3fs < Formula
   desc "FUSE-based file system backed by Amazon S3"
   homepage "https://github.com/s3fs-fuse/s3fs-fuse/wiki"
-  url "https://github.com/s3fs-fuse/s3fs-fuse/archive/v1.83.tar.gz"
-  sha256 "8f060accef304c1e5adde0c9d6976a3a69fd9935444a4985517c6cefa86b34ef"
-
-  head "https://github.com/s3fs-fuse/s3fs-fuse.git"
+  url "https://github.com/s3fs-fuse/s3fs-fuse/archive/refs/tags/v1.91.tar.gz"
+  sha256 "f130fec375dc6972145c56f53e83ea7c98c82621406d0208a328989e5d900b0f"
+  license "GPL-2.0-or-later"
+  head "https://github.com/s3fs-fuse/s3fs-fuse.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "a2561b0db0c7eb9a4355b42a38f307f4e432da3db3b3580a68eeee8001b12ffd" => :high_sierra
-    sha256 "d6b4884bb5138ff0f10f2149668b09685567c8f55069525ec5557f54033d191f" => :sierra
-    sha256 "9dcbe3450e2fdf5498c18e11390c9d48474c91c1bcd4f8cad6a7e3057fb9b3ee" => :el_capitan
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "40366ae4c296e3095014f8639d77d0ede2b0f8f960d305a8ed43f0b160702fff"
   end
 
-  depends_on "pkg-config" => :build
   depends_on "autoconf" => :build
   depends_on "automake" => :build
+  depends_on "pkg-config" => :build
   depends_on "gnutls"
-  depends_on "nettle"
   depends_on "libgcrypt"
+  depends_on "nettle"
 
-  depends_on :osxfuse
+  uses_from_macos "curl"
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse@2"
+  end
 
   def install
     system "./autogen.sh"
@@ -28,13 +33,16 @@ class S3fs < Formula
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    Be aware that s3fs has some caveats concerning S3 "directories"
-    that have been created by other tools. See the following issue for
-    details:
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
 
-      https://code.google.com/p/s3fs/issues/detail?id=73
-    EOS
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
   end
 
   test do

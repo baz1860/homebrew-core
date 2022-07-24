@@ -1,19 +1,27 @@
 class Omega < Formula
   desc "Packaged search engine for websites, built on top of Xapian"
   homepage "https://xapian.org/"
-  url "https://oligarchy.co.uk/xapian/1.4.3/xapian-omega-1.4.3.tar.xz"
-  mirror "https://mirrors.ocf.berkeley.edu/debian/pool/main/x/xapian-omega/xapian-omega_1.4.3.orig.tar.xz"
-  sha256 "2eea0344a0703ba379d845b86d08a9c2e9faf0deb21834d9ea6939b712c6216e"
+  url "https://oligarchy.co.uk/xapian/1.4.20/xapian-omega-1.4.20.tar.xz"
+  sha256 "09fd7d6c60b394fd00d84700649969a1fcc3aa2b88bb2c6ca220fdfa8d25881f"
+  license "GPL-2.0-or-later"
 
-  bottle do
-    sha256 "7fb7918a5ffd7bb9641dc939ed792586ddc8dc4985c5c9eb442a2196a93b9dcc" => :high_sierra
-    sha256 "53f9899d6a964d8ae8b0de390dec626836aa24a1004d45352dd7746f53af7934" => :sierra
-    sha256 "cdba43e3a877484ee608c3c9a55fc96ebf38b17fb78e1bf2f5b84881aed170b8" => :el_capitan
-    sha256 "be5b012a19ea29890fac384b2a1ea3ffe96654da8fa65390c8345fa4d6c88900" => :yosemite
+  livecheck do
+    url "https://xapian.org/download"
+    regex(/href=.*?xapian-omega[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    sha256 arm64_monterey: "f31fc4528304c469409597cc3e5020ca3b64d18df7b9d478423c2d722a3cb7f4"
+    sha256 arm64_big_sur:  "d528b1f8c49977851c96018a85fcabb6123a02295e6ffd78f178a4e954032b15"
+    sha256 monterey:       "24aa73ee85c48d037cd4e89372c1b3a77d29dd0751e5bec17f3735833c2ab09c"
+    sha256 big_sur:        "4825314fe767f36588ed224150bb35fbe97dc11fe8f3d51404443b27a09c6677"
+    sha256 catalina:       "355a1633fb902636576152608fa9bc78fea0571ba5c7049d9c4d953f29bb95a4"
+    sha256 x86_64_linux:   "280e98c2623fa1636caf48a11a58ee15a07885ffec9f310153daf82283754277"
+  end
+
+  depends_on "pkg-config" => :build
   depends_on "libmagic"
-  depends_on "pcre"
+  depends_on "pcre2"
   depends_on "xapian"
 
   def install

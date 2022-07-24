@@ -1,16 +1,23 @@
 class Bgpq3 < Formula
   desc "BGP filtering automation for Cisco, Juniper, BIRD and OpenBGPD routers"
   homepage "http://snar.spb.ru/prog/bgpq3/"
-  url "https://github.com/snar/bgpq3/archive/v0.1.33.tar.gz"
-  sha256 "f3a58d547368c4396e5bc2b6189fe968567f1afde47245220b1ba9486b26fb39"
-  head "https://github.com/snar/bgpq3.git"
+  url "https://github.com/snar/bgpq3/archive/v0.1.36.1.tar.gz"
+  sha256 "68d602434d072115b848f6047a7a29812d53c709835a4fbd0ba34dcc31553bcd"
+  license "BSD-2-Clause"
+  head "https://github.com/snar/bgpq3.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "baf8c7084ca313d18bc307c9e1fc114a605e4950d067d91250721d7e3672a913" => :high_sierra
-    sha256 "0b7ddfe831651eac02b3e5f72a99ecb237f371c27826fff682dd21e3bb3f21a4" => :sierra
-    sha256 "f0accebad776f61fba550fad572ff7f7ace7f1d442c21c8147f8594a7f99e561" => :el_capitan
-    sha256 "80f717b72e90ed6eb6a25874e52c262f73559ec034764004af35c6df17630acf" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "890ade49fae97d8e9967362b464b57cc172fb5305e05dee84d7c3b5ab5e869bd"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "b9edea14c24ccca9986d9dbf14cedd8e245fc49ecffb07a3079deff2b6576448"
+    sha256 cellar: :any_skip_relocation, monterey:       "7a130fc4a82b1ab7255290dc18058a369ba604905386a32ac7f76a6bab543ee7"
+    sha256 cellar: :any_skip_relocation, big_sur:        "6d04e58f086891a0a8f1bd8c91e813afb4de0fff26f61a8bc30d3c82d2829a42"
+    sha256 cellar: :any_skip_relocation, catalina:       "4294f76491ed0fe10c6df11b695489e2765b7eb8bd4ccfe0adcabced418968a2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ee8fc268ac1e1293ee27d9b8a82411c7dc98f2a4df8e4a88efed3635699bc4ba"
   end
 
   # Makefile: upstream has been informed of the patch through email (multiple
@@ -29,15 +36,11 @@ class Bgpq3 < Formula
 end
 
 __END__
-diff --git a/Makefile.in b/Makefile.in
-index c2d7e96..afec780 100644
 --- a/Makefile.in
 +++ b/Makefile.in
-@@ -29,9 +29,10 @@ clean:
- 	rm -rf *.o *.core core.* core
-
+@@ -32,8 +32,8 @@
  install: bgpq3
-+	if test ! -d @prefix@/bin ; then mkdir -p @prefix@/bin ; fi
+ 	if test ! -d @bindir@ ; then mkdir -p @bindir@ ; fi
  	${INSTALL} -c -s -m 755 bgpq3 @bindir@
 -	if test ! -d @prefix@/man/man8 ; then mkdir -p @prefix@/man/man8 ; fi
 -	${INSTALL} -m 644 bgpq3.8 @prefix@/man/man8

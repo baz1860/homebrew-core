@@ -1,56 +1,46 @@
 class Zbar < Formula
   desc "Suite of barcodes-reading tools"
-  homepage "https://zbar.sourceforge.io"
-  revision 8
+  homepage "https://github.com/mchehab/zbar"
+  url "https://github.com/mchehab/zbar/archive/0.23.90.tar.gz"
+  sha256 "25fdd6726d5c4c6f95c95d37591bfbb2dde63d13d0b10cb1350923ea8b11963b"
+  license "LGPL-2.1-only"
+  revision 1
+  head "https://github.com/mchehab/zbar.git", branch: "master"
 
-  stable do
-    url "https://downloads.sourceforge.net/project/zbar/zbar/0.10/zbar-0.10.tar.bz2"
-    sha256 "234efb39dbbe5cef4189cc76f37afbe3cfcfb45ae52493bfe8e191318bdbadc6"
-
-    # Fix JPEG handling using patch from
-    # https://sourceforge.net/p/zbar/discussion/664596/thread/58b8d79b#8f67
-    # already applied upstream but not present in the 0.10 release
-    patch :DATA
+  livecheck do
+    url :stable
+    strategy :github_latest
   end
 
   bottle do
-    cellar :any
-    sha256 "5929b876b1536e7b4c75ea08e52a94aafb43326bdfda8258929929a867e8f15d" => :high_sierra
-    sha256 "86a824f7c99c057389d03591a665a85d975e43f7296bf2a26e8bd7664846562a" => :sierra
-    sha256 "b30c6de3d4194cfe20e054cb2f3aa271766f1147da91295bf03db9c422384a7d" => :el_capitan
+    sha256 arm64_monterey: "a8c52a7dede836b5ec86f3a7ef42463b684a0d6882e898e810424004b5440ffe"
+    sha256 arm64_big_sur:  "baa3cd1c3c1f3942f21809ce8da4135007a447a5c00162962fe7ed2a86eb3221"
+    sha256 monterey:       "56ff6ecef94a14d19f42acb9077d3a48a9b34aa2dae7d84a22a2df8eb65d770e"
+    sha256 big_sur:        "4bdea261367d272a41f9546056eb9b6ba65f1d88fbbeb07fbea7f2ac8da225bb"
+    sha256 catalina:       "e49e72eb04239895bbd43b085c03f24ddf86288530d1d7afedbd933fee8b172f"
+    sha256 mojave:         "cb9d3b6678c961ae919859751707682658a1cb40b268d329ace6c64e3dbb9c12"
+    sha256 x86_64_linux:   "7f6956b81e35c47342447c03fc27ee441d9babb705e4ce9832a0418d6275310e"
   end
 
-  head do
-    url "https://github.com/ZBar/ZBar.git"
-
-    depends_on "gettext" => :build
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-    depends_on "libtool" => :build
-    depends_on "xmlto" => :build
-  end
-
-  depends_on :x11 => :optional
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "gettext" => :build
+  depends_on "libtool" => :build
   depends_on "pkg-config" => :build
-  depends_on "jpeg"
+  depends_on "xmlto" => :build
+  depends_on "freetype"
   depends_on "imagemagick"
+  depends_on "jpeg"
+  depends_on "libtool"
   depends_on "ufraw"
   depends_on "xz"
-  depends_on "freetype"
-  depends_on "libtool" => :run
+
+  on_linux do
+    depends_on "dbus"
+  end
 
   def install
-    if build.head?
-      inreplace "configure.ac", "-Werror", ""
-      gettext = Formula["gettext"]
-      system "autoreconf", "-fvi", "-I", "#{gettext.opt_share}/aclocal"
-    end
-
-    # ImageMagick 7 compatibility
-    # Reported 20 Jun 2016 https://sourceforge.net/p/zbar/support-requests/156/
-    inreplace ["configure", "zbarimg/zbarimg.c"],
-      "wand/MagickWand.h",
-      "ImageMagick-7/MagickWand/MagickWand.h"
+    system "autoreconf", "-fvi"
 
     args = %W[
       --disable-dependency-tracking
@@ -59,13 +49,8 @@ class Zbar < Formula
       --without-qt
       --disable-video
       --without-gtk
+      --without-x
     ]
-
-    if build.with? "x11"
-      args << "--with-x"
-    else
-      args << "--without-x"
-    end
 
     system "./configure", *args
     system "make", "install"
@@ -75,27 +60,3 @@ class Zbar < Formula
     system bin/"zbarimg", "-h"
   end
 end
-
-__END__
-diff --git a/zbar/jpeg.c b/zbar/jpeg.c
-index fb566f4..d1c1fb2 100644
---- a/zbar/jpeg.c
-+++ b/zbar/jpeg.c
-@@ -79,8 +79,15 @@ int fill_input_buffer (j_decompress_ptr cinfo)
- void skip_input_data (j_decompress_ptr cinfo,
-                       long num_bytes)
- {
--    cinfo->src->next_input_byte = NULL;
--    cinfo->src->bytes_in_buffer = 0;
-+    if (num_bytes > 0) {
-+        if (num_bytes < cinfo->src->bytes_in_buffer) {
-+            cinfo->src->next_input_byte += num_bytes;
-+            cinfo->src->bytes_in_buffer -= num_bytes;
-+        }
-+        else {
-+            fill_input_buffer(cinfo);
-+        }
-+    }
- }
- 
- void term_source (j_decompress_ptr cinfo)

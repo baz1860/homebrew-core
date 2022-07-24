@@ -1,101 +1,118 @@
 class Glib < Formula
+  include Language::Python::Shebang
+
   desc "Core application library for C"
   homepage "https://developer.gnome.org/glib/"
-  url "https://download.gnome.org/sources/glib/2.54/glib-2.54.3.tar.xz"
-  sha256 "963fdc6685dc3da8e5381dfb9f15ca4b5709b28be84d9d05a9bb8e446abac0a8"
+  url "https://download.gnome.org/sources/glib/2.72/glib-2.72.3.tar.xz"
+  sha256 "4a39a2f624b8512d500d5840173eda7fa85f51c109052eae806acece85d345f0"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "d0cb36e80d824c93c250df321be899bed94da31e32f39aec5f7710cce372d3f3" => :high_sierra
-    sha256 "a0a54e741506cca840b8eab0c30d72b01bf548f3c7706e815fd60fee6d31178f" => :sierra
-    sha256 "630391d3aa92601c75afe44772ca891ad74ab315628451c069c7d459c8d19097" => :el_capitan
+    sha256 arm64_monterey: "36038c2b4fb7dbede91facedd3dd3062e0ae697149e5ce758bbd17ce0e2448ab"
+    sha256 arm64_big_sur:  "a3265f48c2c88487e5f1db1230ec8f9382a2fb68d5eafe90a9ad75fd7c71de85"
+    sha256 monterey:       "29d582d267be192c3262bbc318af8ac451f067d8e647c671b8685c4ef349d6a8"
+    sha256 big_sur:        "5711f5a9d216f5ace87ec33851ad868623835ca0f940df46e87a62621662f7ac"
+    sha256 catalina:       "605292cae9fba2b545a9a7bfe6a97623dd6aa055a0c05747d3143297a137b0a2"
+    sha256 x86_64_linux:   "6bf1b47d083b90834e59c72f3ba6d6a8edc7637bcecba7d3ff769eff8d66a946"
   end
 
-  option "with-test", "Build a debug build and run tests. NOTE: Not all tests succeed yet"
-
-  deprecated_option "test" => "with-test"
-
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  # next three lines can be removed when bug 780271 is fixed and gio.patch is modified accordingly
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
+  depends_on "python@3.10" => :build
   depends_on "gettext"
   depends_on "libffi"
   depends_on "pcre"
 
-  # https://bugzilla.gnome.org/show_bug.cgi?id=673135 Resolved as wontfix,
-  # but needed to fix an assumption about the location of the d-bus machine
-  # id file.
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/59e4d32/glib/hardcoded-paths.diff"
-    sha256 "a4cb96b5861672ec0750cb30ecebe1d417d38052cac12fbb8a77dbf04a886fcb"
+  on_linux do
+    depends_on "util-linux"
   end
 
-  # Fixes compilation with FSF GCC. Doesn't fix it on every platform, due
-  # to unrelated issues in GCC, but improves the situation.
-  # Patch submitted upstream: https://bugzilla.gnome.org/show_bug.cgi?id=672777
+  # Sync this with `glib-utils.rb`
+  # replace several hardcoded paths with homebrew counterparts
   patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/13efbb2/glib/gio.patch"
-    sha256 "628f8ea171a29c67fb06461ce4cfe549846b8fe64d83466e18e225726615b997"
-  end
-
-  # Revert some bad macOS specific commits
-  # https://bugzilla.gnome.org/show_bug.cgi?id=780271
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/73738ca/glib/revert-appinfo-contenttype.patch"
-    sha256 "675369c6d956b5533865178a2a78a6b2dcb921fbcfd81d35e92fc1592323e5e4"
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/43467fd8dfc0e8954892ecc08fab131242dca025/glib/hardcoded-paths.diff"
+    sha256 "d81c9e8296ec5b53b4ead6917f174b06026eeb0c671dfffc4965b2271fb6a82c"
   end
 
   def install
-    inreplace %w[gio/gdbusprivate.c gio/xdgmime/xdgmime.c glib/gutils.c],
+    inreplace %w[gio/xdgmime/xdgmime.c glib/gutils.c],
       "@@HOMEBREW_PREFIX@@", HOMEBREW_PREFIX
 
-    # renaming is necessary for patches to work
-    mv "gio/gcocoanotificationbackend.c", "gio/gcocoanotificationbackend.m"
-    mv "gio/gnextstepsettingsbackend.c", "gio/gnextstepsettingsbackend.m"
-    rm "gio/gosxappinfo.h"
-
     # Disable dtrace; see https://trac.macports.org/ticket/30413
-    args = %W[
-      --disable-maintainer-mode
-      --disable-dependency-tracking
-      --disable-silent-rules
-      --disable-dtrace
-      --disable-libelf
-      --enable-static
-      --prefix=#{prefix}
+    # and https://gitlab.gnome.org/GNOME/glib/-/issues/653
+    args = std_meson_args + %W[
+      --default-library=both
       --localstatedir=#{var}
-      --with-gio-module-dir=#{HOMEBREW_PREFIX}/lib/gio/modules
+      -Diconv=auto
+      -Dgio_module_dir=#{HOMEBREW_PREFIX}/lib/gio/modules
+      -Dbsymbolic_functions=false
+      -Ddtrace=false
     ]
 
-    # next line can be removed when bug 780271 is fixed and gio.patch is modified accordingly
-    system "autoreconf", "-i", "-f"
-
-    system "./configure", *args
-
-    # disable creating directory for GIO_MODULE_DIR, we will do this manually in post_install
-    inreplace "gio/Makefile", "$(mkinstalldirs) $(DESTDIR)$(GIO_MODULE_DIR)", ""
-
-    system "make"
-    # the spawn-multithreaded tests require more open files
-    system "ulimit -n 1024; make check" if build.with? "test"
-    system "make", "install"
-
-    # `pkg-config --libs glib-2.0` includes -lintl, and gettext itself does not
-    # have a pkgconfig file, so we add gettext lib and include paths here.
-    gettext = Formula["gettext"].opt_prefix
-    inreplace lib+"pkgconfig/glib-2.0.pc" do |s|
-      s.gsub! "Libs: -L${libdir} -lglib-2.0 -lintl",
-              "Libs: -L${libdir} -lglib-2.0 -L#{gettext}/lib -lintl"
-      s.gsub! "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include",
-              "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include -I#{gettext}/include"
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
 
-    (share+"gtk-doc").rmtree
+    # ensure giomoduledir contains prefix, as this pkgconfig variable will be
+    # used by glib-networking and glib-openssl to determine where to install
+    # their modules
+    inreplace lib/"pkgconfig/gio-2.0.pc",
+              "giomoduledir=#{HOMEBREW_PREFIX}/lib/gio/modules",
+              "giomoduledir=${libdir}/gio/modules"
+
+    # Delete python files because they are provided by `glib-utils`
+    python_extension_regex = /\.(py(?:[diwx])?|px[di]|cpython-(?:[23]\d{1,2})[-\w]*\.(so|dylib))$/i
+    python_shebang_regex = %r{^#! ?/usr/bin/(?:env )?python(?:[23](?:\.\d{1,2})?)?( |$)}
+    shebang_max_length = 28 # the length of "#! /usr/bin/env pythonx.yyy "
+    prefix.find do |f|
+      next unless f.file?
+
+      f.unlink if python_extension_regex.match?(f.basename) || python_shebang_regex.match?(f.read(shebang_max_length))
+    end
+
+    # Delete empty directories
+    # Note: We need to traversal the directories in reverse order (i.e. deepest first).
+    #       Also, we should put checking emptiness and deletion in a single loop.
+    #       `dirs.select(&:empty?).map(&:rmdir)` will not work because it will not delete
+    #       directories that only contain empty directories.
+    prefix.find.select(&:directory?).reverse_each { |d| d.rmdir if d.empty? }
+
+    if OS.mac?
+      # `pkg-config --libs glib-2.0` includes -lintl, and gettext itself does not
+      # have a pkgconfig file, so we add gettext lib and include paths here.
+      gettext = Formula["gettext"].opt_prefix
+      inreplace lib+"pkgconfig/glib-2.0.pc" do |s|
+        s.gsub! "Libs: -L${libdir} -lglib-2.0 -lintl",
+                "Libs: -L${libdir} -lglib-2.0 -L#{gettext}/lib -lintl"
+        s.gsub! "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include",
+                "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include -I#{gettext}/include"
+      end
+    end
+
+    # `pkg-config --print-requires-private gobject-2.0` includes libffi,
+    # but that package is keg-only so it needs to look for the pkgconfig file
+    # in libffi's opt path.
+    libffi = Formula["libffi"].opt_prefix
+    inreplace lib+"pkgconfig/gobject-2.0.pc" do |s|
+      s.gsub! "Requires.private: libffi",
+              "Requires.private: #{libffi}/lib/pkgconfig/libffi.pc"
+    end
+
+    bash_completion.install Dir["gio/completion/*"]
   end
 
   def post_install
     (HOMEBREW_PREFIX/"lib/gio/modules").mkpath
+  end
+
+  def caveats
+    <<~EOS
+      Python executables and libraries are no longer included with this formula, but they are available separately:
+        brew install glib-utils
+    EOS
   end
 
   test do
@@ -113,7 +130,7 @@ class Glib < Formula
 
           return (strcmp(str, result_2) == 0) ? 0 : 1;
       }
-      EOS
+    EOS
     system ENV.cc, "-o", "test", "test.c", "-I#{include}/glib-2.0",
                    "-I#{lib}/glib-2.0/include", "-L#{lib}", "-lglib-2.0"
     system "./test"

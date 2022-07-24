@@ -1,15 +1,18 @@
 class Mimic < Formula
   desc "Lightweight text-to-speech engine based on CMU Flite"
   homepage "https://mimic.mycroft.ai"
-  url "https://github.com/MycroftAI/mimic/archive/1.2.0.2.tar.gz"
-  sha256 "6adcc9911b09d6e9513add41ad9dfc0893ece277f556419869520a0f0708c102"
-  revision 2
+  url "https://github.com/MycroftAI/mimic1/archive/1.3.0.1.tar.gz"
+  sha256 "9041f5c7d3720899c90c890ada179c92c3b542b90bb655c247e4a4835df79249"
 
   bottle do
-    cellar :any
-    sha256 "5f3ce8f5ca539aa8661b22c8dfc768001ad3d3d83dd209c2b33e7f2ed86d4a82" => :high_sierra
-    sha256 "2ce3923f3dfbd7a7e47d0d7f794291b1d32f74d990989b0643480178d2ad4304" => :sierra
-    sha256 "8d4320a8cf2badd931d5e5750c4777acde53d653766b6485a104644ca1271b87" => :el_capitan
+    sha256 arm64_monterey: "d5e9edd6ea60a7c799c8d88e35f981dce913d950874ce44fa9805bb7c91c5e32"
+    sha256 arm64_big_sur:  "72107347e7fd6f6ca1af6808fe3ea5b428e3dee2f733743a0d44cd9b9e67d492"
+    sha256 monterey:       "b5b3fbdb47926a507b67c517346e66e1b3deba2622f915eb66409c601fe2718b"
+    sha256 big_sur:        "ef5067be11a74cc8cd63e266a775ece9ebcf59c9995b630f9717d7333dbdd924"
+    sha256 catalina:       "72b346f8eefbbc70abc0a67bc72265b3bec7f99e53b18418ad6835df52518f1e"
+    sha256 mojave:         "a185641e0d84aae004df33923ca0612b9ba0d59c9a1d4a5fd80ebd6d1de69f58"
+    sha256 high_sierra:    "98a927ebfffb3a965506102d758fe4a5e76d0c6bd732972e6b113505d28241c8"
+    sha256 x86_64_linux:   "027d95ecca63daf3f9c20419da6630b9a6a2d00e92dbdccbbc5d1747e0aca4d4"
   end
 
   depends_on "autoconf" => :build
@@ -18,6 +21,7 @@ class Mimic < Formula
   depends_on "pkg-config" => :build
 
   depends_on "icu4c"
+  depends_on "pcre2"
   depends_on "portaudio"
 
   def install

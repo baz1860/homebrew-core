@@ -1,17 +1,18 @@
 class Pgbadger < Formula
   desc "Log analyzer for PostgreSQL"
-  homepage "https://dalibo.github.io/pgbadger/"
-  url "https://github.com/dalibo/pgbadger/archive/v9.2.tar.gz"
-  sha256 "2107466309a409fb9e40f11bb77cac1f9ba7910d5328e7b2e08eb7a1c6d760ec"
-
-  head "https://github.com/dalibo/pgbadger.git"
+  homepage "https://pgbadger.darold.net/"
+  url "https://github.com/darold/pgbadger/archive/v11.8.tar.gz"
+  sha256 "ddf4714ac058e0170359af43c22addcc0872ae17ba6f15c4e3c5a71be3b68291"
+  license "PostgreSQL"
+  head "https://github.com/darold/pgbadger.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a481b5c37d9517b2329493447798188e722f354a4d0309dbecc505f1b0e9bbdf" => :high_sierra
-    sha256 "d67b1d85810ffbcd8b638b44cbcce14744e6aff9f72f2e3085047897f3cad0d3" => :sierra
-    sha256 "d67b1d85810ffbcd8b638b44cbcce14744e6aff9f72f2e3085047897f3cad0d3" => :el_capitan
-    sha256 "d67b1d85810ffbcd8b638b44cbcce14744e6aff9f72f2e3085047897f3cad0d3" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "14c6be30fcb494f156c9e06700f1930a5ec306b9be715e647afaa2319138132c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "cc2767affa21e941a91b14ddb5622027af8383b33c739969cae9e2896725215d"
+    sha256 cellar: :any_skip_relocation, monterey:       "94fe00a37abe83df467c20fb60cfadc7140dfdb7ad5de9d06f6d0de70449fe85"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ec7c5490b66889b7dfa965f6b845b7c3ca19a94100d3bb15a6bf6602a20ea3d2"
+    sha256 cellar: :any_skip_relocation, catalina:       "9a0cd6664145e98e6d291f37ac262ae8c6e4820c5b5627e42f09630ec09d1b40"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5192e1ac9ad093144950218397106a35b7dec3aa3e18d887234d391cb4026537"
   end
 
   def install
@@ -19,26 +20,32 @@ class Pgbadger < Formula
     system "make"
     system "make", "install"
 
+    man_dir = if OS.mac?
+      "share/man/man1"
+    else
+      "man/man1"
+    end
     bin.install "usr/local/bin/pgbadger"
-    man1.install "usr/local/share/man/man1/pgbadger.1p"
+    man1.install "usr/local/#{man_dir}/pgbadger.1p"
   end
 
-  def caveats; <<~EOS
-    You must configure your PostgreSQL server before using pgBadger.
-    Edit postgresql.conf (in #{var}/postgres if you use Homebrew's
-    PostgreSQL), set the following parameters, and restart PostgreSQL:
+  def caveats
+    <<~EOS
+      You must configure your PostgreSQL server before using pgBadger.
+      Edit postgresql.conf (in #{var}/postgres if you use Homebrew's
+      PostgreSQL), set the following parameters, and restart PostgreSQL:
 
-      log_destination = 'stderr'
-      log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '
-      log_statement = 'none'
-      log_duration = off
-      log_min_duration_statement = 0
-      log_checkpoints = on
-      log_connections = on
-      log_disconnections = on
-      log_lock_waits = on
-      log_temp_files = 0
-      lc_messages = 'C'
+        log_destination = 'stderr'
+        log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d '
+        log_statement = 'none'
+        log_duration = off
+        log_min_duration_statement = 0
+        log_checkpoints = on
+        log_connections = on
+        log_disconnections = on
+        log_lock_waits = on
+        log_temp_files = 0
+        lc_messages = 'C'
     EOS
   end
 

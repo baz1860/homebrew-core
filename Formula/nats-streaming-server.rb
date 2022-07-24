@@ -1,55 +1,45 @@
 class NatsStreamingServer < Formula
   desc "Lightweight cloud messaging system"
   homepage "https://nats.io"
-  url "https://github.com/nats-io/nats-streaming-server/archive/v0.7.0.tar.gz"
-  sha256 "22cb25ffc084b883b269fbbebb6a6979e2280b19d83197b6485618b292bfe83b"
-  head "https://github.com/nats-io/nats-streaming-server.git"
+  url "https://github.com/nats-io/nats-streaming-server/archive/v0.24.6.tar.gz"
+  sha256 "750e091f3473688a1b0c251513bf9beb7a12e3e1359d541b53381bd91e09b9be"
+  license "Apache-2.0"
+  head "https://github.com/nats-io/nats-streaming-server.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "3fae57b99948ba21df72cdc73d1d3463a081c234c068b90d57e1338737dd5e2f" => :high_sierra
-    sha256 "fe89a33e0529b5cc18586aadde08b1318dac86a18879754eb6ba6aa6806657f1" => :sierra
-    sha256 "e8eb41ab04bca3531bca427aa1fe606e9c69c095a69dfaad2ca09b7d60863027" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "5acb964e918c9c39ac0f6bd7d8ddeb6dff13e492a69a3930532382f331543403"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "57ec652026e19945c61f645d16ea0e381a8a51d090507ba4f1ee749d641b2b3e"
+    sha256 cellar: :any_skip_relocation, monterey:       "851c8e68280ed15b2ecc1b43128a27ddf3ee60260bc4befec4d49fe905d8a352"
+    sha256 cellar: :any_skip_relocation, big_sur:        "2faf7fcca36d51e50500cdd714af091b6275928d86042358747037b694bafbf7"
+    sha256 cellar: :any_skip_relocation, catalina:       "3f13def42236d8b66965b7efce39bba963ff54f30635428e5f90818f47e48ec5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "65350b37f1c99b651e98103ae68e4e978d0589fadef5bd541f71dcccc062b1b3"
   end
 
   depends_on "go" => :build
 
   def install
-    ENV["GOPATH"] = buildpath
-    mkdir_p "src/github.com/nats-io"
-    ln_s buildpath, "src/github.com/nats-io/nats-streaming-server"
-    buildfile = buildpath/"src/github.com/nats-io/nats-streaming-server/nats-streaming-server.go"
-    system "go", "build", "-v", "-o", bin/"nats-streaming-server", buildfile
+    system "go", "build", "-ldflags", "-s -w", "-trimpath", "-o", bin/"nats-streaming-server"
+    prefix.install_metafiles
   end
 
-  plist_options :manual => "nats-streaming-server"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/nats-streaming-server</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run opt_bin/"nats-streaming-server"
   end
 
   test do
+    port = free_port
+    http_port = free_port
     pid = fork do
-      exec "#{bin}/nats-streaming-server --port=8085 --pid=#{testpath}/pid --log=#{testpath}/log"
+      exec "#{bin}/nats-streaming-server",
+           "--port=#{port}",
+           "--http_port=#{http_port}",
+           "--pid=#{testpath}/pid",
+           "--log=#{testpath}/log"
     end
     sleep 3
 
     begin
-      assert_match "INFO", shell_output("curl localhost:8085")
+      assert_match "uptime", shell_output("curl localhost:#{http_port}/varz")
       assert_predicate testpath/"log", :exist?
       assert_match version.to_s, File.read(testpath/"log")
     ensure

@@ -1,25 +1,28 @@
 class Percol < Formula
+  include Language::Python::Virtualenv
+
   desc "Interactive grep tool"
   homepage "https://github.com/mooz/percol"
-  url "https://github.com/mooz/percol/archive/v0.2.1.tar.gz"
-  sha256 "75056ba1fe190ae4c728e68df963c0e7d19bfe5a85649e51ae4193d4011042f9"
-  head "https://github.com/mooz/percol.git"
+  url "https://files.pythonhosted.org/packages/50/ea/282b2df42d6be8d4292206ea9169742951c39374af43ae0d6f9fff0af599/percol-0.2.1.tar.gz"
+  sha256 "7a649c6fae61635519d12a6bcacc742241aad1bff3230baef2cedd693ed9cfe8"
+  license "MIT"
+  revision 4
+  head "https://github.com/mooz/percol.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "5d11dcf9119aa83ea6d45cc1d15eb94bebda00ffd190527bbdae7dddc5879237" => :high_sierra
-    sha256 "dac0631f61d1fad12ffed033d16c163a237e6d863bf5350971a8305fbd69c171" => :sierra
-    sha256 "e0acd43c0270f0277dc69492da9c31e0e819c2b4bd1ca8f23db012ba2e4e3aab" => :el_capitan
-    sha256 "8a46e774ad1128721b2b425f11083d6494101834b887a575f9071c006abab887" => :yosemite
-    sha256 "a5c8be8d7e307651de4951384ac2603e7ca932bfffbf9434170a597f801b799e" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "6fb4f3792ab7e2a2c1dc1808d4e9d2de64ab257d7b5662ec698b445bdbaafb66"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "6fb4f3792ab7e2a2c1dc1808d4e9d2de64ab257d7b5662ec698b445bdbaafb66"
+    sha256 cellar: :any_skip_relocation, monterey:       "e8c42fa54505580142f2850d3f4fd77c8150618b4018ef731feab7ef196df03a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "e8c42fa54505580142f2850d3f4fd77c8150618b4018ef731feab7ef196df03a"
+    sha256 cellar: :any_skip_relocation, catalina:       "e8c42fa54505580142f2850d3f4fd77c8150618b4018ef731feab7ef196df03a"
+    sha256 cellar: :any_skip_relocation, mojave:         "e8c42fa54505580142f2850d3f4fd77c8150618b4018ef731feab7ef196df03a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "85e58c86eaf02e87796f3b30f81cf3c070408d25525aa9857366e47c3e015384"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
+  depends_on "six"
 
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
-  end
+  uses_from_macos "expect" => :test
 
   resource "cmigemo" do
     url "https://files.pythonhosted.org/packages/2f/e4/374df50b655e36139334046f898469bf5e2d7600e1e638f29baf05b14b72/cmigemo-0.1.6.tar.gz"
@@ -27,18 +30,7 @@ class Percol < Formula
   end
 
   def install
-    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
-    resources.each do |r|
-      r.stage do
-        system "python", *Language::Python.setup_install_args(libexec/"vendor")
-      end
-    end
-
-    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
-    system "python", *Language::Python.setup_install_args(libexec)
-
-    bin.install Dir["#{libexec}/bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    virtualenv_install_with_resources
   end
 
   test do
@@ -49,6 +41,6 @@ class Percol < Formula
       spawn #{bin}/percol --query=Homebrew textfile
       expect "QUERY> Homebrew"
     EOS
-    assert_match "Homebrew", shell_output("/usr/bin/expect -f expect-script")
+    assert_match "Homebrew", shell_output("expect -f expect-script")
   end
 end

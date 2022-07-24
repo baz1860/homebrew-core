@@ -1,15 +1,23 @@
 class Timelimit < Formula
   desc "Limit a process's absolute execution time"
   homepage "https://devel.ringlet.net/sysutils/timelimit/"
-  url "https://devel.ringlet.net/files/sys/timelimit/timelimit-1.8.1.tar.gz"
-  sha256 "7043d9ff1ec9650f7f50118529a4cea129720ea9d1035d986cb77e6358c7179d"
+  url "https://devel.ringlet.net/files/sys/timelimit/timelimit-1.9.2.tar.gz"
+  sha256 "320a72770288b2deeb9abbd343f9c27afcb6190bb128ad2a1e1ee2a03a796d45"
+  license "BSD-2-Clause"
+
+  livecheck do
+    url :homepage
+    regex(/latest release is .*?timelimit[._-]v?(\d+(?:\.\d+)+)</i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "6754c1851d0530a70c035b15a53b7286c018191e744befdb03ddbb086a97e537" => :high_sierra
-    sha256 "5085abbf18bc1e2f4aa65651feeebb7e5704de5e2712d82a32c854ba7438273e" => :sierra
-    sha256 "dbd4adf91b29d800a9d84be457279ab0465185c951491015c50e0e6a086ca908" => :el_capitan
-    sha256 "6ae0fbb95e2011aa3511ab5bc95a476f1de4216d972e93f312e8bebf8abbef3f" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "942effb229cb7f279a5cd4471bf3b70111bd0c79f286ad4954f924dc9805d096"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "857697f444d4ddc8658970890885230fe12eb21474cb212112a3ccbbbbaf81b3"
+    sha256 cellar: :any_skip_relocation, monterey:       "04d40a5e190cb1ed96e44690538d8445b7e097663a5df16577ad90e3ff3f7d01"
+    sha256 cellar: :any_skip_relocation, big_sur:        "3888001f62e0dfdf0573b405dc2c0c5a36ce1274d1091a0cb0f38ee18438cfc4"
+    sha256 cellar: :any_skip_relocation, catalina:       "e083932ebe7fa08f9afaa28254e5a73df07a29bf072cb932065678d708127a87"
+    sha256 cellar: :any_skip_relocation, mojave:         "c0259eec4d6e78c2faf7c3860e5c47dffdef165dff28ef7992f7e9bf0914d0bd"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b7a67387373b1409dd8e80893ccef41f0cf75d02c7256c35c19691bed52b5d8d"
   end
 
   def install
@@ -27,7 +35,7 @@ class Timelimit < Formula
   end
 
   test do
-    assert_equal "timelimit: sending warning signal 15",
+    assert_match "timelimit: sending warning signal 15",
       shell_output("#{bin}/timelimit -p -t 1 sleep 5 2>&1", 143).chomp
   end
 end

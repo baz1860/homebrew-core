@@ -1,18 +1,28 @@
 class Bcftools < Formula
   desc "Tools for BCF/VCF files and variant calling from samtools"
   homepage "https://www.htslib.org/"
-  url "https://github.com/samtools/bcftools/releases/download/1.7/bcftools-1.7.tar.bz2"
-  sha256 "dd4f63d91b0dffb0f0ce88ac75c2387251930c8063f7799611265083f8d302d1"
+  url "https://github.com/samtools/bcftools/releases/download/1.15.1/bcftools-1.15.1.tar.bz2"
+  sha256 "f21f9564873eb27ccf22d13b91a64acb8fbbfe4f9e4c37933a54b9a95857f2d7"
+  # The bcftools source code is MIT/Expat-licensed, but when it is configured
+  # with --enable-libgsl the resulting executable is GPL-licensed.
+  license "GPL-3.0-or-later"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    sha256 "55eb87755553c4679a31801e822b5975607196ef34021796e46f5f32a7bc397a" => :high_sierra
-    sha256 "e395ccbbaa803a095d59437f76167e6b6d61053d3ee562ee848dc305d7b4bbee" => :sierra
-    sha256 "bcfd075273b9918e5632e45b20f5ac5b1788540c02d41877bcc17f2041e687aa" => :el_capitan
+    sha256                               arm64_monterey: "547be287eadb9b767ab27232071c0fbd6895cea8de8470a657912d82ea90183c"
+    sha256                               arm64_big_sur:  "856cc821f42aa3a34efc45c71fe5be9139605e52373d123bd04be511d1476380"
+    sha256                               monterey:       "51b716a9f1b3b6889ee91f67135f0b3ef19bd4fbc298f1c3607497842684a5a2"
+    sha256                               big_sur:        "da96ced1e7dea42220ef0bea1deecc4f38bb1f30d68cd980dbdb37cdd61a719c"
+    sha256                               catalina:       "622b3e4e56e7b716824e3552e7cb9468753ba4dddacb7ef9b14e7e128cf68fc8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e7d57e0c0fbe7639362ba27ef336000e43e6be81c68d920cf7f86d6b4f50eeb5"
   end
 
   depends_on "gsl"
   depends_on "htslib"
-  depends_on "xz"
 
   def install
     system "./configure", "--prefix=#{prefix}",

@@ -1,27 +1,29 @@
-require "language/haskell"
-
 class Darcs < Formula
-  include Language::Haskell::Cabal
-
   desc "Distributed version control system that tracks changes, via Haskell"
   homepage "http://darcs.net/"
-  url "https://hackage.haskell.org/package/darcs-2.12.5/darcs-2.12.5.tar.gz"
-  sha256 "355b04c85c27bca43c8c380212988d9c1e9a984b0b593ceb2884de4295063553"
+  url "https://hackage.haskell.org/package/darcs-2.16.5/darcs-2.16.5.tar.gz"
+  sha256 "d63c6cd236e31e812e8ad84433d27059387606269fbd953f4c349c3cb3aa242b"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "ed165766c4f5ae94fe7e5744155bd7e9e71bdf80e54f0998af2a96c4312e4c3f" => :high_sierra
-    sha256 "92a148502ee81e0be44a12531fa8b45331742cb28f28e83fb351b23c93a7a7b3" => :sierra
-    sha256 "e11d1841f356e3f0ce47fc26951a81a23098d709fc726cbc786fa5451a002f14" => :el_capitan
-    sha256 "1c0522297c9eb1c858888fa28434305d149e474329890137ff9827a3424cef82" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "9d03a37a9b8cb29eb9cd4ff21b169c63db57c681edb4761ea3004bdc15fa17f8"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ad19b2f85d71c0fdfb32ee9e5d758a7491877dd99e854ec7759acdaf59f90ebe"
+    sha256 cellar: :any_skip_relocation, monterey:       "160b91bf58a6d87b60e85e62ad2f6124c0d952f921389d82f04114788bd6c0aa"
+    sha256 cellar: :any_skip_relocation, big_sur:        "bedb352218c8ae7e6c209f3297dfd25df8bfbbbf2e99559c964133e81989209c"
+    sha256 cellar: :any_skip_relocation, catalina:       "2db034fcb43671e797cf5d6ea83359fabce3de8fd3653c6dfaef6d356b27ea1f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ee3f9ad7d74ba60c4f75fea414168304c2bd7d3dbe9c6ee0ca249a7d10703740"
   end
 
-  depends_on "ghc@8.0" => :build
   depends_on "cabal-install" => :build
+  depends_on "ghc" => :build
   depends_on "gmp"
 
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
+
   def install
-    install_cabal_package
+    system "cabal", "v2-update"
+    system "cabal", "v2-install", *std_cabal_v2_args
   end
 
   test do

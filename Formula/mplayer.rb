@@ -1,15 +1,22 @@
 class Mplayer < Formula
   desc "UNIX movie player"
   homepage "https://mplayerhq.hu/"
-  url "https://mplayerhq.hu/MPlayer/releases/MPlayer-1.3.0.tar.xz"
-  sha256 "3ad0846c92d89ab2e4e6fb83bf991ea677e7aa2ea775845814cbceb608b09843"
+  url "https://mplayerhq.hu/MPlayer/releases/MPlayer-1.5.tar.xz"
+  sha256 "650cd55bb3cb44c9b39ce36dac488428559799c5f18d16d98edb2b7256cbbf85"
+  license all_of: ["GPL-2.0-only", "GPL-2.0-or-later"]
+
+  livecheck do
+    url "https://mplayerhq.hu/MPlayer/releases/"
+    regex(/href=.*?MPlayer[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "26285311d46556224a46a14367dac8c813c3959712c267d591950ae9fb703f38" => :high_sierra
-    sha256 "52b4e6e55808d69ff34210337e86359e766c6065da3e43117357d378970cffcf" => :sierra
-    sha256 "6cee95b050e52a0f09e2807d6feda1f798d3f43166fbad1e3fb2ec5fe2c11f99" => :el_capitan
-    sha256 "8bb05f0875afca69802634411d8e67af5f42e4461b66c640de3c152e049c7843" => :yosemite
-    sha256 "d3833fa49709d2857337eebcbd956002f20309cbd676b27070940f84888ebb65" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "3c5f82232990e06050b98b5a7b03c8ad6b5f254a5835e4f481ebe75c021c008f"
+    sha256 cellar: :any,                 arm64_big_sur:  "342506fa732f2c986f49ff9dbab695a099c4e5b245400488a22a278dcea57253"
+    sha256 cellar: :any,                 monterey:       "00103327d3942df72a98315701f7e85ad2efa4117523b68740b7027dcc1682e2"
+    sha256 cellar: :any,                 big_sur:        "3b5339dbcd0b5bb06748cb16aed789fc24502e4f19947c0ec328f8d57a9f53c2"
+    sha256 cellar: :any,                 catalina:       "e899927dc7566ac3f3157e1f82b2786a2471443537ae6dbe73b9ef38d27b2630"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9dd55b355fbcb3fe9848921430f12bc2c2bb17c2d1f39eccea909e0ec496781e"
   end
 
   head do
@@ -20,18 +27,11 @@ class Mplayer < Formula
     patch :DATA
   end
 
+  depends_on "pkg-config" => :build
   depends_on "yasm" => :build
-  depends_on "libcaca" => :optional
-  depends_on "libdvdread" => :optional
-  depends_on "libdvdnav" => :optional
-  depends_on "pkg-config" => :build if build.with? "libdvdnav"
-
-  unless MacOS.prefer_64_bit?
-    fails_with :clang do
-      build 211
-      cause "Inline asm errors during compile on 32bit Snow Leopard."
-    end
-  end
+  depends_on "fontconfig"
+  depends_on "freetype"
+  depends_on "libcaca"
 
   def install
     # we disable cdparanoia because homebrew's version is hacked to work on macOS
@@ -44,16 +44,10 @@ class Mplayer < Formula
       --disable-cdparanoia
       --prefix=#{prefix}
       --disable-x11
+      --enable-caca
+      --enable-freetype
+      --disable-libbs2b
     ]
-
-    args << "--enable-caca" if build.with? "libcaca"
-    args << "--enable-dvdnav" if build.with? "libdvdnav"
-
-    if build.with? "libdvdread"
-      ENV["LDFLAGS"] = "-L#{Formula["libdvdread"].opt_lib} -ldvdread"
-      args << "--enable-dvdread"
-    end
-
     system "./configure", *args
     system "make"
     system "make", "install"

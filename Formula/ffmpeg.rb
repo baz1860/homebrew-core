@@ -1,94 +1,75 @@
 class Ffmpeg < Formula
   desc "Play, record, convert, and stream audio and video"
   homepage "https://ffmpeg.org/"
-  url "https://ffmpeg.org/releases/ffmpeg-3.4.2.tar.bz2"
-  sha256 "eb0370bf223809b9ebb359fed5318f826ac038ce77933b3afd55ab1a0a21785a"
-  head "https://github.com/FFmpeg/FFmpeg.git"
+  url "https://ffmpeg.org/releases/ffmpeg-5.0.1.tar.xz"
+  sha256 "ef2efae259ce80a240de48ec85ecb062cecca26e4352ffb3fda562c21a93007b"
+  # None of these parts are used by default, you have to explicitly pass `--enable-gpl`
+  # to configure to activate them. In this case, FFmpeg's license changes to GPL v2+.
+  license "GPL-2.0-or-later"
+  revision 3
+  head "https://github.com/FFmpeg/FFmpeg.git", branch: "master"
 
-  bottle do
-    sha256 "9df7c5868b825944edc80822e818028b4123ee8cdf85ef60eb11fed235b23c79" => :high_sierra
-    sha256 "18b50630056fbe4a3d12515f32728242349b43bd7b956f3401190861b2ccd402" => :sierra
-    sha256 "e507900d3ec72618b365588223f57428654334119d34d6d61ca58210bb7c4907" => :el_capitan
+  livecheck do
+    url "https://ffmpeg.org/download.html"
+    regex(/href=.*?ffmpeg[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-chromaprint", "Enable the Chromaprint audio fingerprinting library"
-  option "with-fdk-aac", "Enable the Fraunhofer FDK AAC library"
-  option "with-libass", "Enable ASS/SSA subtitle format"
-  option "with-librsvg", "Enable SVG files as inputs via librsvg"
-  option "with-libsoxr", "Enable the soxr resample library"
-  option "with-libssh", "Enable SFTP protocol via libssh"
-  option "with-tesseract", "Enable the tesseract OCR engine"
-  option "with-libvidstab", "Enable vid.stab support for video stabilization"
-  option "with-opencore-amr", "Enable Opencore AMR NR/WB audio format"
-  option "with-openh264", "Enable OpenH264 library"
-  option "with-openjpeg", "Enable JPEG 2000 image format"
-  option "with-openssl", "Enable SSL support"
-  option "with-rtmpdump", "Enable RTMP protocol"
-  option "with-rubberband", "Enable rubberband library"
-  option "with-sdl2", "Enable FFplay media player"
-  option "with-snappy", "Enable Snappy library"
-  option "with-tools", "Enable additional FFmpeg tools"
-  option "with-webp", "Enable using libwebp to encode WEBP images"
-  option "with-x265", "Enable x265 encoder"
-  option "with-xz", "Enable decoding of LZMA-compressed TIFF files"
-  option "with-zeromq", "Enable using libzeromq to receive commands sent through a libzeromq client"
-  option "with-zimg", "Enable z.lib zimg library"
-  option "without-lame", "Disable MP3 encoder"
-  option "without-qtkit", "Disable deprecated QuickTime framework"
-  option "without-securetransport", "Disable use of SecureTransport"
-  option "without-x264", "Disable H.264 encoder"
-  option "without-xvid", "Disable Xvid MPEG-4 video encoder"
-  option "without-gpl", "Disable building GPL licensed parts of FFmpeg"
-
-  deprecated_option "with-ffplay" => "with-sdl2"
-  deprecated_option "with-sdl" => "with-sdl2"
-  deprecated_option "with-libtesseract" => "with-tesseract"
+  bottle do
+    sha256 arm64_monterey: "6aa7fa8dbc5fb950f1ef81c31e5c3af52d92c616ea9a4b46e58b42c51a0ba7d7"
+    sha256 arm64_big_sur:  "a494fef2d5a93ecdadfce8530964af6ddcdb8662795bb7aa35ef8f8d8f659a01"
+    sha256 monterey:       "b835b65ef6d4b85e36b7a315133fd9310a4ab6184caef6e8c99174d4aeec7bbb"
+    sha256 big_sur:        "a65289290fb40e981887568f2711357402f2e9e7e42f57e2c4d3984f11b36f7a"
+    sha256 catalina:       "d35f1a769b57ff7180076d53af7c1602ff7e3d3f29f81d6e5a6cb1a90cbc6a3a"
+    sha256 x86_64_linux:   "d020ef50ab876425fa9d9555473b3925da14fe80365a7dc39f53e98e5b7960de"
+  end
 
   depends_on "nasm" => :build
   depends_on "pkg-config" => :build
-  depends_on "texi2html" => :build
+  depends_on "aom"
+  depends_on "dav1d"
+  depends_on "fontconfig"
+  depends_on "freetype"
+  depends_on "frei0r"
+  depends_on "gnutls"
+  depends_on "lame"
+  depends_on "libass"
+  depends_on "libbluray"
+  depends_on "librist"
+  depends_on "libsoxr"
+  depends_on "libvidstab"
+  depends_on "libvmaf"
+  depends_on "libvorbis"
+  depends_on "libvpx"
+  depends_on "opencore-amr"
+  depends_on "openjpeg"
+  depends_on "opus"
+  depends_on "rav1e"
+  depends_on "rubberband"
+  depends_on "sdl2"
+  depends_on "snappy"
+  depends_on "speex"
+  depends_on "srt"
+  depends_on "tesseract"
+  depends_on "theora"
+  depends_on "webp"
+  depends_on "x264"
+  depends_on "x265"
+  depends_on "xvid"
+  depends_on "xz"
+  depends_on "zeromq"
+  depends_on "zimg"
 
-  depends_on "lame" => :recommended
-  depends_on "x264" => :recommended
-  depends_on "xvid" => :recommended
+  uses_from_macos "bzip2"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
 
-  depends_on "chromaprint" => :optional
-  depends_on "fdk-aac" => :optional
-  depends_on "fontconfig" => :optional
-  depends_on "freetype" => :optional
-  depends_on "frei0r" => :optional
-  depends_on "game-music-emu" => :optional
-  depends_on "libass" => :optional
-  depends_on "libbluray" => :optional
-  depends_on "libbs2b" => :optional
-  depends_on "libcaca" => :optional
-  depends_on "libgsm" => :optional
-  depends_on "libmodplug" => :optional
-  depends_on "librsvg" => :optional
-  depends_on "libsoxr" => :optional
-  depends_on "libssh" => :optional
-  depends_on "libvidstab" => :optional
-  depends_on "libvorbis" => :optional
-  depends_on "libvpx" => :optional
-  depends_on "opencore-amr" => :optional
-  depends_on "openh264" => :optional
-  depends_on "openjpeg" => :optional
-  depends_on "openssl" => :optional
-  depends_on "opus" => :optional
-  depends_on "rtmpdump" => :optional
-  depends_on "rubberband" => :optional
-  depends_on "sdl2" => :optional
-  depends_on "snappy" => :optional
-  depends_on "speex" => :optional
-  depends_on "tesseract" => :optional
-  depends_on "theora" => :optional
-  depends_on "two-lame" => :optional
-  depends_on "wavpack" => :optional
-  depends_on "webp" => :optional
-  depends_on "x265" => :optional
-  depends_on "xz" => :optional
-  depends_on "zeromq" => :optional
-  depends_on "zimg" => :optional
+  on_linux do
+    depends_on "alsa-lib"
+    depends_on "gcc" # because rubberband is compiled with gcc
+    depends_on "libxv"
+  end
+
+  fails_with gcc: "5"
 
   def install
     args = %W[
@@ -96,82 +77,71 @@ class Ffmpeg < Formula
       --enable-shared
       --enable-pthreads
       --enable-version3
-      --enable-hardcoded-tables
-      --enable-avresample
       --cc=#{ENV.cc}
       --host-cflags=#{ENV.cflags}
       --host-ldflags=#{ENV.ldflags}
+      --enable-ffplay
+      --enable-gnutls
+      --enable-gpl
+      --enable-libaom
+      --enable-libbluray
+      --enable-libdav1d
+      --enable-libmp3lame
+      --enable-libopus
+      --enable-librav1e
+      --enable-librist
+      --enable-librubberband
+      --enable-libsnappy
+      --enable-libsrt
+      --enable-libtesseract
+      --enable-libtheora
+      --enable-libvidstab
+      --enable-libvmaf
+      --enable-libvorbis
+      --enable-libvpx
+      --enable-libwebp
+      --enable-libx264
+      --enable-libx265
+      --enable-libxml2
+      --enable-libxvid
+      --enable-lzma
+      --enable-libfontconfig
+      --enable-libfreetype
+      --enable-frei0r
+      --enable-libass
+      --enable-libopencore-amrnb
+      --enable-libopencore-amrwb
+      --enable-libopenjpeg
+      --enable-libspeex
+      --enable-libsoxr
+      --enable-libzmq
+      --enable-libzimg
+      --disable-libjack
+      --disable-indev=jack
     ]
 
-    args << "--disable-jack" if build.stable?
-    args << "--enable-gpl" if build.with? "gpl"
-    args << "--disable-indev=qtkit" if build.without? "qtkit"
-    args << "--disable-securetransport" if build.without? "securetransport"
-    args << "--enable-chromaprint" if build.with? "chromaprint"
-    args << "--enable-ffplay" if build.with? "sdl2"
-    args << "--enable-frei0r" if build.with? "frei0r"
-    args << "--enable-libass" if build.with? "libass"
-    args << "--enable-libbluray" if build.with? "libbluray"
-    args << "--enable-libbs2b" if build.with? "libbs2b"
-    args << "--enable-libcaca" if build.with? "libcaca"
-    args << "--enable-libfdk-aac" if build.with? "fdk-aac"
-    args << "--enable-libfontconfig" if build.with? "fontconfig"
-    args << "--enable-libfreetype" if build.with? "freetype"
-    args << "--enable-libgme" if build.with? "game-music-emu"
-    args << "--enable-libgsm" if build.with? "libgsm"
-    args << "--enable-libmodplug" if build.with? "libmodplug"
-    args << "--enable-libmp3lame" if build.with? "lame"
-    args << "--enable-libopencore-amrnb" << "--enable-libopencore-amrwb" if build.with? "opencore-amr"
-    args << "--enable-libopenh264" if build.with? "openh264"
-    args << "--enable-libopus" if build.with? "opus"
-    args << "--enable-librsvg" if build.with? "librsvg"
-    args << "--enable-librtmp" if build.with? "rtmpdump"
-    args << "--enable-librubberband" if build.with? "rubberband"
-    args << "--enable-libsnappy" if build.with? "snappy"
-    args << "--enable-libsoxr" if build.with? "libsoxr"
-    args << "--enable-libspeex" if build.with? "speex"
-    args << "--enable-libssh" if build.with? "libssh"
-    args << "--enable-libtesseract" if build.with? "tesseract"
-    args << "--enable-libtheora" if build.with? "theora"
-    args << "--enable-libtwolame" if build.with? "two-lame"
-    args << "--enable-libvidstab" if build.with? "libvidstab"
-    args << "--enable-libvorbis" if build.with? "libvorbis"
-    args << "--enable-libvpx" if build.with? "libvpx"
-    args << "--enable-libwavpack" if build.with? "wavpack"
-    args << "--enable-libwebp" if build.with? "webp"
-    args << "--enable-libx264" if build.with? "x264"
-    args << "--enable-libx265" if build.with? "x265"
-    args << "--enable-libxvid" if build.with? "xvid"
-    args << "--enable-libzimg" if build.with? "zimg"
-    args << "--enable-libzmq" if build.with? "zeromq"
-    args << "--enable-opencl" if MacOS.version > :lion
-    args << "--enable-videotoolbox" if MacOS.version >= :mountain_lion
-    args << "--enable-openssl" if build.with? "openssl"
+    # Needs corefoundation, coremedia, corevideo
+    args << "--enable-videotoolbox" if OS.mac?
+    args << "--enable-neon" if Hardware::CPU.arm?
 
-    if build.with? "xz"
-      args << "--enable-lzma"
-    else
-      args << "--disable-lzma"
+    # Replace hardcoded default VMAF model path
+    unless build.head?
+      %w[doc/filters.texi libavfilter/vf_libvmaf.c].each do |f|
+        inreplace f, "/usr/local/share/model", HOMEBREW_PREFIX/"share/libvmaf/model"
+        # Since libvmaf v2.0.0, `.pkl` model files have been deprecated in favor of `.json` model files.
+        inreplace f, "vmaf_v0.6.1.pkl", "vmaf_v0.6.1.json"
+      end
     end
-
-    if build.with? "openjpeg"
-      args << "--enable-libopenjpeg"
-      args << "--disable-decoder=jpeg2000"
-      args << "--extra-cflags=" + `pkg-config --cflags libopenjp2`.chomp
-    end
-
-    # These librares are GPL-incompatible, and require ffmpeg be built with
-    # the "--enable-nonfree" flag, which produces unredistributable libraries
-    args << "--enable-nonfree" if build.with?("fdk-aac") || build.with?("openssl")
 
     system "./configure", *args
-
     system "make", "install"
 
-    if build.with? "tools"
-      system "make", "alltools"
-      bin.install Dir["tools/*"].select { |f| File.executable? f }
-    end
+    # Build and install additional FFmpeg tools
+    system "make", "alltools"
+    bin.install Dir["tools/*"].select { |f| File.executable? f }
+
+    # Fix for Non-executables that were installed to bin/
+    mv bin/"python", pkgshare/"python", force: true
   end
 
   test do

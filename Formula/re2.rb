@@ -1,27 +1,44 @@
 class Re2 < Formula
   desc "Alternative to backtracking PCRE-style regular expression engines"
   homepage "https://github.com/google/re2"
-  url "https://github.com/google/re2/archive/2018-02-01.tar.gz"
-  version "20180201"
-  sha256 "c8ab833081c9766ef4e4d1e6397044ff3b20e42be109084b50d49c161f876184"
-  head "https://github.com/google/re2.git"
+  url "https://github.com/google/re2/archive/2022-06-01.tar.gz"
+  version "20220601"
+  sha256 "f89c61410a072e5cbcf8c27e3a778da7d6fd2f2b5b1445cd4f4508bee946ab0f"
+  license "BSD-3-Clause"
+  head "https://github.com/google/re2.git", branch: "main"
 
-  bottle do
-    cellar :any
-    sha256 "3aaaba4cf90743849818298a2dd831d2a64b350d9a31bcb888c17d071b30db6b" => :high_sierra
-    sha256 "d1cb01d0c5a8e53a9cd2ce8595af2b6ee9528f7f305c91e069153a020d44cc86" => :sierra
-    sha256 "06cc788ba640a13a851b20505f4dd53bf44768683f64c1465ff99092a2213bef" => :el_capitan
+  # The `strategy` block below is used to massage upstream tags into the
+  # YYYYMMDD format used in the `version`. This is necessary for livecheck
+  # to be able to do proper `Version` comparison.
+  livecheck do
+    url :stable
+    regex(/^(\d{2,4}-\d{2}-\d{2})$/i)
+    strategy :git do |tags, regex|
+      tags.map { |tag| tag[regex, 1]&.gsub(/\D/, "") }.compact
+    end
   end
 
-  needs :cxx11
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "5364a5325131113abec97c05282f85c29572094ac0ad2cbce9571e1dffd8fda1"
+    sha256 cellar: :any,                 arm64_big_sur:  "3d60ddeca55c3d3e629bf2edbf5cfa0b0eeaaf61360b2b9adbde91979c2595ba"
+    sha256 cellar: :any,                 monterey:       "568670d04b9bc92a07f6db624acda793834ad1c8bcb2f120386df77d7bd6385c"
+    sha256 cellar: :any,                 big_sur:        "e52a5ade3edeaf1d62170e1f4b43a4e73b71178d0e5f91300a4e29442905e7bd"
+    sha256 cellar: :any,                 catalina:       "2ca1a5a803d348e1487da767936165a12224b65940de3927e83ccd81c90ed443"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0f6532af8d10af84905b47b7e1fe9db19ae6b2ec9c17bca8c659137f66c56a8a"
+  end
+
+  depends_on "cmake" => :build
 
   def install
     ENV.cxx11
 
-    system "make", "install", "prefix=#{prefix}"
-    MachO::Tools.change_dylib_id("#{lib}/libre2.0.0.0.dylib", "#{lib}/libre2.0.dylib")
-    lib.install_symlink "libre2.0.0.0.dylib" => "libre2.0.dylib"
-    lib.install_symlink "libre2.0.0.0.dylib" => "libre2.dylib"
+    # Run this for pkg-config files
+    system "make", "common-install", "prefix=#{prefix}"
+
+    # Run this for the rest of the install
+    system "cmake", ".", "-DBUILD_SHARED_LIBS=ON", "-DRE2_BUILD_TESTING=OFF", *std_cmake_args
+    system "make"
+    system "make", "install"
   end
 
   test do
@@ -34,8 +51,8 @@ class Re2 < Formula
         return 0;
       }
     EOS
-    system ENV.cxx, "-std=c++11", "-I#{include}", "-L#{lib}", "-lre2",
-           "test.cpp", "-o", "test"
+    system ENV.cxx, "-std=c++11", "test.cpp", "-o", "test",
+                    "-I#{include}", "-L#{lib}", "-lre2"
     system "./test"
   end
 end

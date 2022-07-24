@@ -1,79 +1,56 @@
 class Oauth2Proxy < Formula
   desc "Reverse proxy for authenticating users via OAuth 2 providers"
-  homepage "https://github.com/bitly/oauth2_proxy"
-  url "https://github.com/bitly/oauth2_proxy/archive/v2.2.tar.gz"
-  sha256 "dae9bae213ccf2a98bf36177e04c1edf4688989c58c383525258956679ddcc19"
-  head "https://github.com/bitly/oauth2_proxy.git"
+  homepage "https://oauth2-proxy.github.io/oauth2-proxy/"
+  url "https://github.com/oauth2-proxy/oauth2_proxy/archive/v7.3.0.tar.gz"
+  sha256 "a7f4d087eef75dbc4e3b1d5df8cccbfdf3adced577bf72350bcba2c5ef8f4144"
+  license "MIT"
+  head "https://github.com/oauth2-proxy/oauth2-proxy.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "062e2e65e4a9e233eeb94b711b642eb061f9eee949ef43e10845353b8fbcb9d8" => :high_sierra
-    sha256 "48fde51ae6c8f7c1ea348526117953ced48616c0e9a7678867c31998fdc13612" => :sierra
-    sha256 "56c173bc0afde492037cd5c572ae600562058ae0c9c0dc8b0155d902332bbe37" => :el_capitan
-    sha256 "bf940346696e4c891da94647640886d5aa78c261649730ddb08bc7efc3bea63e" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a9cba89eddab57dd20217411d6f2809c3248601b5464a7646b4b8d2dc730f66a"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "b13f716b9da407692ef38082ba829b0e0fd60fa4c0e0c44077ef401dfecba6e1"
+    sha256 cellar: :any_skip_relocation, monterey:       "2f4dc0e4f0d79b052682d73b6635b629ed7331199ed6feec3558814b92ff1d45"
+    sha256 cellar: :any_skip_relocation, big_sur:        "3cdf5fc8e6f16ee54892ad9bb2139548b621b5449e20742594d74a876b30ce13"
+    sha256 cellar: :any_skip_relocation, catalina:       "d44b06c7ff0a3c356d6234a864bb57e09dc4cbe6c74139a4ef956864188a573d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "06920e7d165fbded5e81a60e915e286fb74bed4268275988273329e826b38275"
   end
 
   depends_on "go" => :build
-  depends_on "gpm" => :build
 
   def install
-    mkdir_p "#{buildpath}/src/github.com/bitly"
-    ln_s buildpath, "#{buildpath}/src/github.com/bitly/oauth2_proxy"
-
-    ENV["GOPATH"] = buildpath
-
-    system "gpm", "install"
-    system "go", "build", "-o", "#{bin}/oauth2_proxy"
-    (etc/"oauth2_proxy").install "contrib/oauth2_proxy.cfg.example"
+    system "go", "build", "-ldflags", "-s -w -X main.VERSION=#{version}",
+                          "-trimpath",
+                          "-o", bin/"oauth2-proxy"
+    (etc/"oauth2-proxy").install "contrib/oauth2-proxy.cfg.example"
+    bash_completion.install "contrib/oauth2-proxy_autocomplete.sh" => "oauth2-proxy"
   end
 
-  def caveats; <<~EOS
-    #{etc}/oauth2_proxy/oauth2_proxy.cfg must be filled in.
+  def caveats
+    <<~EOS
+      #{etc}/oauth2-proxy/oauth2-proxy.cfg must be filled in.
     EOS
   end
 
-  plist_options :manual => "oauth2_proxy"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/oauth2_proxy</string>
-            <string>--config=#{etc}/oauth2_proxy/oauth2_proxy.cfg</string>
-        </array>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"oauth2-proxy", "--config=#{etc}/oauth2-proxy/oauth2-proxy.cfg"]
+    keep_alive true
+    working_dir HOMEBREW_PREFIX
   end
 
   test do
-    require "socket"
     require "timeout"
 
-    # Get an unused TCP port.
-    server = TCPServer.new(0)
-    port = server.addr[1]
-    server.close
+    port = free_port
 
     pid = fork do
-      exec "#{bin}/oauth2_proxy",
+      exec "#{bin}/oauth2-proxy",
         "--client-id=testing",
         "--client-secret=testing",
-        "--cookie-secret=testing",
+        # Cookie secret must be 16, 24, or 32 bytes to create an AES cipher
+        "--cookie-secret=0b425616d665d89fb6ee917b7122b5bf",
         "--http-address=127.0.0.1:#{port}",
         "--upstream=file:///tmp",
-        "-email-domain=*"
+        "--email-domain=*"
     end
 
     begin
@@ -81,6 +58,7 @@ class Oauth2Proxy < Formula
         loop do
           Utils.popen_read "curl", "-s", "http://127.0.0.1:#{port}"
           break if $CHILD_STATUS.exitstatus.zero?
+
           sleep 1
         end
       end

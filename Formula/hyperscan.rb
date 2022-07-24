@@ -1,41 +1,35 @@
 class Hyperscan < Formula
   desc "High-performance regular expression matching library"
-  homepage "https://01.org/hyperscan"
-  url "https://github.com/01org/hyperscan/archive/v4.7.0.tar.gz"
-  sha256 "a0c07b48ae80903001ab216b03fdf6359bfd5777b2976de728947725b335e941"
+  homepage "https://www.hyperscan.io/"
+  url "https://github.com/intel/hyperscan/archive/v5.4.0.tar.gz"
+  sha256 "e51aba39af47e3901062852e5004d127fa7763b5dbbc16bcca4265243ffa106f"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any
-    sha256 "7114cdf8a7e154d861a21a9a3dab22639875ed40e5398021bd73987a8ef263b9" => :high_sierra
-    sha256 "cd7714c9f44d58be98bdc64d3294bcd40cfb070bd7ce6af2c93359d33d4d1285" => :sierra
-    sha256 "769a4578b1776d344622e8a3d45e48d927b67fea7cda7dbe94160d39abae8807" => :el_capitan
+    sha256 cellar: :any,                 monterey:     "d042b40534ac02d2cc6ad57621802787340c7b76ee2bb7abfed79442b2f61d7e"
+    sha256 cellar: :any,                 big_sur:      "1e75b4699ac1040d24cbe81ddae60149be7179e09f450840bdcbe5fd0e4582dc"
+    sha256 cellar: :any,                 catalina:     "2c5afe9775aad01d1bfb577cb80218bdf241c48d5b567ad85fe6bba68241c8d3"
+    sha256 cellar: :any,                 mojave:       "0564db4adcb7022d1691f482d12fdf3a2c0ea71079a749c90f2233340aebb98e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "8e91525e2c275594bf2394e5664be60d6199784c9c2ab3b273a8531c38c2acc1"
   end
 
-  option "with-debug", "Build with debug symbols"
-
-  depends_on "python" => :build if MacOS.version <= :snow_leopard
   depends_on "boost" => :build
-  depends_on "ragel" => :build
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
+  depends_on "ragel" => :build
+  # Only supports x86 instructions and will fail to build on ARM.
+  # See https://github.com/intel/hyperscan/issues/197
+  depends_on arch: :x86_64
+  depends_on "pcre"
 
   def install
+    cmake_args = std_cmake_args + ["-DBUILD_STATIC_AND_SHARED=ON"]
+
+    # Linux CI cannot guarantee AVX2 support needed to build fat runtime.
+    cmake_args << "-DFAT_RUNTIME=OFF" if OS.linux?
+
     mkdir "build" do
-      args = std_cmake_args << "-DBUILD_STATIC_AND_SHARED=on"
-
-      if build.with? "debug"
-        args -= %w[
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_C_FLAGS_RELEASE=-DNDEBUG
-          -DCMAKE_CXX_FLAGS_RELEASE=-DNDEBUG
-        ]
-        args += %w[
-          -DCMAKE_BUILD_TYPE=Debug
-          -DDEBUG_OUTPUT=on
-        ]
-      end
-
-      system "cmake", "..", *args
+      system "cmake", "..", *cmake_args
       system "make", "install"
     end
   end

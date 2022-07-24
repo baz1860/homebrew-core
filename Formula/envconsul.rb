@@ -1,63 +1,42 @@
 class Envconsul < Formula
   desc "Launch process with environment variables from Consul and Vault"
   homepage "https://github.com/hashicorp/envconsul"
-  url "https://github.com/hashicorp/envconsul/archive/v0.7.3.tar.gz"
-  sha256 "7152d73818c3faceac831c6ffae6e01c2f3a6372976409d9d084130ffcea35f4"
+  url "https://github.com/hashicorp/envconsul.git",
+      tag:      "v0.13.0",
+      revision: "c9c55c9bffa749227e3c3bcd44f93f1f5b0eafb9"
+  license "MPL-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "bcc86e79f07b429a1f11e23b0dec1d359fd5bbed13f7aba1ce300c2da8f6e637" => :high_sierra
-    sha256 "6f66466edce5064c839d4328b819ea5e915474512153e72beea08b5846cb2b77" => :sierra
-    sha256 "be7343c9cfa1c58fb65ad6eef20c99f27cd0a5dcfc5aba5851593c534e41882c" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "aae3da5d88d84ca10de1d8aba2e729c3003a8471ac55663906cc5de0aa346738"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "765b7246012434cd3f226cfc83158b02c2e0d32cb05f544b074b37d0e11ed13a"
+    sha256 cellar: :any_skip_relocation, monterey:       "c552f2ed9f026eebfb281aeedb8c9ae593e8e7ff97d99a7451c45e5f46c66be9"
+    sha256 cellar: :any_skip_relocation, big_sur:        "870fbc163cfcdeea7abdedd3a974d3a890694b4eb3d14194c7a34df15cd990cf"
+    sha256 cellar: :any_skip_relocation, catalina:       "e63efc1337364669933ff9bc274f096d503c1d750360db683672c988ee00edfb"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c478975d58b8da6790ee34e3fb3e99a0b704e286fa7bf30dddc3b680bd436d7b"
   end
 
   depends_on "go" => :build
-  depends_on "consul" => :recommended # only used in test
+  depends_on "consul" => :test
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/hashicorp/envconsul").install buildpath.children
-    cd "src/github.com/hashicorp/envconsul" do
-      system "go", "build", "-o", bin/"envconsul"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args(ldflags: "-s -w")
   end
 
   test do
-    require "socket"
-    require "timeout"
-
-    CONSUL_DEFAULT_PORT = 8500
-    LOCALHOST_IP = "127.0.0.1".freeze
-
-    def port_open?(ip, port, seconds = 1)
-      Timeout.timeout(seconds) do
-        begin
-          TCPSocket.new(ip, port).close
-          true
-        rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
-          false
-        end
-      end
-    rescue Timeout::Error
-      false
-    end
-
+    port = free_port
     begin
-      if !port_open?(LOCALHOST_IP, CONSUL_DEFAULT_PORT)
-        fork do
-          exec "consul agent -dev -bind 127.0.0.1"
-          puts "consul started"
-        end
-        sleep 5
-      else
-        puts "Consul already running"
+      fork do
+        exec "consul agent -dev -bind 127.0.0.1 -http-port #{port}"
+        puts "consul started"
       end
-      system "consul", "kv", "put", "homebrew-recipe-test/working", "1"
-      output = shell_output("#{bin}/envconsul -consul-addr=127.0.0.1:8500 -upcase -prefix homebrew-recipe-test env")
+      sleep 5
+
+      system "consul", "kv", "put", "-http-addr", "127.0.0.1:#{port}", "homebrew-recipe-test/working", "1"
+      output = shell_output("#{bin}/envconsul -consul-addr=127.0.0.1:#{port} " \
+                            "-upcase -prefix homebrew-recipe-test env")
       assert_match "WORKING=1", output
     ensure
-      system "consul", "leave"
+      system "consul", "leave", "-http-addr", "127.0.0.1:#{port}"
     end
   end
 end

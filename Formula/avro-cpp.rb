@@ -1,23 +1,51 @@
 class AvroCpp < Formula
   desc "Data serialization system"
   homepage "https://avro.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=avro/avro-1.8.2/cpp/avro-cpp-1.8.2.tar.gz"
-  sha256 "5328b913882ee5339112fa0178756789f164c9c5162e1c83437a20ee162a3aab"
+  url "https://www.apache.org/dyn/closer.lua?path=avro/avro-1.11.0/cpp/avro-cpp-1.11.0.tar.gz"
+  mirror "https://archive.apache.org/dist/avro/avro-1.11.0/cpp/avro-cpp-1.11.0.tar.gz"
+  sha256 "ef70ca8a1cfeed7017dcb2c0ed591374deab161b86be6ca4b312bc24cada9c56"
+  license "Apache-2.0"
+  revision 2
 
   bottle do
-    cellar :any
-    sha256 "92474608c57be07c5453914f40ac5579affe1c2852776c99784559028ae61808" => :high_sierra
-    sha256 "319664d5b1f6dcfca5485ca7e30c10b316a6b865658bb4d86e94036312400792" => :sierra
-    sha256 "608da3caf3b22380430f27975bd00c240f9b852fb7b2bfa1a06c91ff25bf6245" => :el_capitan
-    sha256 "30de5dd8b0328916218197bf57e6d74695c770a9c53194a0ec4d2676934dc27b" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "d145604463d480ee07b3794aff978506e8b6b9416e6026fcfd535b8ed4e6d04e"
+    sha256 cellar: :any,                 arm64_big_sur:  "e3593bbb6bee2823fb7579f905811185a8ba2e8210adcd4638c35a658e625aca"
+    sha256 cellar: :any,                 monterey:       "4e7669cb5ad4b716ea291d0d6ae21a81f9f1788c214fbf3d4c29b00f4ee0d39a"
+    sha256 cellar: :any,                 big_sur:        "a402156606df45a62409bd79abf55fb5758e17458a02085aafc8ae2d9717a126"
+    sha256 cellar: :any,                 catalina:       "d99a75d903f5f4e39b13b553d087f0ac6c538dc367f3c89c36baca6945714ccb"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d487876c7a03a2c2fce379cb73105b33b19adbfcd1ea38f67dd9da76e1442506"
   end
 
-  depends_on "pkg-config" => :build
   depends_on "cmake" => :build
+  depends_on "pkg-config" => :build
   depends_on "boost"
 
   def install
     system "cmake", ".", *std_cmake_args
     system "make", "install"
+  end
+
+  test do
+    (testpath/"cpx.json").write <<~EOS
+      {
+          "type": "record",
+          "name": "cpx",
+          "fields" : [
+              {"name": "re", "type": "double"},
+              {"name": "im", "type" : "double"}
+          ]
+      }
+    EOS
+    (testpath/"test.cpp").write <<~EOS
+      #include "cpx.hh"
+
+      int main() {
+        cpx::cpx number;
+        return 0;
+      }
+    EOS
+    system "#{bin}/avrogencpp", "-i", "cpx.json", "-o", "cpx.hh", "-n", "cpx"
+    system ENV.cxx, "test.cpp", "-std=c++11", "-o", "test"
+    system "./test"
   end
 end

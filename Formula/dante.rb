@@ -1,23 +1,36 @@
 class Dante < Formula
   desc "SOCKS server and client, implementing RFC 1928 and related standards"
   homepage "https://www.inet.no/dante/"
-  url "https://www.inet.no/dante/files/dante-1.4.2.tar.gz"
-  sha256 "baa25750633a7f9f37467ee43afdf7a95c80274394eddd7dcd4e1542aa75caad"
+  url "https://www.inet.no/dante/files/dante-1.4.3.tar.gz"
+  sha256 "418a065fe1a4b8ace8fbf77c2da269a98f376e7115902e76cda7e741e4846a5d"
 
-  bottle do
-    cellar :any
-    sha256 "a34bdf64962d79c16db11fa8c30254c1639258771278d665efdb11dc6cce9e5d" => :high_sierra
-    sha256 "036442d258ec7128e6ac6a31f6862afe0aebf16fec6f268a96a32c438e706086" => :sierra
-    sha256 "78d19f01354b73e82ccc3a3eb59c45fddf65969b6bf36e307bb7813eeef7c8f1" => :el_capitan
-    sha256 "6bb94dda6feae85c407e7779c34f20dc10bd9b2fd377660af7d1c6467735053d" => :yosemite
+  livecheck do
+    url "https://www.inet.no/dante/download.html"
+    regex(/href=.*?dante[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "miniupnpc" => :optional
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "6ba49e77d7e95f26793d9283ea19a0fd2649480808873491ce1263087e0bab0f"
+    sha256 cellar: :any,                 arm64_big_sur:  "7b25a50f17292cdad4dd0e52de401117411fc6bb660c66bedbdbc8c7759dea9a"
+    sha256 cellar: :any,                 monterey:       "df57fb7fae717cc7673b29a6665d6f6f74f9d32e3ea959174e65ff31ce87db9f"
+    sha256 cellar: :any,                 big_sur:        "098dc6c46d4ee77860f8fefcd44bc21533bf70423add42de899910757796d410"
+    sha256 cellar: :any,                 catalina:       "4b33f0996ade01cae7bc72f40cf7c8011f86133755e782cc40a15a0d610560c1"
+    sha256 cellar: :any,                 mojave:         "f6348c63fff9dbf5392ccb1b769e9643e248e00913aba9bcb24dc928f153b526"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "19ae4553c91fc1991fd495f3b3e25d92fa7cbd59bd7d32f8fc71444f02bbbee5"
+  end
+
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff"
+    sha256 "83af02f2aa2b746bb7225872cab29a253264be49db0ecebb12f841562d9a2923"
+  end
 
   def install
     system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
                           "--disable-silent-rules",
+                          # Enabling dependency tracking disables universal
+                          # build, avoiding a build error on Mojave
+                          "--enable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--sysconfdir=#{etc}/dante"
     system "make", "install"

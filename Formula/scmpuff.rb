@@ -1,27 +1,23 @@
 class Scmpuff < Formula
   desc "Adds numbered shortcuts for common git commands"
   homepage "https://mroth.github.io/scmpuff/"
-  url "https://github.com/mroth/scmpuff/archive/v0.2.1.tar.gz"
-  sha256 "6855562be9788a0fcf69102546f3bf8ccac063086d28a9a3f1ab4947e9dd08e2"
+  url "https://github.com/mroth/scmpuff/archive/v0.5.0.tar.gz"
+  sha256 "e07634c7207dc51479d39895e546dd0107a50566faf5c2067f61a3b92c824fbf"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a09454488aec6c6990f258473c1cdcd722b7f615fff662d040acee353df9a0ee" => :high_sierra
-    sha256 "3532b6f0d95310bede8ccb33b13ad4dbb657563744ea3accf641fa27e34a37b4" => :sierra
-    sha256 "3dd4f5a5a6760a6e92c57e69dda4e689eb33787ebbbad01482a3ae0fb26c4445" => :el_capitan
-    sha256 "fc633135611451e73386836b3d2a9bdd63b25065bcf6cae4228239af0fc05a04" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "37bdb546a920a6c1c1fd70d047a37e872de2058469f4782cda61d349a28e00e7"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "33983dedea1c7f4cec6bdc8b3a8814f58ac8da892a7bc415c98b1e441ecbe4f2"
+    sha256 cellar: :any_skip_relocation, monterey:       "acd7800600cbf0326f2f792d647a119b7174c508d846ad694f7ea98decf48525"
+    sha256 cellar: :any_skip_relocation, big_sur:        "41d08601121e1ebb24cedcc58596b4a89c5cfd66663848640b83f838eccdab84"
+    sha256 cellar: :any_skip_relocation, catalina:       "fe527b88da1db127392fa45238013ec0b7152848ab17ee082d1e7bf03d2440c5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "96edc62c0602395ade99c3772fd371d7eb833c6e467c99236902f45014108dae"
   end
 
   depends_on "go" => :build
 
   def install
-    mkdir_p buildpath/"src/github.com/mroth"
-    ln_s buildpath, buildpath/"src/github.com/mroth/scmpuff"
-    ENV["GOPATH"] = buildpath
-
-    # scmpuff's build script normally does version detection which depends on
-    # being checked out via git repo -- instead have homebrew specify version.
-    system "go", "build", "-o", "#{bin}/scmpuff", "-ldflags", "-X main.VERSION=#{version}", "./src/github.com/mroth/scmpuff"
+    system "go", "build", *std_go_args, "-ldflags", "-s -v -X main.VERSION=#{version}"
   end
 
   test do

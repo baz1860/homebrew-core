@@ -1,16 +1,20 @@
 class Yank < Formula
   desc "Copy terminal output to clipboard"
   homepage "https://github.com/mptre/yank"
-  url "https://github.com/mptre/yank/archive/v0.8.3.tar.gz"
-  sha256 "39a3ccf6d2b0cb803b6d133c477030236660ef5349c7f0556b5a6644cc7588b0"
+  url "https://github.com/mptre/yank/archive/v1.3.0.tar.gz"
+  sha256 "40f5472df5f6356a4d6f48862a19091bd4de3f802b3444891b3bc4b710fb35ca"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "aa67d326b2059610675288a2ff20edb1f156327f8c4399e0d725fed6bb3962f1" => :high_sierra
-    sha256 "07b4356f309e74541d37da6c1a619e836e7743ad206e38d4e1ce66204ca03ce1" => :sierra
-    sha256 "3c5ebdc4717d374aa9775c137129463fea9d255080e6a90d1380443c50cf192e" => :el_capitan
-    sha256 "eafe51016b3b0b08f5af4db3f9a143ec291cdeb1f8dca59285ea90d5b1fb1101" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "e5fd3a08d92bfeb4da493930b49df96b38ad624f815b3c3f27a661f5e35274ac"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "3ca61de9c598eb8c2abd4b78874ff40af76cc83474ff1d2261979800a42d62f7"
+    sha256 cellar: :any_skip_relocation, monterey:       "7e58ab275e612ff3d6072c1765d5a21fb151c904f56f3c238249be022c14e07a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d41ad7e32d8c75ca170b883b39cd3f5b34f800e9ea555d128a11b1a198f08c53"
+    sha256 cellar: :any_skip_relocation, catalina:       "a1c1f827b9e04877c3c9082c2f531a512be07ff8f0afb204aeea3fba013f74d8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ac3f578746c21ef166d41389433354a0435093a8648e224ad55c648925f1764c"
   end
+
+  uses_from_macos "expect" => :test
 
   def install
     system "make", "install", "PREFIX=#{prefix}", "YANKCMD=pbcopy"

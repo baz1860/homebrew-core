@@ -1,36 +1,44 @@
 class Ncmpc < Formula
   desc "Curses Music Player Daemon (MPD) client"
   homepage "https://www.musicpd.org/clients/ncmpc/"
-  url "https://www.musicpd.org/download/ncmpc/0/ncmpc-0.29.tar.xz"
-  sha256 "ef68a9b67172383ea80ee46579015109433fa058728812d2b0ebede660d85f12"
+  url "https://www.musicpd.org/download/ncmpc/0/ncmpc-0.47.tar.xz"
+  sha256 "61da23b1bc6c7a593fdc28611932cd7a30fcf6803830e01764c29b8abed2249c"
+  license "GPL-2.0-or-later"
 
-  bottle do
-    sha256 "c3c7f8c6425c97cff94a2e4c4d243ca1a93eb290e25f9ecc0648f829b6eb2a28" => :high_sierra
-    sha256 "22f03b525346f87611fde7c3f22d02a68c133a835f27e17b5003f16a4d35da3a" => :sierra
-    sha256 "ec4647fad45693bfa29ce801da1c8801b567b3987829aca96cdb1b71db12cfa1" => :el_capitan
+  livecheck do
+    url "https://www.musicpd.org/download/ncmpc/0/"
+    regex(/href=.*?ncmpc[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    sha256 cellar: :any, arm64_monterey: "9c5a751cf1cdf763576b2a5af746ae5f0042cbc2eceb1fb2057ce8f0d4a7e3fc"
+    sha256 cellar: :any, arm64_big_sur:  "59fb26a2c225c8f652a4bd075e3536677f435a804d5acf774f893759cf1e5ce5"
+    sha256 cellar: :any, monterey:       "3c0eeb6d9f4de139daf1ed63d8f8e9fbe8f5ca41b47d93aae5b2d14dedff4888"
+    sha256 cellar: :any, big_sur:        "630160a894df86a9f369740acde9e92880c36b7262fab5a75857123d67ea8aa8"
+    sha256 cellar: :any, catalina:       "07e7f1e1a017591372496368045eda2e871a1d5d2a9bfcf57f5408b3608335c5"
+    sha256               x86_64_linux:   "69a523557e8f1de3e7d0b97501f0806c2f6f98fe838ad991aea423a8648b663e"
+  end
+
+  depends_on "boost" => :build
   depends_on "meson" => :build
   depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "gettext"
-  depends_on "glib"
   depends_on "libmpdclient"
+  depends_on "pcre2"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
-    # Fix undefined symbols _COLORS, _COLS, etc.
-    # Reported 21 Sep 2017 https://github.com/MusicPlayerDaemon/ncmpc/issues/6
-    (buildpath/"ncurses.pc").write <<~EOS
-      Name: ncurses
-      Description: ncurses
-      Version: 5.4
-      Libs: -L/usr/lib -lncurses
-      Cflags: -I#{MacOS.sdk_path}/usr/include
-    EOS
-    ENV.prepend_path "PKG_CONFIG_PATH", buildpath
-
     mkdir "build" do
-      system "meson", "--prefix=#{prefix}", ".."
+      system "meson", *std_meson_args, "-Dcolors=false",
+                                       "-Dnls=disabled",
+                                       "-Dregex=enabled",
+                                       ".."
       system "ninja", "install"
     end
   end

@@ -1,38 +1,49 @@
 class PostgresqlAT94 < Formula
   desc "Object-relational database system"
   homepage "https://www.postgresql.org/"
-  url "https://ftp.postgresql.org/pub/source/v9.4.16/postgresql-9.4.16.tar.bz2"
-  sha256 "dcbc62b621e4d8a445c2f33750f7d96257c38103cccebeb934e6913a3c135e81"
+  url "https://ftp.postgresql.org/pub/source/v9.4.26/postgresql-9.4.26.tar.bz2"
+  sha256 "f5c014fc4a5c94e8cf11314cbadcade4d84213cfcc82081c9123e1b8847a20b9"
+  license "PostgreSQL"
 
   bottle do
-    sha256 "efb2de5618cbaf837ea61a41034a6dae2e4fc043b738f31bbdd787d4d230ea85" => :high_sierra
-    sha256 "410b164f32c432f49500e8967aa537bf674192fe5b52d2d940f4627a322baff4" => :sierra
-    sha256 "056bb8aa6d1dec9bf35156568728672c6caa8f05da180313c8f22ab4ed898739" => :el_capitan
+    rebuild 4
+    sha256 monterey:     "6b8c02385f043c6ddf224b48f79dce675f9f6a18a2fcbd9b9cfdbb52ec57663e"
+    sha256 big_sur:      "0331cf3d1dcb6311ad144916317c520c0a442832d038c6d11da6f42c670e263f"
+    sha256 catalina:     "a72c3df7772799a0870db56245b192b655c7691984224f6eb0b9a3f839edb8a3"
+    sha256 mojave:       "64558f09195403c05cea3f52cb7c7162a61a0a01e24a40aaf297021fadf11fc9"
+    sha256 x86_64_linux: "fddd8da997370fa7185ce58a2cb5a2f3a95d4d24d9e20eae8dd368004682d1f9"
   end
 
   keg_only :versioned_formula
 
-  option "without-perl", "Build without Perl support"
-  option "without-tcl", "Build without Tcl support"
-  option "with-dtrace", "Build with DTrace support"
+  # https://www.postgresql.org/support/versioning/
+  deprecate! date: "2020-02-13", because: :unsupported
 
-  depends_on "openssl"
+  depends_on arch: :x86_64
+  depends_on "openssl@1.1"
   depends_on "readline"
-  depends_on "python" => :optional
 
-  fails_with :clang do
-    build 211
-    cause "Miscompilation resulting in segfault on queries"
+  uses_from_macos "krb5"
+  uses_from_macos "libxslt"
+  uses_from_macos "openldap"
+  uses_from_macos "perl"
+
+  on_linux do
+    depends_on "linux-pam"
+    depends_on "util-linux"
+
+    # configure patch to deal with OpenLDAP 2.5
+    depends_on "autoconf@2.69" => :build
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/formula-patches/10fe8d35eb7323bb882c909a0ec065ae01401626/postgresql/openldap-2.5.patch"
+      sha256 "7b1e1a88752482c59f6971dfd17a2144ed60e6ecace8538200377ee9b1b7938c"
+    end
   end
 
   def install
-    # Fix "configure: error: readline library not found"
-    if MacOS.version == :sierra || MacOS.version == :el_capitan
-      ENV["SDKROOT"] = MacOS.sdk_path
-    end
-
-    ENV.prepend "LDFLAGS", "-L#{Formula["openssl"].opt_lib} -L#{Formula["readline"].opt_lib}"
-    ENV.prepend "CPPFLAGS", "-I#{Formula["openssl"].opt_include} -I#{Formula["readline"].opt_include}"
+    ENV.prepend "LDFLAGS", "-L#{Formula["openssl@1.1"].opt_lib} -L#{Formula["readline"].opt_lib}"
+    ENV.prepend "CPPFLAGS", "-I#{Formula["openssl@1.1"].opt_include} -I#{Formula["readline"].opt_include}"
+    ENV.prepend "PG_SYSROOT", MacOS.sdk_path
     ENV.append_to_cflags "-D_XOPEN_SOURCE"
 
     args = %W[
@@ -41,94 +52,123 @@ class PostgresqlAT94 < Formula
       --datadir=#{pkgshare}
       --docdir=#{doc}
       --enable-thread-safety
-      --with-bonjour
       --with-gssapi
       --with-ldap
       --with-openssl
       --with-pam
       --with-libxml
       --with-libxslt
+      --with-perl
+      --with-uuid=e2fs
     ]
 
-    args << "--with-perl" if build.with? "perl"
-    args << "--with-python" if build.with? "python"
+    if OS.mac?
+      args += %w[
+        --with-bonjour
+        --with-tcl
+      ]
 
-    # The CLT is required to build tcl support on 10.7 and 10.8 because tclConfig.sh is not part of the SDK
-    if build.with?("tcl") && (MacOS.version >= :mavericks || MacOS::CLT.installed?)
-      args << "--with-tcl"
-
+      # The CLT is required to build tcl support on 10.7 and 10.8 because tclConfig.sh is not part of the SDK
       if File.exist?("#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework/tclConfig.sh")
         args << "--with-tclconfig=#{MacOS.sdk_path}/System/Library/Frameworks/Tcl.framework"
       end
+
+      # configure issue with CLT 12+
+      if DevelopmentTools.clang_build_version >= 1200
+        inreplace "configure",
+                  "exit(! does_int64_work())",
+                  "return(! does_int64_work())"
+      end
+    else
+      # rebuild `configure` after patching
+      # (remove if patch block not needed)
+      system "autoreconf", "-ivf"
     end
 
-    args << "--enable-dtrace" if build.with? "dtrace"
-    args << "--with-uuid=e2fs"
-
     system "./configure", *args
-    system "make", "install-world"
+    system "make"
+
+    dirs = %W[datadir=#{pkgshare} libdir=#{lib} pkglibdir=#{lib}]
+
+    # Temporarily disable building/installing the documentation.
+    # Postgresql seems to "know" the build system has been altered and
+    # tries to regenerate the documentation when using `install-world`.
+    # This results in the build failing:
+    #  `ERROR: `osx' is missing on your system.`
+    # Attempting to fix that by adding a dependency on `open-sp` doesn't
+    # work and the build errors out on generating the documentation, so
+    # for now let's simply omit it so we can package Postgresql for Mojave.
+    if OS.mac?
+      if DevelopmentTools.clang_build_version >= 1000
+        system "make", "all"
+        system "make", "-C", "contrib", "install", "all", *dirs
+        system "make", "install", "all", *dirs
+      else
+        system "make", "install-world", *dirs
+      end
+    else
+      system "make", "all"
+      system "make", "-C", "contrib", "install", "all", *dirs
+      system "make", "install", "all", *dirs
+      inreplace lib/"pgxs/src/Makefile.global",
+                "LD = #{HOMEBREW_PREFIX}/Homebrew/Library/Homebrew/shims/linux/super/ld",
+                "LD = #{HOMEBREW_PREFIX}/bin/ld"
+    end
   end
 
   def post_install
     (var/"log").mkpath
-    (var/name).mkpath
-    unless File.exist? "#{var}/#{name}/PG_VERSION"
-      system "#{bin}/initdb", "#{var}/#{name}"
-    end
+    postgresql_datadir.mkpath
+
+    # Don't initialize database, it clashes when testing other PostgreSQL versions.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
+    system "#{bin}/initdb", postgresql_datadir unless pg_version_exists?
+  end
+
+  def postgresql_datadir
+    var/name
+  end
+
+  def postgresql_log_path
+    var/"log/#{name}.log"
+  end
+
+  def pg_version_exists?
+    (postgresql_datadir/"PG_VERSION").exist?
   end
 
   def caveats
-    s = <<~EOS
+    <<~EOS
       If builds of PostgreSQL 9 are failing and you have version 8.x installed,
       you may need to remove the previous version first. See:
         https://github.com/Homebrew/legacy-homebrew/issues/2510
 
-      To migrate existing data from a previous major version (pre-9.3) of PostgreSQL, see:
-        https://www.postgresql.org/docs/9.3/static/upgrading.html
+      When installing the postgres gem, including ARCHFLAGS is recommended:
+        ARCHFLAGS="-arch x86_64" gem install pg
+
+      To install gems without sudo, see the Homebrew documentation:
+        https://docs.brew.sh/Gems,-Eggs-and-Perl-Modules
+
+      This formula has created a default database cluster with:
+        initdb #{postgresql_datadir}
+      For more details, read:
+        https://www.postgresql.org/docs/#{version.major}/app-initdb.html
     EOS
-
-    if MacOS.prefer_64_bit?
-      s << <<~EOS
-        \nWhen installing the postgres gem, including ARCHFLAGS is recommended:
-          ARCHFLAGS="-arch x86_64" gem install pg
-
-        To install gems without sudo, see the Homebrew documentation:
-          https://docs.brew.sh/Gems,-Eggs-and-Perl-Modules
-      EOS
-    end
-
-    s
   end
 
-  plist_options :manual => "pg_ctl -D #{HOMEBREW_PREFIX}/var/postgresql@9.4 start"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/postgres</string>
-        <string>-D</string>
-        <string>#{var}/#{name}</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{HOMEBREW_PREFIX}</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/log/#{name}.log</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"postgres", "-D", var/"postgresql@9.4"]
+    working_dir HOMEBREW_PREFIX
+    keep_alive true
+    run_type :immediate
+    error_log_path var/"log/postgresql@9.4.log"
   end
 
   test do
-    system "#{bin}/initdb", testpath/"test"
+    system "#{bin}/initdb", testpath/"test" unless ENV["HOMEBREW_GITHUB_ACTIONS"]
+    assert_equal pkgshare.to_s, shell_output("#{bin}/pg_config --sharedir").chomp
+    assert_equal lib.to_s, shell_output("#{bin}/pg_config --libdir").chomp
+    assert_equal lib.to_s, shell_output("#{bin}/pg_config --pkglibdir").chomp
   end
 end

@@ -1,19 +1,31 @@
 class Gmime < Formula
   desc "MIME mail utilities"
   homepage "https://spruce.sourceforge.io/gmime/"
-  url "https://download.gnome.org/sources/gmime/3.2/gmime-3.2.0.tar.xz"
-  sha256 "75ec6033f9192488ff37745792c107b3d0ab0a36c2d3e4f732901a771755d7e0"
+  url "https://download.gnome.org/sources/gmime/3.2/gmime-3.2.7.tar.xz"
+  sha256 "2aea96647a468ba2160a64e17c6dc6afe674ed9ac86070624a3f584c10737d44"
+  license "LGPL-2.1"
 
   bottle do
-    sha256 "f259025c542b5d0486c23d001dbf858cfd50beca495dad58dbcb2d6027376660" => :high_sierra
-    sha256 "9d696db40dba32aac602a9ba84516520c63e74c31e60002d59dc8baa83d20748" => :sierra
-    sha256 "cb7d81356c0fc27f95110a21929dc4772dc571269fbe1ed2cb7c5d7079c7490b" => :el_capitan
+    sha256                               arm64_monterey: "18050619c00d2e6b994b91472ed9567716f0d77ee64b200626ff6ab066e87aaa"
+    sha256                               arm64_big_sur:  "0c12167da5badd3447325e0770666c1e7f5e5e8945613e4c54c4e3e5ef1915fa"
+    sha256                               monterey:       "ea53d26dfed5e8441375732cc9c626436480ad9cfae885b9883b00e3b09b197b"
+    sha256                               big_sur:        "3714b2907a93c2495efb79c0cf870bdab5683c64c17696836b19e5b34108b852"
+    sha256                               catalina:       "877f2024cc0d97bc94f559ad992f87bdf6fdc23f9a1acc7b5bb13f0711b734c3"
+    sha256                               mojave:         "7a0bda5bca906bc62e3ab24fc39752e2858fce861ba759040fc864928ab18d96"
+    sha256                               high_sierra:    "0bb48841eae316695037bcd793673d518d0f2be20968a115a81c92824fb77ac0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "07bffed5c3be937ee007bd878ff92561ed7f17f841d5062eccc7a8900e416b42"
   end
 
+  depends_on "gobject-introspection" => :build
   depends_on "pkg-config" => :build
-  depends_on "gobject-introspection" => :recommended
   depends_on "glib"
   depends_on "gpgme"
+
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-big_sur.diff"
+    sha256 "35acd6aebc19843f1a2b3a63e880baceb0f5278ab1ace661e57a502d9d78c93c"
+  end
 
   def install
     args = %W[
@@ -23,13 +35,8 @@ class Gmime < Formula
       --disable-vala
       --disable-glibtest
       --enable-crypto
+      --enable-introspection
     ]
-
-    if build.with? "gobject-introspection"
-      args << "--enable-introspection"
-    else
-      args << "--disable-introspection"
-    end
 
     system "./configure", *args
     system "make", "install"
@@ -48,7 +55,7 @@ class Gmime < Formula
           return 1;
         }
       }
-      EOS
+    EOS
     gettext = Formula["gettext"]
     glib = Formula["glib"]
     pcre = Formula["pcre"]
@@ -67,8 +74,8 @@ class Gmime < Formula
       -lglib-2.0
       -lgmime-3.0
       -lgobject-2.0
-      -lintl
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "-o", "test", "test.c", *flags
     system "./test"
   end

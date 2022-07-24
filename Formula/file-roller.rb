@@ -1,51 +1,42 @@
 class FileRoller < Formula
   desc "GNOME archive manager"
   homepage "https://wiki.gnome.org/Apps/FileRoller"
-  url "https://download.gnome.org/sources/file-roller/3.26/file-roller-3.26.2.tar.xz"
-  sha256 "3e677b8e1c2f19aead69cf4fc419a19fc3373aaf5d7bf558b4f077f10bbba8a5"
+  url "https://download.gnome.org/sources/file-roller/3.42/file-roller-3.42.0.tar.xz"
+  sha256 "1c438e6d53ec10ff4f2eb5b22d7bbf28a7c2a84957ab64a751c1cdf3c52302c7"
+  license "GPL-2.0-or-later"
 
   bottle do
-    sha256 "0f6ed9638357c88ec9e063f050f9602987f408f858d11f96ede54a889e9fb6ec" => :high_sierra
-    sha256 "527d3641639115a94e2cda64a7804d603a5c72cffff43fd3c12c32ed4b78ccba" => :sierra
-    sha256 "846f18e2a5785cbdb3acb87f86dc375a3362c0acf403888d989417a841912c4c" => :el_capitan
+    sha256 arm64_monterey: "4beb47f33e5f0829a1bb2afc229327c18e9ea1e555283066df56bae6e8dc35f8"
+    sha256 arm64_big_sur:  "49adb5120e4a854e49a3a437a20cecb4968438cf70f9b633733ff4e3dd8cf8dc"
+    sha256 monterey:       "a3482cea0278ad464148e4bdb47892b1548a35f25c86aa370c19f64e0d8f95aa"
+    sha256 big_sur:        "7c535b2b24a9bd6902dc40ee6423a838c2d5a8e1f65846fa90bb2132c3e67b7f"
+    sha256 catalina:       "4aec12ffc7731540e37f874eea27e18ae25b4358f99a0c4bd4c4b48ac19596e9"
+    sha256 x86_64_linux:   "b083f2d968ccc6ea981e53fc5105b39ded995f37c49a5115e34e830f91a02981"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
   depends_on "itstool" => :build
-  depends_on "libxml2" => :build
-  depends_on "gtk+3"
-  depends_on "json-glib"
-  depends_on "libmagic"
-  depends_on "libarchive"
-  depends_on "hicolor-icon-theme"
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
   depends_on "adwaita-icon-theme"
-
-  # Add linked-library dependencies
-  depends_on "atk"
-  depends_on "cairo"
-  depends_on "gdk-pixbuf"
-  depends_on "gettext"
-  depends_on "glib"
-  depends_on "pango"
+  depends_on "gtk+3"
+  depends_on "hicolor-icon-theme"
+  depends_on "json-glib"
+  depends_on "libarchive"
+  depends_on "libhandy"
+  depends_on "libmagic"
 
   def install
-    # forces use of gtk3-update-icon-cache instead of gtk-update-icon-cache. No bugreport should
-    # be filed for this since it only occurs because Homebrew renames gtk+3's gtk-update-icon-cache
-    # to gtk3-update-icon-cache in order to avoid a collision between gtk+ and gtk+3.
-    inreplace "data/Makefile.in", "gtk-update-icon-cache", "gtk3-update-icon-cache"
-
     ENV.append "CFLAGS", "-I#{Formula["libmagic"].opt_include}"
     ENV.append "LIBS", "-L#{Formula["libmagic"].opt_lib}"
 
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--disable-schemas-compile",
-                          "--disable-packagekit",
-                          "--enable-magic"
-    ENV.append_path "PYTHONPATH", "#{Formula["libxml2"].opt_lib}/python2.7/site-packages"
-    system "make", "install"
+    # stop meson_post_install.py from doing what needs to be done in the post_install step
+    ENV["DESTDIR"] = ""
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dpackagekit=false", ".."
+      system "ninja"
+      system "ninja", "install"
+    end
   end
 
   def post_install

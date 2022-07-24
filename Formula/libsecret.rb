@@ -1,46 +1,40 @@
 class Libsecret < Formula
   desc "Library for storing/retrieving passwords and other secrets"
   homepage "https://wiki.gnome.org/Projects/Libsecret"
-  url "https://download.gnome.org/sources/libsecret/0.18/libsecret-0.18.5.tar.xz"
-  sha256 "9ce7bd8dd5831f2786c935d82638ac428fa085057cc6780aba0e39375887ccb3"
-  revision 1
+  url "https://download.gnome.org/sources/libsecret/0.20/libsecret-0.20.5.tar.xz"
+  sha256 "3fb3ce340fcd7db54d87c893e69bfc2b1f6e4d4b279065ffe66dac9f0fd12b4d"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "fe0fb636bf96c93bade82da91245ef92a5734dee84a8f2ed6294f0bd9e822806" => :high_sierra
-    sha256 "70dc8c53fe5e90878623f3d78dc31e23894429e5ffac816efaa17ac683d6e80d" => :sierra
-    sha256 "bc8741bca918709da77c0144e985918b720afcd27b6228963f117348994d680c" => :el_capitan
-    sha256 "9abd02a3cc9049c185321f691df43da2b150a2f55ca0463e346632b93a7a7900" => :yosemite
+    sha256 cellar: :any, arm64_monterey: "38a274dc11d584dac3a265339c366a8222bf51d81142c65908164391cae6b789"
+    sha256 cellar: :any, arm64_big_sur:  "23de21c66b4f88d01394e21e1827996b1660efdd8250f49fdbca528918cddfd9"
+    sha256 cellar: :any, monterey:       "52e590836bb88b9a3d1ce3f29dd2e9c0d5f5812fceab2832228d8bff36b4c661"
+    sha256 cellar: :any, big_sur:        "c1049f62e574ca71381f1f094d91acc44f98ad92876de2d8393099a46c73d969"
+    sha256 cellar: :any, catalina:       "2c4f4cd18a9563c27effbe7fbc28d5831751c2b5e5db7509ace428dab8f1398f"
+    sha256               x86_64_linux:   "1c058afaabea66bc915fc2f412f4f64d84a4b28c0243e5036544b76e884a64f3"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "gnu-sed" => :build
-  depends_on "intltool" => :build
-  depends_on "gettext" => :build
   depends_on "docbook-xsl" => :build
+  depends_on "gettext" => :build
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
+  depends_on "vala" => :build
   depends_on "glib"
   depends_on "libgcrypt"
-  depends_on "gobject-introspection" => :recommended
-  depends_on "vala" => :optional
+  uses_from_macos "libxslt" => :build
 
   def install
     ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
 
-    args = %W[
-      --disable-debug
-      --disable-dependency-tracking
-      --disable-silent-rules
-      --prefix=#{prefix}
-    ]
-
-    args << "--enable-introspection" if build.with? "gobject-introspection"
-    args << "--enable-vala" if build.with? "vala"
-
-    system "./configure", *args
-
-    # https://bugzilla.gnome.org/show_bug.cgi?id=734630
-    inreplace "Makefile", "sed", "gsed"
-
-    system "make", "install"
+    mkdir "build" do
+      system "meson", "..", "-Dbashcompdir=#{bash_completion}",
+                            "-Dgtk_doc=false",
+                            *std_meson_args
+      system "ninja", "--verbose"
+      system "ninja", "install", "--verbose"
+    end
   end
 
   test do

@@ -1,20 +1,25 @@
 class Flume < Formula
   desc "Hadoop-based distributed log collection and aggregation"
   homepage "https://flume.apache.org"
-  url "https://www.apache.org/dyn/closer.cgi?path=flume/1.6.0/apache-flume-1.6.0-bin.tar.gz"
-  sha256 "0f7cef2f0128249893498a23401a0c8cb261e4516bc60f1885f8a3ae4475ed80"
+  url "https://www.apache.org/dyn/closer.lua?path=flume/1.10.0/apache-flume-1.10.0-bin.tar.gz"
+  mirror "https://archive.apache.org/dist/flume/1.10.0/apache-flume-1.10.0-bin.tar.gz"
+  sha256 "c9d09cb473ede45be6d478b33b1cc3289e871c150e035246fb594bc3e81b3381"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "cb04c708d2c0e6590e7cd6a504df26c480719eb70d5744108b7bf660bb90442a"
+  end
 
   depends_on "hadoop"
-  depends_on :java => "1.7+"
+  depends_on "openjdk"
 
   def install
     rm_f Dir["bin/*.cmd", "bin/*.ps1"]
     libexec.install %w[conf docs lib tools]
     bin.install Dir["bin/*"]
-    bin.env_script_all_files(libexec/"bin",
-      Language::Java.java_home_env("1.7+").merge(:FLUME_HOME => libexec))
+    bin.env_script_all_files libexec/"bin",
+                             JAVA_HOME:  Formula["openjdk"].opt_prefix,
+                             FLUME_HOME: libexec
   end
 
   test do

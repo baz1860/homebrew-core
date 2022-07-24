@@ -1,15 +1,21 @@
 class Mlkit < Formula
   desc "Compiler for the Standard ML programming language"
   homepage "https://melsman.github.io/mlkit"
-  url "https://github.com/melsman/mlkit/archive/mlkit-4.3.9.tar.gz"
-  sha256 "3c6adbeb9a85f7b3586d0961fd3b170ff31e09fa0ff12889b76b9ceb459059c4"
-  head "https://github.com/melsman/mlkit.git"
+  url "https://github.com/melsman/mlkit/archive/v4.6.1.tar.gz"
+  sha256 "63fda6db4997bc2c422217c4868ae09967bf8bdc7ae552908ad5daa9b43a7a35"
+  license "GPL-2.0-or-later"
+  head "https://github.com/melsman/mlkit.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    rebuild 1
-    sha256 "506bb73d7421593ea3bd76f8958ce61d161c9a7e724c525b1b32bedae61fa8dd" => :high_sierra
-    sha256 "2f6e573272e385556c38437c83017ce3ffb9279b091bdd3f6d815d6ef401940b" => :sierra
-    sha256 "3b1eeb563a56a67b8335bcfe94359482b068d12b9a34b033158ee642a2536056" => :el_capitan
+    sha256 monterey:     "36067c952b766856650dde4ec7063715116b3b35187bccf3d993159dcb1acff4"
+    sha256 big_sur:      "d10a1831efd17c9a803d2d7d89bac114e8ef4c1941e370aba738a3fb7d961b8e"
+    sha256 catalina:     "c97338472a17c0a140b823973c74d68879374e5a967c0e2e586c63ad135411ee"
+    sha256 x86_64_linux: "58f15971bbf285b7c71aec2b302ec80ed912957bb1d8749cc137ec9e633ffe76"
   end
 
   depends_on "autoconf" => :build
@@ -30,8 +36,7 @@ class Mlkit < Formula
     # invocation. Thus, on a 32-bit machine, both the mlton-compiled
     # binary (the mlkit compiler) and the 32-bit native code generated
     # by the mlkit compiler will be running 32-bit code.
-
-    ENV.permit_arch_flags if MacOS.prefer_64_bit?
+    ENV.permit_arch_flags
     system "make", "mlkit"
     system "make", "mlkit_libs"
     system "make", "install"

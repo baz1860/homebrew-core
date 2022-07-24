@@ -1,64 +1,59 @@
 class Hdf5AT18 < Formula
   desc "File format designed to store large amounts of data"
   homepage "https://www.hdfgroup.org/HDF5"
-  url "https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.20.tar.bz2"
-  sha256 "a4f2db7e0a078aa324f64e0216a80731731f73025367fa94d158c9b1d3fbdf6f"
+  # NOTE: 1.8.23 is expected to be the last release for HDF5-1.8
+  # (see: https://portal.hdfgroup.org/display/support/HDF5%201.8.22#HDF51.8.22-futureFutureofHDF5-1.8).
+  url "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.22/src/hdf5-1.8.22.tar.bz2"
+  sha256 "689b88c6a5577b05d603541ce900545779c96d62b6f83d3f23f46559b48893a4"
+  revision 3
+
+  livecheck do
+    url "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/"
+    regex(%r{href=["']?hdf5[._-]v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    rebuild 1
-    sha256 "de1706b6d6a77507e56985403bfdb861466c6670e465ca54a32524c9273679f1" => :high_sierra
-    sha256 "c5971253a925403e2ead5da952c27eaaa50b51f28af17bf262ad8ec3fba0dc92" => :sierra
-    sha256 "351aea0c2432b6991f5df4cea14d6b7d280eaaccc051c49ea358565ab9469dde" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "b7b7d577875a460f98ea62d61b2d3c94cac815a71d7dd608694e1bd25b44fd74"
+    sha256 cellar: :any,                 arm64_big_sur:  "e4a385612628698f38ab015e10848bac04ec8b3cbcc99539cabea13f7ba86de2"
+    sha256 cellar: :any,                 monterey:       "1cab5b7ad0dd428f41cda7395afa6011e733ea35ed57f6f0e46974c03c246e2a"
+    sha256 cellar: :any,                 big_sur:        "722e36e081eda4de717052848c474c7a48d2f94b74755ed549f9dcb34a665da3"
+    sha256 cellar: :any,                 catalina:       "eea9e890f8225d6747ec5dea3562ae13a31645d15f6e4db0a23de3703473b135"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5d7b58ab67742577e914b2a1a00da722eccabfc1fbba2d84f295294f57993b08"
   end
 
   keg_only :versioned_formula
-
-  option "with-mpi", "Enable parallel support"
-  option :cxx11
-
-  deprecated_option "enable-parallel" => "with-mpi"
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
   depends_on "gcc" # for gfortran
-  depends_on "open-mpi" if build.with? "mpi"
-  depends_on "szip"
+  depends_on "libaec"
 
   def install
-    ENV.cxx11 if build.cxx11?
-
-    inreplace %w[c++/src/h5c++.in fortran/src/h5fc.in tools/misc/h5cc.in],
-      "${libdir}/libhdf5.settings", "#{pkgshare}/libhdf5.settings"
+    inreplace %w[c++/src/h5c++.in fortran/src/h5fc.in bin/h5cc.in],
+              "${libdir}/libhdf5.settings",
+              "#{pkgshare}/libhdf5.settings"
 
     inreplace "src/Makefile.am", "settingsdir=$(libdir)", "settingsdir=#{pkgshare}"
 
-    system "autoreconf", "-fiv"
+    system "autoreconf", "--force", "--install", "--verbose"
 
     args = %W[
       --disable-dependency-tracking
       --disable-silent-rules
-      --prefix=#{prefix}
-      --with-szlib=#{Formula["szip"].opt_prefix}
       --enable-build-mode=production
       --enable-fortran
+      --disable-cxx
+      --prefix=#{prefix}
+      --with-szlib=#{Formula["libaec"].opt_prefix}
     ]
-
-    if build.without?("mpi")
-      args << "--enable-cxx"
-    else
-      args << "--disable-cxx"
-    end
-
-    if build.with? "mpi"
-      ENV["CC"] = "mpicc"
-      ENV["CXX"] = "mpicxx"
-      ENV["FC"] = "mpif90"
-
-      args << "--enable-parallel"
-    end
+    args << "--with-zlib=#{Formula["zlib"].opt_prefix}" if OS.linux?
 
     system "./configure", *args
+
+    # Avoid shims in settings file
+    inreplace "src/libhdf5.settings", Superenv.shims_path/ENV.cc, ENV.cc
+
     system "make", "install"
   end
 
@@ -101,7 +96,7 @@ class Hdf5AT18 < Formula
       if (error /= 0) call abort
       write (*,"(I0,'.',I0,'.',I0)") major, minor, rel
       end
-      EOS
+    EOS
     system "#{bin}/h5fc", "test.f90"
     assert_equal version.to_s, shell_output("./a.out").chomp
   end

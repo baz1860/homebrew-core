@@ -1,22 +1,31 @@
 class Libmspub < Formula
   desc "Interpret and import Microsoft Publisher content"
   homepage "https://wiki.documentfoundation.org/DLP/Libraries/libmspub"
-  url "https://dev-www.libreoffice.org/src/libmspub/libmspub-0.1.3.tar.xz"
-  sha256 "f0225f0ff03f6bec4847d7c2d8719a36cafc4b97a09e504b610372cc5b981c97"
+  url "https://dev-www.libreoffice.org/src/libmspub/libmspub-0.1.4.tar.xz"
+  sha256 "ef36c1a1aabb2ba3b0bedaaafe717bf4480be2ba8de6f3894be5fd3702b013ba"
+  license "MPL-2.0"
+  revision 11
 
-  bottle do
-    cellar :any
-    sha256 "bd35b73b9a1d0a740a113dfd921f62a103cd66c83018b027a1a97415509a6732" => :high_sierra
-    sha256 "1e00c58cbc9530cf5bf0a344cf2aaa16e5613c88ab4e3883668975917cc05a95" => :sierra
-    sha256 "1fec7ae574d1addc7d6f89fb6b4bd5212b88e431add06b656a204a2a41708e09" => :el_capitan
+  livecheck do
+    url "https://dev-www.libreoffice.org/src/"
+    regex(/href=["']?libmspub[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "d60cfbaeaa186d7c12f52e8e87061e003dc1d2d787936b74d626e58aebda28b4"
+    sha256 cellar: :any,                 arm64_big_sur:  "b71ae096f6e3c708e1dd259998c918f047bf0c584f46b154c9b128cb2fd398de"
+    sha256 cellar: :any,                 monterey:       "5ec35402768596402e87df3c1ec3f5a2959eea5fa64c96748e2fb82ba9ee9137"
+    sha256 cellar: :any,                 big_sur:        "07380fc76e573cabf43926740e27dd943f0b8efd2c66537befd750f63429907e"
+    sha256 cellar: :any,                 catalina:       "6d5024ba3736210442d3be7d48ec1c266363d90f0a2f5eb789c46fdf2720bb59"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0e34106510e2efca8e914ec52a1acc8d9d2d7c9cd536fcbe72627885c7dcfd1a"
+  end
+
   depends_on "boost" => :build
   depends_on "libwpg" => :build
-  depends_on "libwpd"
+  depends_on "pkg-config" => :build
   depends_on "icu4c"
   depends_on "librevenge"
+  depends_on "libwpd"
 
   def install
     system "./configure", "--without-docs",

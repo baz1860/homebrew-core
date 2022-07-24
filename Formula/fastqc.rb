@@ -1,17 +1,25 @@
 class Fastqc < Formula
   desc "Quality control tool for high throughput sequence data"
   homepage "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
-  url "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.5.zip"
-  sha256 "dd7a5ad80ceed2588cf6d6ffe35e0f161c0d9977ed08355f5e4d9473282cbd66"
+  url "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip"
+  sha256 "15510a176ef798e40325b717cac556509fb218268cfdb9a35ea6776498321369"
+  revision 1
 
-  bottle :unneeded
+  livecheck do
+    url "https://www.bioinformatics.babraham.ac.uk/projects/download.html"
+    regex(/href=.*?fastqc[._-]v?(\d+(?:\.\d+)+)\.zip/i)
+  end
 
-  depends_on :java
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "ae41c7f995b1200ba6dddc708af5b5ced03a817515b7d2fb2a6ec6104ed7c94b"
+  end
+
+  depends_on "openjdk"
 
   def install
     libexec.install Dir["*"]
     chmod 0755, libexec/"fastqc"
-    bin.install_symlink libexec/"fastqc"
+    (bin/"fastqc").write_env_script libexec/"fastqc", JAVA_HOME: Formula["openjdk"].opt_prefix
   end
 
   test do
@@ -20,7 +28,7 @@ class Fastqc < Formula
       CNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
       +SRR098281.1 HWUSI-EAS1599_1:2:1:0:318 length=35
       #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     EOS
+    EOS
     assert_match "Analysis complete for test.fasta", shell_output("#{bin}/fastqc test.fasta")
   end
 end

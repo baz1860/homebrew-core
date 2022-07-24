@@ -1,36 +1,26 @@
 class Html2text < Formula
   desc "Advanced HTML-to-text converter"
   homepage "http://www.mbayer.de/html2text/"
-  url "http://www.mbayer.de/html2text/downloads/html2text-1.3.2a.tar.gz"
-  sha256 "000b39d5d910b867ff7e087177b470a1e26e2819920dcffd5991c33f6d480392"
+  url "https://github.com/grobian/html2text/archive/v2.1.1.tar.gz"
+  sha256 "be16ec8ceb25f8e7fe438bd6e525b717d5de51bd0797eeadda0617087f1563c9"
+  license "GPL-2.0-or-later"
+  head "https://github.com/grobian/html2text.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "651c7204ba8de17d552b8ccef6cb381f41bd1ca8f0f3b2577543e0daf4d92899" => :high_sierra
-    sha256 "8f0adab889fb872e10fd26d57d063b9501298e11db2f996d495db0951662596f" => :sierra
-    sha256 "766f16608d01f0fdf581e64e96a92d311cf96589b938cd87957d0543bb7fd1df" => :el_capitan
-    sha256 "103d5c3d14bb0b13b2c6fe20f9889ea1269d276a6d294dd058c7c75ea78bf7ae" => :yosemite
-    sha256 "b691a4fa679e2ae4562afe36d216b13ecaf2355167d4142bdb0f697f753eac19" => :mavericks
-  end
-
-  # Patch provided by author. See:
-  # http://www.mbayer.de/html2text/faq.shtml#sect6
-  patch do
-    url "http://www.mbayer.de/html2text/downloads/patch-utf8-html2text-1.3.2a.diff"
-    sha256 "be4e90094d2854059924cb2c59ca31a5e9e0e22d2245fa5dc0c03f604798c5d1"
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "54bba0f039b260d8cebd56ccb081dec77f1b75b11fc648a6dda6204b7bf21ccf"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "e60478802f517404cd7193c7ae612335fd2f4e494e8eb066badd9cf61dd72bcb"
+    sha256 cellar: :any_skip_relocation, monterey:       "195fd0fabd45c610163f7eb572e1aec8977b92150e1acc8dcc613c642ffc1dca"
+    sha256 cellar: :any_skip_relocation, big_sur:        "051ceb5b6dc1a54670a01b6b90281b3f91a5e10c5f66d01db0f8664b78760e6d"
+    sha256 cellar: :any_skip_relocation, catalina:       "2e2e2d60421b7b5609e5de0a8151abee3e4a4488f67cf4b6fed242cbbef4740b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7b4f01b75211993397fa0a3fbe836c9817b331c2fcc5f01295a872961e88a0e0"
   end
 
   def install
-    inreplace "configure",
-              'for i in "CC" "g++" "cc" "$CC"; do',
-              'for i in "g++"; do'
+    ENV.cxx11
 
-    system "./configure"
+    system "./configure", *std_configure_args
     system "make", "all"
-
-    bin.install "html2text"
-    man1.install "html2text.1.gz"
-    man5.install "html2textrc.5.gz"
+    system "make", "install", "PREFIX=#{prefix}", "BINDIR=#{bin}", "MANDIR=#{man}", "DOCDIR=#{doc}"
   end
 
   test do

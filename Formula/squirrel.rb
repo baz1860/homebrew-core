@@ -1,19 +1,38 @@
 class Squirrel < Formula
   desc "High level, imperative, object-oriented programming language"
   homepage "http://www.squirrel-lang.org"
-  url "https://downloads.sourceforge.net/project/squirrel/squirrel3/squirrel%203.1%20stable/squirrel_3_1_stable.tar.gz"
-  version "3.1.0"
-  sha256 "4845a7fb82e4740bde01b0854112e3bb92a0816ad959c5758236e73f4409d0cb"
+  url "https://downloads.sourceforge.net/project/squirrel/squirrel3/squirrel%203.2%20stable/squirrel_3_2_stable.tar.gz"
+  sha256 "211f1452f00b24b94f60ba44b50abe327fd2735600a7bacabc5b774b327c81db"
+  license "MIT"
+  head "https://github.com/albertodemichelis/squirrel.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/squirrel[._-]v?(\d+(?:[_-]\d+)+)[._-]stable\.t}i)
+    strategy :sourceforge do |page, regex|
+      page.scan(regex).map { |match| match.first.tr("_", ".") }
+    end
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "9c3957604cc76bd0c2b3bc9db7d7e1cf73c3218dbab9bda47673d9ed92f5a7e3" => :sierra
-    sha256 "a3ba69216ec68a32489febe2894de6fc52a681309e58df8625e3659fd578d28d" => :el_capitan
-    sha256 "cf619e423c4e4e00a2bfdd2ae40c81238b66d9fcf07f95bbfe9536687dba875b" => :yosemite
-    sha256 "b98f154a80d82eff0de14488ca60d5b96018d23df854d325f2abbd95c268ab02" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "4a1b1eaad58270a2b924e75720f9c3a1ce63ca408868ce31637e26fd27d66062"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "0b4a46f4bce39d747dcf5e7ec4ee43afc76646ae6f4e8c0e7ae1601d147061f5"
+    sha256 cellar: :any_skip_relocation, monterey:       "c8822588938ec4e83897e6f883ccfad6f39ae6fff7279ea35e988a39c2da4c10"
+    sha256 cellar: :any_skip_relocation, big_sur:        "bb230ed7a9aa535e40bbe4f127cd6d4325fed6be46b4a4dae58c39d01b169666"
+    sha256 cellar: :any_skip_relocation, catalina:       "749bb90e798990994fa79d8846661f95fa7e150d3606b889c0351697c82add62"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "747575d9f05e9496d0eecf8ea4d6db59711396eac5feca1ae2f61794a53a6a64"
   end
 
   def install
+    # The tarball files are in a subdirectory, unlike the upstream repository.
+    # Moving tarball files out of the subdirectory allows us to use the same
+    # build steps for stable and HEAD builds.
+    squirrel_subdir = "squirrel#{version.major}"
+    if Dir.exist?(squirrel_subdir)
+      mv Dir["squirrel#{version.major}/*"], "."
+      rmdir squirrel_subdir
+    end
+
     system "make"
     prefix.install %w[bin include lib]
     doc.install Dir["doc/*.pdf"]
@@ -22,21 +41,22 @@ class Squirrel < Formula
     (lib+"pkgconfig/libsquirrel.pc").write pc_file
   end
 
-  def pc_file; <<~EOS
-    prefix=#{opt_prefix}
-    exec_prefix=${prefix}
-    libdir=/${exec_prefix}/lib
-    includedir=/${prefix}/include
-    bindir=/${prefix}/bin
-    ldflags=  -L/${prefix}/lib
+  def pc_file
+    <<~EOS
+      prefix=#{opt_prefix}
+      exec_prefix=${prefix}
+      libdir=/${exec_prefix}/lib
+      includedir=/${prefix}/include
+      bindir=/${prefix}/bin
+      ldflags=  -L/${prefix}/lib
 
-    Name: libsquirrel
-    Description: squirrel library
-    Version: #{version}
+      Name: libsquirrel
+      Description: squirrel library
+      Version: #{version}
 
-    Requires:
-    Libs: -L${libdir} -lsquirrel -lsqstdlib
-    Cflags: -I${includedir}
+      Requires:
+      Libs: -L${libdir} -lsquirrel -lsqstdlib
+      Cflags: -I${includedir}
     EOS
   end
 

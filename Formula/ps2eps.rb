@@ -1,17 +1,22 @@
 class Ps2eps < Formula
   desc "Convert PostScript to EPS files"
   homepage "https://www.tm.uka.de/~bless/ps2eps"
-  url "https://www.tm.uka.de/~bless/ps2eps-1.68.tar.gz"
-  sha256 "b08f12eed88965d1891261fb70e87c7e3a3f3172ebc31bdb7994a7ce854dd925"
+  url "https://www.tm.uka.de/~bless/ps2eps-1.70.tar.gz"
+  sha256 "3a6681c3177af9ae326459c57e84fe90829d529d247fc32ae7f66e8839e81b11"
+
+  livecheck do
+    url :homepage
+    regex(/href=.*?ps2eps[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "4e0d89ac5be6cb6357d84988a1adc26e6667f4e9cdd8047071d0204cbecee58e" => :high_sierra
-    sha256 "55396ec4ff00cfc85c4e34f1f7b872834264d8640677cd430c16b10fe67f2fa9" => :sierra
-    sha256 "a651d45a267206348a36d213620790b0951e5343070d8613548b80066ec5a584" => :el_capitan
-    sha256 "99b3838d2a7135d8794e4f48e428bd8afc0f18db8998f071c74faa449591ad7f" => :yosemite
-    sha256 "01fbee92f6a8534a4618bb94b9d21913f203b42f7abe41023c7c2b2f68775880" => :mavericks
-    sha256 "4671a8ae732598cbf5c006b7cf6f9924455a8f61dcc660733e14104707974c27" => :mountain_lion
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "bdadaaab653031dd42695d12d97e7b831e15d6e823f00abc74a5a2f89a7e4954"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "cb048bafbe5b44a17151bc81c5743045f3f4963d6f3cf2adf38685bba82c8c67"
+    sha256 cellar: :any_skip_relocation, monterey:       "692aad4f078bddacb438898e625887ae1278fc07de6a1c9ce37ee9683cc5f7fe"
+    sha256 cellar: :any_skip_relocation, big_sur:        "91e08e8ced4f5394ad3f4990a092fa61a547cce4264127350f97912c50dda5f3"
+    sha256 cellar: :any_skip_relocation, catalina:       "b2d84470b90f037632206b6318f87bf1024e0d0ed83fb8344e44642dc8751187"
+    sha256 cellar: :any_skip_relocation, mojave:         "170231b1c48914442e5c4eac304652b1aab7603c46d407f26b1383b932e3c2d9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e392648b006b21de93a33d1fbb1b5505c1de5353d0168368a71f15efd9a39df6"
   end
 
   depends_on "ghostscript"
@@ -22,7 +27,7 @@ class Ps2eps < Formula
     (libexec/"bin").install "bin/ps2eps"
     (bin/"ps2eps").write <<~EOS
       #!/bin/sh
-      perl -S #{libexec}/bin/ps2eps $*
+      perl -S #{libexec}/bin/ps2eps \"$@\"
     EOS
     share.install "doc/man"
     doc.install "doc/pdf", "doc/html"

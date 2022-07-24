@@ -1,11 +1,19 @@
 class Blackbox < Formula
   desc "Safely store secrets in Git/Mercurial/Subversion"
   homepage "https://github.com/StackExchange/blackbox"
-  url "https://github.com/StackExchange/blackbox/archive/v1.20170611.tar.gz"
-  sha256 "dcdc7a9b7c9fd7144c90baa5f48041af434ed4c8f77c8e41f1017789a2f9c017"
-  revision 1
+  url "https://github.com/StackExchange/blackbox/archive/v1.20220610.tar.gz"
+  sha256 "f1efcca6680159f244eb44fdb78e92b521760b875fa5a36e4c433b93ed0f87c1"
+  license "MIT"
+  version_scheme 1
 
-  bottle :unneeded
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)*\.\d{6,8}(?:\.\d+)*)$/i)
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "419360782c976255a478975376c6a504085ec82c56e16938a76f7a0fd322b2b6"
+  end
 
   depends_on "gnupg"
 

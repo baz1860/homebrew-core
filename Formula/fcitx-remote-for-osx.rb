@@ -1,23 +1,30 @@
 class FcitxRemoteForOsx < Formula
+  include Language::Python::Shebang
+
   desc "Handle input method in command-line"
-  homepage "https://github.com/CodeFalling/fcitx-remote-for-osx"
-  url "https://github.com/CodeFalling/fcitx-remote-for-osx/archive/0.3.0.tar.gz"
-  sha256 "b4490a6a0db3c28ce3ddbe89dd038f5ab404744539adc5520eab1a1a39819de6"
+  homepage "https://github.com/xcodebuild/fcitx-remote-for-osx"
+  url "https://github.com/xcodebuild/fcitx-remote-for-osx/archive/0.4.0.tar.gz"
+  sha256 "453c99a0c2e227c29e2db640c592b657342a9294a3386d1810fd4c9237deeaae"
+  license "GPL-3.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "d0d5e296210ad94fb80bdc8e8058a2ad32ba293f3a1d9bb54ab2dd2de573e5f8" => :high_sierra
-    sha256 "91611184e35f77a587eb1c36042660809564ff3fbae553d492b036a8b64b4f56" => :sierra
-    sha256 "8e54fa21fce7e9e363dba2a47f462d1b415d55e9687322d251e2e5995442599a" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "b7b351e505dc719fa8835ddeb9675b58468332f3ceb6d084ae78adfb833ff98b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "693873758b57d18c931cae6a207f3e9662b4ee390c0cd78fe575768021cc45c5"
+    sha256 cellar: :any_skip_relocation, monterey:       "510392afb707d7dbb4559688c000b6207c8aad09f2e53e12bf01365721f53939"
+    sha256 cellar: :any_skip_relocation, big_sur:        "14a03328ceabe65792010d2d33c3500755fb7605b1ba25b4606b9422a7c11646"
+    sha256 cellar: :any_skip_relocation, catalina:       "152aab38c829bea77ca1578b566eda8b6bc3dea479b3c46a41b220c134135575"
   end
 
-  option "with-input-method=", "Select input method: general(default), baidu-pinyin, baidu-wubi, sogou-pinyin, qq-wubi, squirrel-rime, squirrel-rime-upstream, osx-pinyin"
+  # need py3.6+ for f-strings
+  depends_on "python@3.10" => :build
+  depends_on :macos
 
   def install
-    input_method = ARGV.value("with-input-method") || "general"
-    system "./build.py", "build", input_method
-    bin.install "fcitx-remote-#{input_method}"
-    bin.install_symlink "fcitx-remote-#{input_method}" => "fcitx-remote"
+    rewrite_shebang detected_python_shebang, "./build.py"
+
+    system "./build.py", "build", "general"
+    bin.install "fcitx-remote-general"
+    bin.install_symlink "fcitx-remote-general" => "fcitx-remote"
   end
 
   test do

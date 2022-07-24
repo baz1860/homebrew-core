@@ -1,24 +1,37 @@
 class Botan < Formula
   desc "Cryptographic algorithms and formats library in C++"
   homepage "https://botan.randombit.net/"
-  url "https://botan.randombit.net/releases/Botan-2.4.0.tgz"
-  sha256 "ed9464e2a5cfee4cd3d9bd7a8f80673b45c8a0718db2181a73f5465a606608a5"
-  head "https://github.com/randombit/botan.git"
+  url "https://botan.randombit.net/releases/Botan-2.19.2.tar.xz"
+  sha256 "3af5f17615c6b5cd8b832d269fb6cb4d54ec64f9eb09ddbf1add5093941b4d75"
+  license "BSD-2-Clause"
+  head "https://github.com/randombit/botan.git", branch: "master"
 
-  bottle do
-    sha256 "6df2a98208e2495e3bdf95ac62f49e0686f0dc3421507fc0310246c8bbdb4279" => :high_sierra
-    sha256 "abcc8559813b0974792f4d9d2d314e7616f0a561896cf670b1ff11be03e894e6" => :sierra
-    sha256 "377172cd6cf1b00af94b2c82dd91dd26335060d11231a5b8cbae1951a9b8986f" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(/href=.*?Botan[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-debug", "Enable debug build of Botan"
-
-  deprecated_option "enable-debug" => "with-debug"
+  bottle do
+    sha256 arm64_monterey: "d915afe43b2437fe42e94a3392a5855b258b6ed6b5511ead2a0fbf9886a0461b"
+    sha256 arm64_big_sur:  "87689319c0f9a4a1c007c3609f780490f9f7120652220a63828e0316f6d14cee"
+    sha256 monterey:       "e173868c663e129ce4af972cd7efc567f25e623c6e9ee956b8230719b74a943c"
+    sha256 big_sur:        "1f25905970becbcc4b508dfcf5c48a2e018692ed3267f08c5061133b4e3ac60c"
+    sha256 catalina:       "bb925ad7521c9f2d966b452de0763517cf2b1e65700aae1c9cbcc6a01334e9f1"
+    sha256 x86_64_linux:   "3c27ab2df31d5c3e583bccbfb45767515104826e7c031ca996e6114a2cdbfa99"
+  end
 
   depends_on "pkg-config" => :build
-  depends_on "openssl"
+  depends_on "python@3.10"
+  depends_on "sqlite"
 
-  needs :cxx11
+  uses_from_macos "bzip2"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     ENV.cxx11
@@ -26,23 +39,18 @@ class Botan < Formula
     args = %W[
       --prefix=#{prefix}
       --docdir=share/doc
-      --cpu=#{MacOS.preferred_arch}
-      --cc=#{ENV.compiler}
-      --os=darwin
-      --with-openssl
       --with-zlib
       --with-bzip2
+      --with-sqlite3
     ]
 
-    args << "--enable-debug" if build.with? "debug"
-
-    system "./configure.py", *args
+    system "python3", "configure.py", *args
     system "make", "install"
   end
 
   test do
     (testpath/"test.txt").write "Homebrew"
-    (testpath/"testout.txt").write Utils.popen_read("#{bin}/botan base64_enc test.txt")
+    (testpath/"testout.txt").write shell_output("#{bin}/botan base64_enc test.txt")
     assert_match "Homebrew", shell_output("#{bin}/botan base64_dec testout.txt")
   end
 end

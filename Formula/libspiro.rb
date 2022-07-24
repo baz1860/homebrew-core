@@ -1,24 +1,25 @@
 class Libspiro < Formula
   desc "Library to simplify the drawing of curves"
   homepage "https://github.com/fontforge/libspiro"
-  url "https://github.com/fontforge/libspiro/releases/download/0.5.20150702/libspiro-0.5.20150702.tar.gz"
-  sha256 "db1a48659ed3df05521829855b367ab27035c25db2d6a51b868c733b5abf9f7c"
+  url "https://github.com/fontforge/libspiro/releases/download/20220722/libspiro-dist-20220722.tar.gz"
+  sha256 "3b8e54473f3d4d99c014f2630e62f966f5f4e25c28ca59b63d30bd8e9b7593f5"
+  license "GPL-3.0"
   version_scheme 1
 
   bottle do
-    cellar :any
-    sha256 "1429ee36073ef51e18ef636519122059eccdd17d005e56c28fbb2fe6429b3e5a" => :high_sierra
-    sha256 "ed2eb6d7502263bbf73b9a85dfeea23ad76238996c06e2a4b729a687537e9584" => :sierra
-    sha256 "ba2ac132368792d5715eb39a7b0e452fba5a222977ec30b9c5ff09728acfd0e0" => :el_capitan
-    sha256 "408083484eb78518514bd2613f019bd03ac94e791b8302721187eeaf5c775479" => :yosemite
-    sha256 "7bbae215d77ea9b5977f066b2fa646821933f5ed4cbc972e4c50fc5a1708725e" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "b3498c1a31dba2bbd728c4940c270458a946e2b0b4318a92d611d825b93c56f5"
+    sha256 cellar: :any,                 arm64_big_sur:  "586a41d1ce7658531787026822d18043dce42b0f31f89f2506f544b28a156e4c"
+    sha256 cellar: :any,                 monterey:       "37809c1fcd66a6e7f33a8113b04d6799f9740b6a4407a32229f0d8985a38c42b"
+    sha256 cellar: :any,                 big_sur:        "c1022c3d1173013815484d27276a03a251fcc6bf44eacdc74c9baf00e0e9ad5a"
+    sha256 cellar: :any,                 catalina:       "0856dba557c27a3f09a10791e7030aacfd4e8093dc169ecc68d6dd350b6ac146"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "dd949a77a584f8a6783e9432a48f0601c1fec3600f8c0e0dc26a93c32418a1f1"
   end
 
   head do
     url "https://github.com/fontforge/libspiro.git"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 

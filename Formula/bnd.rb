@@ -1,10 +1,20 @@
 class Bnd < Formula
-  desc "The Swiss Army Knife for OSGi bundles"
-  homepage "http://bnd.bndtools.org/"
-  url "https://search.maven.org/remotecontent?filepath=biz/aQute/bnd/biz.aQute.bnd/3.5.0/biz.aQute.bnd-3.5.0.jar"
-  sha256 "6ecfd9b416eb637f6cdd0caa9e86a86ffe9a4c6215de4260824b5669ada160c6"
+  desc "Swiss Army Knife for OSGi bundles"
+  homepage "https://bnd.bndtools.org/"
+  url "https://search.maven.org/remotecontent?filepath=biz/aQute/bnd/biz.aQute.bnd/6.3.1/biz.aQute.bnd-6.3.1.jar"
+  sha256 "019a7b3d61060c6b335feee0c84445bfaaf0839e7b3213156b951034c4540254"
+  license any_of: ["Apache-2.0", "EPL-2.0"]
 
-  bottle :unneeded
+  livecheck do
+    url "https://search.maven.org/remotecontent?filepath=biz/aQute/bnd/biz.aQute.bnd/maven-metadata.xml"
+    regex(%r{<version>v?(\d+(?:\.\d+)+)</version>}i)
+  end
+
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "aa9f51264dbc00785812df13ae1d158f110d862de2bdecc8414689bc2aedff40"
+  end
+
+  depends_on "openjdk"
 
   def install
     libexec.install "biz.aQute.bnd-#{version}.jar"
@@ -24,6 +34,7 @@ class Bnd < Formula
         <resource>
           <capability namespace="osgi.identity">
             <attribute name="osgi.identity" value="#{test_bsn}"/>
+            <attribute name="type" value="osgi.bundle"/>
             <attribute name="version" type="Version" value="#{test_version}"/>
           </capability>
           <capability namespace="osgi.content">
@@ -35,12 +46,14 @@ class Bnd < Formula
     EOS
 
     (testpath/"launch.bndrun").write <<~EOS
-      -standalone: index.xml
+      -standalone: ${.}/index.xml
       -runrequires: osgi.identity;filter:='(osgi.identity=#{test_bsn})'
     EOS
 
+    mkdir "cnf"
+    touch "cnf/build.bnd"
+
     output = shell_output("#{bin}/bnd resolve resolve -b launch.bndrun")
-    assert_match /launch.bndrun\s+ok/, output
-    assert_match /#{test_bsn};version='\[#{test_version},#{test_version_next}\)/, output
+    assert_match(/BUNDLES\s+#{test_bsn};version='\[#{test_version},#{test_version_next}\)'/, output)
   end
 end

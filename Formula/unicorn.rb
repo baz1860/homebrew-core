@@ -1,40 +1,27 @@
 class Unicorn < Formula
   desc "Lightweight multi-architecture CPU emulation framework"
   homepage "https://www.unicorn-engine.org/"
-  url "https://github.com/unicorn-engine/unicorn/archive/1.0.1.tar.gz"
-  sha256 "3a6a4f2b8c405ab009040ca43af8e4aa10ebe44d9c8b336aa36dc35df955017c"
-  head "https://github.com/unicorn-engine/unicorn.git"
+  url "https://github.com/unicorn-engine/unicorn/archive/2.0.0.tar.gz"
+  sha256 "67b445c760e2bbac663e8c8bc410e43311c7fc92df4dfa8d90e06a021d07f634"
+  license "GPL-2.0"
+  head "https://github.com/unicorn-engine/unicorn.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "a12e18a0a334fa19a2dc54a43fc5d56861e31cf5a9ad352cb1150bb6ec61703c" => :high_sierra
-    sha256 "81d29e7f28335317dd40976d904636ccd7d0679b71747ad13530dc991f327122" => :sierra
-    sha256 "3519d8189333c5ae43eb618e18db7b6be4cf9cc288c6a45ca3b618964d62395c" => :el_capitan
-    sha256 "f8c7cb546985c5e34dddb2c2e338314d024e266085fcbdc3f7e52e0f426e4e29" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "7aab257cfb71ae35a05ad57f9403f318eb00d72bcef0ba8cd7bb1c589a1b3853"
+    sha256 cellar: :any,                 arm64_big_sur:  "830145199dbb7748b9e5a5f98914e92a010e393864156462fcea1bb351be8fd4"
+    sha256 cellar: :any,                 monterey:       "ad5055198c408a6a7a2a1a31dc197be3a0fe17d0ffe9429f7c3d7f46b896ef1b"
+    sha256 cellar: :any,                 big_sur:        "bea80a84bc5b02e7a3f6c4823bbd1df374a6a19be367271c18932d0d6ee5fc6b"
+    sha256 cellar: :any,                 catalina:       "dcae27581f0a38a4a788d316f2a21028594b828a4d104e51f19df86b7e2aabcd"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "61d94aa6ca35118429ff913104b9e7d409bc12bc48b480f0e4fc81b509f2847a"
   end
 
-  option "with-all", "Build with support for ARM64, Motorola 64k, PowerPC and "\
-    "SPARC"
-  option "with-debug", "Create a debug build"
-  option "with-test", "Test build"
-
+  depends_on "cmake" => :build
   depends_on "pkg-config" => :build
-  depends_on "cmocka" => :build if build.with? "test"
 
   def install
-    archs  = %w[x86 x86_64 arm mips]
-    archs += %w[aarch64 m64k ppc sparc] if build.with?("all")
-    ENV["PREFIX"] = prefix
-    ENV["UNICORN_ARCHS"] = archs.join " "
-    ENV["UNICORN_SHARED"] = "yes"
-    if build.with?("debug")
-      ENV["UNICORN_DEBUG"] = "yes"
-    else
-      ENV["UNICORN_DEBUG"] = "no"
-    end
-    system "make"
-    system "make", "test" if build.with?("test")
-    system "make", "install"
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, "-DUNICORN_SHARE=yes"
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
@@ -82,7 +69,7 @@ class Unicorn < Formula
       }
     EOS
     system ENV.cc, "-o", testpath/"test1", testpath/"test1.c",
-      "-lpthread", "-lm", "-L#{lib}", "-lunicorn"
+                   "-pthread", "-lpthread", "-lm", "-L#{lib}", "-lunicorn"
     system testpath/"test1"
   end
 end

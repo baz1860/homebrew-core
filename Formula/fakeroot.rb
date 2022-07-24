@@ -1,90 +1,53 @@
 class Fakeroot < Formula
   desc "Provide a fake root environment"
   homepage "https://tracker.debian.org/pkg/fakeroot"
-  url "https://mirrors.ocf.berkeley.edu/debian/pool/main/f/fakeroot/fakeroot_1.22.orig.tar.bz2"
-  mirror "https://mirrorservice.org/sites/ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.22.orig.tar.bz2"
-  sha256 "bd806a4a1e641203eb3d4571a10089e8a038c10ec7e492fa1e061b03ae3ec6fe"
+  url "https://deb.debian.org/debian/pool/main/f/fakeroot/fakeroot_1.29.orig.tar.gz"
+  sha256 "8fbbafb780c9173e3ace4a04afbc1d900f337f3216883939f5c7db3431be7c20"
+  license "GPL-3.0-or-later"
 
   bottle do
-    cellar :any
-    sha256 "999c3be4f098cab81b11516ce2b9e8ac41e5bf9255f9acf3c5cda90f1c657eb3" => :high_sierra
-    sha256 "dedb2018898785d98f98370fb88a89865d6a5e2f679166a457a511c305af0a30" => :sierra
-    sha256 "c7d19659c7d8bca8dead320d7d1ec49fda852629d5061a5760fcb88bd0059b4c" => :el_capitan
-    sha256 "d1be0e8562a2d80b505d253bc308ed0afee830b9e4c151a3039326adbd17b59c" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "7e0e4ef8f43b55ea24a0e11b436b96263af4ab80c8a90b39d1e4d479633a31fb"
+    sha256 cellar: :any,                 arm64_big_sur:  "38e3a802475e1ca4a146a7144f84e94925257331761bf841218e557f0556f988"
+    sha256 cellar: :any,                 monterey:       "2522875d0b65d593eebbeecf71e5ed9fe38e3a911abce60db45bbfd1ec5a139c"
+    sha256 cellar: :any,                 big_sur:        "8e0d19fe2fa84595407862beca5457a1b258d48eda689bd1cb0ca84fb966f7f1"
+    sha256 cellar: :any,                 catalina:       "ec8a523ac84e27ebb81e3cbc41b619fb8fb7cf4858c6d2ada62c2b39a3461885"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0fe66fdf8d3f3c8207fde2c98b5af0562101a38ab164b0a85ae803d7c382abc7"
   end
 
-  # Compile is broken. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=766649
-  # Patches submitted upstream on 24/10/2014, but no reply from maintainer thus far.
+  # Needed to apply patches below. Remove when no longer needed.
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+
+  on_linux do
+    depends_on "libcap" => :build
+  end
+
+  # https://salsa.debian.org/clint/fakeroot/-/merge_requests/16
   patch do
-    url "https://bugs.debian.org/cgi-bin/bugreport.cgi?msg=5;filename=0001-Implement-openat-2-wrapper-which-handles-optional-ar.patch;att=1;bug=766649"
-    sha256 "1c9a24aae6dc2a82fa7414454c12d3774991f6264dd798d7916972335602308d"
+    url "https://salsa.debian.org/clint/fakeroot/-/commit/e1a7af793e58bddd4bbd04cfb4d26687fbaa9bcf.diff"
+    sha256 "60cfd8bbc416527981151237b7c403fba88975e97907a0ed5c31566d0cda078d"
   end
 
-  patch do
-    url "https://bugs.debian.org/cgi-bin/bugreport.cgi?msg=5;filename=0002-OS-X-10.10-introduced-id_t-int-in-gs-etpriority.patch;att=2;bug=766649"
-    sha256 "e0823a8cfe9f4549eb4f0385a9cd611247c3a11c0452b5f80ea6122af4854b7c"
+  # https://salsa.debian.org/clint/fakeroot/-/merge_requests/17
+  patch :p0 do
+    # The MR has a typo, so we use MacPorts' version.
+    url "https://raw.githubusercontent.com/macports/macports-ports/0ffd857cab7b021f9dbf2cbc876d8025b6aefeff/sysutils/fakeroot/files/patch-message.h.diff"
+    sha256 "6540eef1c31ffb4ed636c1f4750ee668d2effdfe308d975d835aa518731c72dc"
   end
-
-  # This patch handles mapping the variadic arguments to the system openat to
-  # the fixed arguments for our next_openat function.
-  # Patch has been submitted to
-  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=766649
-  patch :DATA
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-static",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+    system "./bootstrap" # remove when patches are no longer needed
 
-    # Yosemite introduces an openat function, which has variadic arguments,
-    # which the "fancy" wrapping scheme used by fakeroot does not handle. So we
-    # have to patch the generated file after it is generated.
-    # Patch has been submitted with detailed explanation to
-    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=766649
-    system "make", "wraptmpf.h"
-    (buildpath/"patch-for-wraptmpf-h").write <<~EOS
-      diff --git a/wraptmpf.h b/wraptmpf.h
-      index dbfccc9..0e04771 100644
-      --- a/wraptmpf.h
-      +++ b/wraptmpf.h
-      @@ -575,6 +575,10 @@ static __inline__ int next_mkdirat (int dir_fd, const char *pathname, mode_t mod
-       #endif /* HAVE_MKDIRAT */
-       #ifdef HAVE_OPENAT
-       extern int openat (int dir_fd, const char *pathname, int flags, ...);
-      +static __inline__ int next_openat (int dir_fd, const char *pathname, int flags, mode_t mode) __attribute__((always_inline));
-      +static __inline__ int next_openat (int dir_fd, const char *pathname, int flags, mode_t mode) {
-      +  return openat (dir_fd, pathname, flags, mode);
-      +}
+    args = ["--disable-silent-rules"]
+    args << "--disable-static" if OS.mac?
 
-       #endif /* HAVE_OPENAT */
-       #ifdef HAVE_RENAMEAT
-    EOS
-
-    system "patch < patch-for-wraptmpf-h"
-
+    system "./configure", *args, *std_configure_args
     system "make"
     system "make", "install"
   end
 
   test do
-    if MacOS.version <= :yosemite
-      assert_equal "root", shell_output("#{bin}/fakeroot whoami").strip
-    else
-      assert_match version.to_s, shell_output("#{bin}/fakeroot -v")
-    end
+    assert_match version.to_s, shell_output("#{bin}/fakeroot -v")
   end
 end
-
-__END__
-index 15fdd1d..29d738d 100644
---- a/libfakeroot.c
-+++ b/libfakeroot.c
-@@ -2446,6 +2446,6 @@ int openat(int dir_fd, const char *pathname, int flags, ...)
-         va_end(args);
-         return next_openat(dir_fd, pathname, flags, mode);
-     }
--    return next_openat(dir_fd, pathname, flags);
-+    return next_openat(dir_fd, pathname, flags, NULL);
- }
- #endif

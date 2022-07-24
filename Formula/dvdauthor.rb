@@ -3,23 +3,32 @@ class Dvdauthor < Formula
   homepage "https://dvdauthor.sourceforge.io/"
   url "https://downloads.sourceforge.net/project/dvdauthor/dvdauthor-0.7.2.tar.gz"
   sha256 "3020a92de9f78eb36f48b6f22d5a001c47107826634a785a62dfcd080f612eb7"
+  revision 3
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/dvdauthor[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "c31cd13def25b19f42dc4472ebb7013069aea342d6da18de5b8aa4ce68ddecba" => :high_sierra
-    sha256 "021c04387000c15dfd64763c9cf4eb7dd23ee0bed9e79941c8ff00182bf4e3b2" => :sierra
-    sha256 "adeee0423ba54e77da2710f1877e0cbc43733f833abc73ad76465a7d34c829a7" => :el_capitan
-    sha256 "b4c79aab01e4ae32f39107af7ef863fd75f75cf7d9e32731be3f2e2e4d49d782" => :yosemite
+    rebuild 1
+    sha256 cellar: :any,                 arm64_monterey: "0db62ec5affa472a427aecab0add45800f986518df8aba5026e01aff8fbee17e"
+    sha256 cellar: :any,                 arm64_big_sur:  "962690a3bb6779862c3a13bda8e005928743d76106dd5b39e35b22040697b5b3"
+    sha256 cellar: :any,                 monterey:       "7b32bfedcf0a84223d860c886930d507a26006e6f79646fe0746ec681f4228fa"
+    sha256 cellar: :any,                 big_sur:        "0522363b372b042bb8a672ee3d245b8f0551f8dec40bdf791b4c6eb787e810aa"
+    sha256 cellar: :any,                 catalina:       "d79a1513ecb8ba4433fd4a368aaec314416c3ca8c4ab8fcabac6ed1f523e0b14"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7837acd0fce47d23873d6b1f1df3ba1dd75985a60e0b5c33778435eeb3094c08"
   end
 
   # Dvdauthor will optionally detect ImageMagick or GraphicsMagick, too.
   # But we don't add either as deps because they are big.
 
   depends_on "pkg-config" => :build
-  depends_on "libdvdread"
   depends_on "freetype"
+  depends_on "libdvdread"
   depends_on "libpng"
-  depends_on "libxml2" if MacOS.version <= :el_capitan
+
+  uses_from_macos "libxml2"
 
   def install
     system "./configure", "--disable-dependency-tracking",

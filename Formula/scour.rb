@@ -3,23 +3,28 @@ class Scour < Formula
 
   desc "SVG file scrubber"
   homepage "https://www.codedread.com/scour/"
-  url "https://github.com/scour-project/scour/archive/v0.36.tar.gz"
-  sha256 "1b6820430c671c71406bf79afced676699d03bd3fcc65f01a651da5dcbcf3d3b"
-  head "https://github.com/scour-project/scour.git"
+  url "https://files.pythonhosted.org/packages/75/19/f519ef8aa2f379935a44212c5744e2b3a46173bf04e0110fb7f4af4028c9/scour-0.38.2.tar.gz"
+  sha256 "6881ec26660c130c5ecd996ac6f6b03939dd574198f50773f2508b81a68e0daf"
+  license "Apache-2.0"
+  revision 1
+  version_scheme 1
+  head "https://github.com/scour-project/scour.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "19ad78d7432ab304f132fc35713b6fb1c930adfd245a55693f932fc460ee00f4" => :high_sierra
-    sha256 "6f38d0966f43d293688b66ea4fd518e0c03f8aa2f9aef66940f86b319aa3fbc5" => :sierra
-    sha256 "26b5885d3e21030da63a640e044ef553d0ec8828a15cbeac9a19eaaab00be637" => :el_capitan
-    sha256 "cf80be6ef39cbcdb2e4944799442f0d5fa2a76295fb54eae8677de6b72c8626d" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "0a19de3b6e7507c4472d6807f651ba1dc9364091db38bf495964f1bc8aea5eca"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "0a19de3b6e7507c4472d6807f651ba1dc9364091db38bf495964f1bc8aea5eca"
+    sha256 cellar: :any_skip_relocation, monterey:       "f4540d61288bd5dc596393a3d87870d1aad8fe61771379b9fa98a564fc239a71"
+    sha256 cellar: :any_skip_relocation, big_sur:        "f4540d61288bd5dc596393a3d87870d1aad8fe61771379b9fa98a564fc239a71"
+    sha256 cellar: :any_skip_relocation, catalina:       "f4540d61288bd5dc596393a3d87870d1aad8fe61771379b9fa98a564fc239a71"
+    sha256 cellar: :any_skip_relocation, mojave:         "f4540d61288bd5dc596393a3d87870d1aad8fe61771379b9fa98a564fc239a71"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f1d4f9a36356337522bfcc13866638b977ac217d2602aee271c152b60aa3cd62"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
 
   resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+    url "https://files.pythonhosted.org/packages/6b/34/415834bfdafca3c5f451532e8a8d9ba89a21c9743a0c59fbd0205c7f9426/six-1.15.0.tar.gz"
+    sha256 "30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"
   end
 
   def install

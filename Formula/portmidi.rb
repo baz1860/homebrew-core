@@ -1,53 +1,56 @@
 class Portmidi < Formula
   desc "Cross-platform library for real-time MIDI I/O"
-  homepage "https://sourceforge.net/projects/portmedia/"
-  url "https://downloads.sourceforge.net/project/portmedia/portmidi/217/portmidi-src-217.zip"
-  sha256 "08e9a892bd80bdb1115213fb72dc29a7bf2ff108b378180586aa65f3cfd42e0f"
+  homepage "https://github.com/PortMidi/portmidi"
+  url "https://github.com/PortMidi/portmidi/archive/refs/tags/v2.0.3.tar.gz"
+  sha256 "934f80e1b09762664d995e7ab5a9932033bc70639e8ceabead817183a54c60d0"
+  license "MIT"
   revision 1
+  version_scheme 1
 
   bottle do
-    cellar :any
-    sha256 "c8f2755fd775064c282da84d666336d9125c6e70082975ffdc0867dee60b5802" => :high_sierra
-    sha256 "3ab40020a258be907f829205952a3336f424c0de4588fe41c5859e8c16ebaf72" => :sierra
-    sha256 "0d699de535a558e1bc72811f0b0ac7ccc158ee224564ff8e4d0b959c5872a9dc" => :el_capitan
-    sha256 "c36b7219ff6d838884d8fbe13a1d159b5375e5868b9a9c0d84de332952549e36" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "5d05c4cf7fd4598e7b06088c9207bbc35485f5e9dd631f21f6a0496232403a02"
+    sha256 cellar: :any,                 arm64_big_sur:  "c3fd1fdcee43f0b1c8bc587b44b1e664bd9033e2849ba2e8127db21739020f13"
+    sha256 cellar: :any,                 monterey:       "c3d70704721d80fc6cf532e36a21ef22a8237039d9e3467f97b72e282c85dfa5"
+    sha256 cellar: :any,                 big_sur:        "3026d3f7d4640af9bc8a225841c94645580edde8a312910a56f707c436676e64"
+    sha256 cellar: :any,                 catalina:       "e568b803867bc98754d383a7ff85adcdcb93df765b36f2e7e9dd8baecb71d49f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c405e50acde8be81e1505e686719f891ce35a5d9fc0b7917c407d739748e2eb5"
   end
 
   depends_on "cmake" => :build
-  depends_on "cython" => :build
+
+  on_linux do
+    depends_on "alsa-lib"
+  end
 
   def install
-    if MacOS.version == :sierra || MacOS.version == :el_capitan
+    if OS.mac? && MacOS.version <= :sierra
+      # Fix "fatal error: 'os/availability.h' file not found" on 10.11 and
+      # "error: expected function body after function declarator" on 10.12
+      # Requires the CLT to be the active developer directory if Xcode is
+      # installed
       ENV["SDKROOT"] = MacOS.sdk_path
     end
 
-    inreplace "pm_mac/Makefile.osx", "PF=/usr/local", "PF=#{prefix}"
+    system "cmake", ".", *std_cmake_args
+    system "make"
+    system "make", "install"
+  end
 
-    # need to create include/lib directories since make won't create them itself
-    include.mkpath
-    lib.mkpath
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <portmidi.h>
 
-    # Fix outdated SYSROOT to avoid:
-    # No rule to make target `/Developer/SDKs/MacOSX10.5.sdk/...'
-    inreplace "pm_common/CMakeLists.txt",
-              "set(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.5.sdk CACHE",
-              "set(CMAKE_OSX_SYSROOT /#{MacOS.sdk_path} CACHE"
-
-    system "make", "-f", "pm_mac/Makefile.osx"
-    system "make", "-f", "pm_mac/Makefile.osx", "install"
-
-    cd "pm_python" do
-      # There is no longer a CHANGES.txt or TODO.txt.
-      inreplace "setup.py" do |s|
-        s.gsub! "CHANGES = open('CHANGES.txt').read()", 'CHANGES = ""'
-        s.gsub! "TODO = open('TODO.txt').read()", 'TODO = ""'
-      end
-      # Provide correct dirs (that point into the Cellar)
-      ENV.append "CFLAGS", "-I#{include}"
-      ENV.append "LDFLAGS", "-L#{lib}"
-
-      ENV.prepend_path "PYTHONPATH", Formula["cython"].opt_libexec/"lib/python2.7/site-packages"
-      system "python", *Language::Python.setup_install_args(prefix)
-    end
+      int main()
+      {
+        int count = -1;
+        count = Pm_CountDevices();
+        if(count >= 0)
+            return 0;
+        else
+            return 1;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-lportmidi", "-o", "test"
+    system "./test"
   end
 end

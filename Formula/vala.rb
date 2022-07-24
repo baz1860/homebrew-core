@@ -1,29 +1,35 @@
 class Vala < Formula
   desc "Compiler for the GObject type system"
-  homepage "https://live.gnome.org/Vala"
-  url "https://download.gnome.org/sources/vala/0.38/vala-0.38.8.tar.xz"
-  sha256 "2fa746b51cd66e43577d1da06a80b708c2875cadaafee77e9700ea35cf23882c"
+  homepage "https://wiki.gnome.org/Projects/Vala"
+  url "https://download.gnome.org/sources/vala/0.56/vala-0.56.2.tar.xz"
+  sha256 "66c9619bb17859fd1ac3aba0a57970613e38fd2a1ee30541174260c9fb90124c"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "ce3464c39a85a556ec30584892c006587c50d9fc4d2c9db90bb8f9367e404256" => :high_sierra
-    sha256 "be679c61c3f51c64775540ccbf3506fa3221c5c7a5e1c57c5431e013ac70202d" => :sierra
-    sha256 "5d938313296c0a61435fd91f78acc394941c53cc8c96a2eda492c754b86d03a9" => :el_capitan
+    sha256 arm64_monterey: "2bd209117dca513e77dda3fb30aac09fe70e33de746ee534da79763321016d1a"
+    sha256 arm64_big_sur:  "f4a0df580a3de5d84f544dba4c652e2c0caf2abbde86aa2c3c7dcb46efad5ca9"
+    sha256 monterey:       "7a57596dd9b29ae2d3dca304d7797832174c57c467e81df669261c7e66d54ff8"
+    sha256 big_sur:        "d084fc68f777a4788b709e505bcad0257598b76b7cdb3f93fa901a6989cf2ce1"
+    sha256 catalina:       "c9f5f66abea2d4d1d49d23e4bad08bc2cf6a8285517e61fe96661ddd1c3cb5bb"
+    sha256 x86_64_linux:   "bc182eae4d8a5496e2569f1236cd74bc4c5f32a636b724e485ffcf39ef306814"
   end
 
-  depends_on "pkg-config" => :run
   depends_on "gettext"
   depends_on "glib"
   depends_on "graphviz"
+  depends_on "pkg-config"
+
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+    system "./configure", *std_configure_args
     system "make" # Fails to compile as a single step
     system "make", "install"
   end
 
   test do
+    ENV.prepend_path "PKG_CONFIG_PATH", Formula["libffi"].opt_lib/"pkgconfig"
     test_string = "Hello Homebrew\n"
     path = testpath/"hello.vala"
     path.write <<~EOS

@@ -1,52 +1,48 @@
 class Gitup < Formula
+  include Language::Python::Virtualenv
+
   desc "Update multiple git repositories at once"
   homepage "https://github.com/earwig/git-repo-updater"
-  url "https://github.com/earwig/git-repo-updater.git",
-    :revision => "bf66406c10d3e7654ca3f56f4ec6b57bcc068fea",
-    :tag => "v0.4.1"
+  url "https://files.pythonhosted.org/packages/7f/07/4835f8f4de5924b5f38b816c648bde284f0cec9a9ae65bd7e5b7f5867638/gitup-0.5.1.tar.gz"
+  sha256 "4f787079cd65d8f60c5842181204635e1b72d3533ae91f0c619624c6b20846dd"
+  license "MIT"
+  revision 5
+  head "https://github.com/earwig/git-repo-updater.git", branch: "develop"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "8a11d7864ef368045ba5ebed1580fe3a22f4e04b24f4f24c9678eefbf186afc7" => :high_sierra
-    sha256 "8a11d7864ef368045ba5ebed1580fe3a22f4e04b24f4f24c9678eefbf186afc7" => :sierra
-    sha256 "c1659d82d045517de16860042a53360b5ce061c8d13e57b8ea15db624ad7289f" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "ff1d31029cc66522b235ec285341133a1074781dd57ff709e53caccb305ba3ee"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ff1d31029cc66522b235ec285341133a1074781dd57ff709e53caccb305ba3ee"
+    sha256 cellar: :any_skip_relocation, monterey:       "75fd26446950358870cfd58d35f9f354ea7e64c8cda02672e35ee43288a40796"
+    sha256 cellar: :any_skip_relocation, big_sur:        "75fd26446950358870cfd58d35f9f354ea7e64c8cda02672e35ee43288a40796"
+    sha256 cellar: :any_skip_relocation, catalina:       "75fd26446950358870cfd58d35f9f354ea7e64c8cda02672e35ee43288a40796"
+    sha256 cellar: :any_skip_relocation, mojave:         "75fd26446950358870cfd58d35f9f354ea7e64c8cda02672e35ee43288a40796"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ab75d63b467bb90432d40c39999e7d3524fc5ef7bff426be0d8aec63f256b093"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
 
   resource "colorama" do
-    url "https://files.pythonhosted.org/packages/source/c/colorama/colorama-0.3.9.tar.gz"
-    sha256 "48eb22f4f8461b1df5734a074b57042430fb06e1d61bd1e11b078c0fe6d7a1f1"
+    url "https://files.pythonhosted.org/packages/1f/bb/5d3246097ab77fa083a61bd8d3d527b7ae063c7d8e8671b1cf8c4ec10cbe/colorama-0.4.4.tar.gz"
+    sha256 "5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"
   end
 
-  resource "smmap2" do
-    url "https://files.pythonhosted.org/packages/source/s/smmap2/smmap2-2.0.3.tar.gz"
-    sha256 "c7530db63f15f09f8251094b22091298e82bf6c699a6b8344aaaef3f2e1276c3"
-  end
-
-  resource "gitdb2" do
-    url "https://files.pythonhosted.org/packages/source/g/gitdb2/gitdb2-2.0.3.tar.gz"
-    sha256 "b60e29d4533e5e25bb50b7678bbc187c8f6bcff1344b4f293b2ba55c85795f09"
+  resource "gitdb" do
+    url "https://files.pythonhosted.org/packages/d1/05/eaf2ac564344030d8b3ce870b116d7bb559020163e80d9aa4a3d75f3e820/gitdb-4.0.5.tar.gz"
+    sha256 "c9e1f2d0db7ddb9a704c2a0217be31214e91a4fe1dea1efad19ae42ba0c285c9"
   end
 
   resource "GitPython" do
-    url "https://files.pythonhosted.org/packages/source/G/GitPython/GitPython-2.1.8.tar.gz"
-    sha256 "ad61bc25deadb535b047684d06f3654c001d9415e1971e51c9c20f5b510076e9"
+    url "https://files.pythonhosted.org/packages/ec/4d/e6553122c85ec7c4c3e702142cc0f5ed02e5cf1b4d7ecea86a07e45725a0/GitPython-3.1.12.tar.gz"
+    sha256 "42dbefd8d9e2576c496ed0059f3103dcef7125b9ce16f9d5f9c834aed44a1dac"
+  end
+
+  resource "smmap" do
+    url "https://files.pythonhosted.org/packages/75/fb/2f594e5364f9c986b2c89eb662fc6067292cb3df2b88ae31c939b9138bb9/smmap-3.0.4.tar.gz"
+    sha256 "9c98bbd1f9786d22f14b3d4126894d56befb835ec90cef151af566c7e19b5d24"
   end
 
   def install
-    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
-    %w[colorama smmap2 gitdb2 GitPython].each do |r|
-      resource(r).stage do
-        system "python", *Language::Python.setup_install_args(libexec/"vendor")
-      end
-    end
-
-    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
-    system "python", *Language::Python.setup_install_args(libexec)
-
-    bin.install Dir[libexec/"bin/*"]
-    bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+    virtualenv_install_with_resources
   end
 
   test do
@@ -72,11 +68,11 @@ class Gitup < Formula
 
     system bin/"gitup", "first", "second"
 
-    first_head = `cd first ; git rev-parse HEAD`.split.first
-    assert_not_equal first_head, first_head_start
+    first_head = Utils.git_head(testpath/"first")
+    refute_equal first_head, first_head_start
 
-    second_head = `cd second ; git rev-parse HEAD`.split.first
-    assert_not_equal second_head, second_head_start
+    second_head = Utils.git_head(testpath/"second")
+    refute_equal second_head, second_head_start
 
     third_head_start = "f47ab45abdbc77e518776e5dc44f515721c523ae"
     mkdir "third" do
@@ -86,8 +82,8 @@ class Gitup < Formula
     system bin/"gitup", "--add", "third"
 
     system bin/"gitup"
-    third_head = `cd third ; git rev-parse HEAD`.split.first
-    assert_not_equal third_head, third_head_start
+    third_head = Utils.git_head(testpath/"third")
+    refute_equal third_head, third_head_start
 
     assert_match %r{#{Dir.pwd}/third}, `#{bin}/gitup --list`.strip
 

@@ -1,48 +1,61 @@
 class Libsoup < Formula
   desc "HTTP client/server library for GNOME"
-  homepage "https://live.gnome.org/LibSoup"
-  url "https://download.gnome.org/sources/libsoup/2.60/libsoup-2.60.3.tar.xz"
-  sha256 "1b0dc762f23abe4e0d29b77370e539fd35f31d8e8e0318d6ddccff395be68a22"
+  homepage "https://wiki.gnome.org/Projects/libsoup"
+  url "https://download.gnome.org/sources/libsoup/3.0/libsoup-3.0.7.tar.xz"
+  sha256 "ebdf90cf3599c11acbb6818a9d9e3fc9d2c68e56eb829b93962972683e1bf7c8"
+  license "LGPL-2.0-or-later"
+  revision 1
 
   bottle do
-    sha256 "9324d895eeed906f4685c4a0ec4e34505c1928f3a7b0c70f25ba30588372dbbe" => :high_sierra
-    sha256 "b801fadef26e8a135850d367b7c06267d1fc871ca60f81e31b0354ed50c128d8" => :sierra
-    sha256 "611d2867125b1c7d7d4d24c8c2c7fb2300c593b2af3a0d195a50b3aacd73a81b" => :el_capitan
+    sha256 arm64_monterey: "ce9be7a6430e5ad4130b5119695c18fca50ceeaa4b48e2070e086e5671b2b906"
+    sha256 arm64_big_sur:  "fade8aa78c7d30d257cacac998c3fcf5a9ed2f23e9eb8650bb0bbdf75c1dc781"
+    sha256 monterey:       "d6c2693071efd9ae4ebdc8c238af301e1a304214a14de6b7219fce94703b677c"
+    sha256 big_sur:        "70466230085dee25a369684a2739b26553bf849a30faeea47b44d8a40d4d62f0"
+    sha256 catalina:       "f7cd4fd0f05050c24dc2d1bce7a9074417d1ec8ff5ed6272a8574e860bfdadcc"
+    sha256 x86_64_linux:   "f05deaf1f0ffb5404a40160e7042a68d3008af7468861cdbffe8f7f4e0181ae0"
   end
 
+  depends_on "glib-utils" => :build
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
+  depends_on "python@3.10" => :build
+  depends_on "vala" => :build
   depends_on "glib-networking"
   depends_on "gnutls"
-  depends_on "sqlite"
-  depends_on "gobject-introspection"
-  depends_on "vala"
+  depends_on "libpsl"
+
+  uses_from_macos "krb5"
+  uses_from_macos "libxml2"
+  uses_from_macos "sqlite"
 
   def install
-    args = %W[
-      --disable-debug
-      --disable-dependency-tracking
-      --disable-silent-rules
-      --prefix=#{prefix}
-      --disable-tls-check
-      --enable-introspection=yes
-    ]
-
-    # ensures that the vala files remain within the keg
-    inreplace "libsoup/Makefile.in",
-              "VAPIDIR = @VAPIDIR@",
-              "VAPIDIR = @datadir@/vala/vapi"
-
-    system "./configure", *args
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do
+    # if this test start failing, the problem might very well be in glib-networking instead of libsoup
     (testpath/"test.c").write <<~EOS
       #include <libsoup/soup.h>
 
       int main(int argc, char *argv[]) {
-        guint version = soup_get_major_version();
+        SoupMessage *msg = soup_message_new(SOUP_METHOD_GET, "https://brew.sh");
+        SoupSession *session = soup_session_new();
+        GError *error = NULL;
+        GBytes *bytes = soup_session_send_and_read(session, msg, NULL, &error); // blocks
+
+        if(error) {
+          g_error_free(error);
+          return 1;
+        }
+
+        g_object_unref(msg);
+        g_object_unref(session);
         return 0;
       }
     EOS
@@ -53,7 +66,7 @@ class Libsoup < Formula
       -I#{gettext.opt_include}
       -I#{glib.opt_include}/glib-2.0
       -I#{glib.opt_lib}/glib-2.0/include
-      -I#{include}/libsoup-2.4
+      -I#{include}/libsoup-3.0
       -D_REENTRANT
       -L#{gettext.opt_lib}
       -L#{glib.opt_lib}
@@ -61,7 +74,7 @@ class Libsoup < Formula
       -lgio-2.0
       -lglib-2.0
       -lgobject-2.0
-      -lsoup-2.4
+      -lsoup-3.0
     ]
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"

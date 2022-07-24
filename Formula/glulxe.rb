@@ -1,38 +1,27 @@
 class Glulxe < Formula
   desc "Portable VM like the Z-machine"
   homepage "https://www.eblong.com/zarf/glulx/"
-  url "https://eblong.com/zarf/glulx/glulxe-054.tar.gz"
-  version "0.5.4"
-  sha256 "1fc26f8aa31c880dbc7c396ede196c5d2cdff9bdefc6b192f320a96c5ef3376e"
-  head "https://github.com/erkyrath/glulxe.git"
+  url "https://eblong.com/zarf/glulx/glulxe-060.tar.gz"
+  version "0.6.0"
+  sha256 "74880ecbe57130da67119388f29565fbc9198408cc100819fa602d7d82c746bb"
+  license "MIT"
+  head "https://github.com/erkyrath/glulxe.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "229ef4b0b9e61f0e1ecf0b632ccd5fee08df494a97203820368e669a91f4028d" => :high_sierra
-    sha256 "3a36753838342aef55319fdf1aab32666caffcb714fefd328a93521ed33d6adf" => :sierra
-    sha256 "b5bc0c06241f2c7de3da21b27f2126903550fe959378992fe5260eeedb0f612f" => :el_capitan
-    sha256 "b50be16e36671d7818d123403937496f258882c98bbc6f4d8242c2e6eb97b310" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "26ce8c326d32c6a9bc677cb31ac3d71ad3c342b9268519ed852e3067073e020c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "4685ff356d489470d50622a226708c1934221e100048759f2e63edb18c711964"
+    sha256 cellar: :any_skip_relocation, monterey:       "7a5f7a89d8fb4f97d8dd4c0e129c57750e716822f5a74d050f8d3e5012461710"
+    sha256 cellar: :any_skip_relocation, big_sur:        "c147aa8b889f611ce1b8d1e7bdefc29c9b0da936fea7e187068039eb89255a0f"
+    sha256 cellar: :any_skip_relocation, catalina:       "50f3bb35f8755b4c24989bc354d9fc81afc5c2442e6bb5250a9aa47541c0dff2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d094a606fc180d36718be5f056934f832e7273be306e87813a190050181eedde"
   end
 
-  option "with-glkterm", "Build with glkterm (without wide character support)"
+  depends_on "glktermw" => :build
 
-  depends_on "cheapglk" => [:build, :optional]
-  depends_on "glkterm" => [:build, :optional]
-  depends_on "glktermw" => :build if build.without?("cheapglk") && build.without?("glkterm")
+  uses_from_macos "ncurses"
 
   def install
-    if build.with?("cheapglk") && build.with?("glkterm")
-      odie "Options --with-cheapglk and --with-glkterm are mutually exclusive."
-    end
-
-    if build.with? "cheapglk"
-      glk = Formula["cheapglk"]
-    elsif build.with? "glkterm"
-      glk = Formula["glkterm"]
-    else
-      glk = Formula["glktermw"]
-    end
-
+    glk = Formula["glktermw"]
     inreplace "Makefile", "GLKINCLUDEDIR = ../cheapglk", "GLKINCLUDEDIR = #{glk.include}"
     inreplace "Makefile", "GLKLIBDIR = ../cheapglk", "GLKLIBDIR = #{glk.lib}"
     inreplace "Makefile", "Make.cheapglk", "Make.#{glk.name}"
@@ -42,10 +31,6 @@ class Glulxe < Formula
   end
 
   test do
-    if build.with? "cheapglk"
-      assert shell_output("#{bin}/glulxe").start_with? "Welcome to the Cheap Glk Implementation"
-    else
-      assert pipe_output("#{bin}/glulxe -v").start_with? "GlkTerm, library version"
-    end
+    assert pipe_output("#{bin}/glulxe -v").start_with? "GlkTerm, library version"
   end
 end

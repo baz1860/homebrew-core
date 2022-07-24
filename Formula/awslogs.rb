@@ -3,61 +3,67 @@ class Awslogs < Formula
 
   desc "Simple command-line tool to read AWS CloudWatch logs"
   homepage "https://github.com/jorgebastida/awslogs"
-  url "https://github.com/jorgebastida/awslogs/archive/0.10.tar.gz"
-  sha256 "6b05e930ab83d2f7fce4f4aa0320bb855efcd951deb70644a043db539bc56bcf"
-  head "https://github.com/jorgebastida/awslogs.git"
+  url "https://files.pythonhosted.org/packages/96/7b/20bff9839d6679e25d989f94ca4320466ec94f3441972aadaafbad50560f/awslogs-0.14.0.tar.gz"
+  sha256 "1b249f87fa2adfae39b9867f3066ac00b9baf401f4783583ab28fcdea338f77e"
+  license "BSD-3-Clause"
+  revision 3
+  head "https://github.com/jorgebastida/awslogs.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "b88cc466b6c2abeaa15b2908146acedc7f37c2226abda8d028fc35ff2f467493" => :high_sierra
-    sha256 "663f1607891140fd516ebc34ffc51fe14c0501a66c4cacb6c400acb6b8933b28" => :sierra
-    sha256 "0c3af48bc56a1c0451db0bde75f585c9463c2d26a9dd410806e3624190a95594" => :el_capitan
-    sha256 "c9240034aeb03e9d4e42857b0f37c11ba93486e48e4badf5b31a1d2280238f97" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "c457a22e04ef623d43b954bae9a56d0405deceb801279a13260d594d80b8975b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "b7f9afdefeb804cdd221be20780ffeadfcfdccbd234f549b38d163f9962c6cb0"
+    sha256 cellar: :any_skip_relocation, monterey:       "dd66106ec6dd50056c85ce84a7f507890f19338ad95c0d844d333b582923e620"
+    sha256 cellar: :any_skip_relocation, big_sur:        "9823d363323b80a5c1c48929a7313b3bef67a0e4c7a891dfca9f80edc526abae"
+    sha256 cellar: :any_skip_relocation, catalina:       "96c56ae773c9f68c3b5a0080549b13eafb699ab110198bad5334a8941b294209"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1a14896857ef941ec8b99d1eae133515be05a45c95eed41ffb809583f0d146cc"
+  end
+
+  depends_on "python@3.10"
+
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "openssl@1.1"
   end
 
   resource "boto3" do
-    url "https://files.pythonhosted.org/packages/58/61/50d2e459049c5dbc963473a71fae928ac0e58ffe3fe7afd24c817ee210b9/boto3-1.4.4.tar.gz"
-    sha256 "518f724c4758e5a5bed114fbcbd1cf470a15306d416ff421a025b76f1d390939"
+    url "https://files.pythonhosted.org/packages/5e/ac/e930417b8b389423899cd350643a7814edff04d548accf8bfd686482dbb3/boto3-1.22.5.tar.gz"
+    sha256 "dbbeee6d535a311d4d646a9dd683b216bf17d59345367432a22a21b50eb43a8e"
   end
 
   resource "botocore" do
-    url "https://files.pythonhosted.org/packages/e4/f9/b7026f410edf33b6c10143482b42d0168c7ffdb14dcc89fe0eb4c7f2d7c9/botocore-1.5.38.tar.gz"
-    sha256 "dd6314cee663ccbb96aa115ec188075567df685956e43df22e795cf450d49b11"
-  end
-
-  resource "docutils" do
-    url "https://files.pythonhosted.org/packages/05/25/7b5484aca5d46915493f1fd4ecb63c38c333bd32aa9ad6e19da8d08895ae/docutils-0.13.1.tar.gz"
-    sha256 "718c0f5fb677be0f34b781e04241c4067cbd9327b66bdd8e763201130f5175be"
-  end
-
-  resource "futures" do
-    url "https://files.pythonhosted.org/packages/55/db/97c1ca37edab586a1ae03d6892b6633d8eaa23b23ac40c7e5bbc55423c78/futures-3.0.5.tar.gz"
-    sha256 "0542525145d5afc984c88f914a0c85c77527f65946617edb5274f72406f981df"
+    url "https://files.pythonhosted.org/packages/ad/18/0cb0c4f06adc779a13f7e7cbbee3b3ab284c5cada53a3257b4330f6ae880/botocore-1.25.5.tar.gz"
+    sha256 "9f2f143fe8581eb9c43c0934b7daf706067afa409171a80b103f458977fcfbd4"
   end
 
   resource "jmespath" do
-    url "https://files.pythonhosted.org/packages/96/6e/0723cccec195a37de6a428ad8879fe063b6debe5c855444e9285b27d253e/jmespath-0.9.2.tar.gz"
-    sha256 "54c441e2e08b23f12d7fa7d8e6761768c47c969e6aed10eead57505ba760aee9"
+    url "https://files.pythonhosted.org/packages/3c/56/3f325b1eef9791759784aa5046a8f6a1aff8f7c898a2e34506771d3b99d8/jmespath-0.10.0.tar.gz"
+    sha256 "b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9"
   end
 
   resource "python-dateutil" do
-    url "https://files.pythonhosted.org/packages/51/fc/39a3fbde6864942e8bb24c93663734b74e281b984d1b8c4f95d64b0c21f6/python-dateutil-2.6.0.tar.gz"
-    sha256 "62a2f8df3d66f878373fd0072eacf4ee52194ba302e00082828e0d263b0418d2"
+    url "https://files.pythonhosted.org/packages/4c/c4/13b4776ea2d76c115c1d1b84579f3764ee6d57204f6be27119f13a61d0a9/python-dateutil-2.8.2.tar.gz"
+    sha256 "0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"
   end
 
   resource "s3transfer" do
-    url "https://files.pythonhosted.org/packages/8b/13/517e8ec7c13f0bb002be33fbf53c4e3198c55bb03148827d72064426fe6e/s3transfer-0.1.10.tar.gz"
-    sha256 "ba1a9104939b7c0331dc4dd234d79afeed8b66edce77bbeeecd4f56de74a0fc1"
+    url "https://files.pythonhosted.org/packages/7e/19/f82e4af435a19b28bdbfba63f338ea20a264f4df4beaf8f2ab9bfa34072b/s3transfer-0.5.2.tar.gz"
+    sha256 "95c58c194ce657a5f4fb0b9e60a84968c808888aed628cd98ab8771fe1db98ed"
   end
 
   resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+    url "https://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz"
+    sha256 "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"
   end
 
   resource "termcolor" do
     url "https://files.pythonhosted.org/packages/8a/48/a76be51647d0eb9f10e2a4511bf3ffb8cc1e6b14e9e4fab46173aa79f981/termcolor-1.1.0.tar.gz"
     sha256 "1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"
+  end
+
+  resource "urllib3" do
+    url "https://files.pythonhosted.org/packages/1b/a5/4eab74853625505725cefdf168f48661b2cd04e7843ab836f3f63abf81da/urllib3-1.26.9.tar.gz"
+    sha256 "aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"
   end
 
   def install

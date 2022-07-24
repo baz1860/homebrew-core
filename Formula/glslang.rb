@@ -1,54 +1,37 @@
 class Glslang < Formula
   desc "OpenGL and OpenGL ES reference compiler for shading languages"
   homepage "https://www.khronos.org/opengles/sdk/tools/Reference-Compiler/"
+  url "https://github.com/KhronosGroup/glslang/archive/11.10.0.tar.gz"
+  sha256 "8ffc19c435232d09299dd2c91e247292b3508c1b826a3497c60682e4bbf2d602"
+  license all_of: ["BSD-3-Clause", "GPL-3.0-or-later", "MIT", "Apache-2.0"]
   head "https://github.com/KhronosGroup/glslang.git"
 
-  stable do
-    url "https://github.com/KhronosGroup/glslang/archive/3.0.tar.gz"
-    sha256 "91653d09a90440a0bc35aa490d0c44973501257577451d4c445b2df5e78d118c"
-
-    if DevelopmentTools.clang_build_version >= 900
-      # Fix ordered pointer comparison build warning/error
-      # https://github.com/KhronosGroup/glslang/pull/108
-      patch do
-        url "https://github.com/KhronosGroup/glslang/commit/a3f53e54d232f3bb345b501ab30a01a5507e5b4e.patch?full_index=1"
-        sha256 "0b25f25119eaf2abb62cd743fc47b587df18e12c69dbc84f4593d7992935e586"
-      end
-
-      # Fix: Failed std::map static assertion with libc++ 3.8
-      # https://github.com/KhronosGroup/glslang/issues/368
-      patch do
-        url "https://github.com/KhronosGroup/glslang/commit/ec1476b7060306fd9109faf7a4c70a20ea3b538c.patch?full_index=1"
-        sha256 "36e8986d8e506f3b85e652a048b3039d2758664f0068c6e466af314e9096a0b6"
-      end
-    end
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "8b113e3ef8ccd8e18bae3a53d7ca409c1c8e0ba1e3b38f6dcf94b2d8917ea1a9" => :high_sierra
-    sha256 "d5de78fc374f3c92cdf8f06f1518405346c63b42ffd7ad53bb153c27bd00a935" => :sierra
-    sha256 "770943fa3e43b765e303cc88da1aa0bf2455f91cc0e84a636bfadd517cc87776" => :el_capitan
-    sha256 "111206ad8b23ca9f78fa5657d371056e238f3eabf747d48001115d85f4ea88bf" => :yosemite
-    sha256 "4d22c058983e127f3dbb02d86ef6d6cb94fcc5b87c5f3e46802b8b157d56e1c9" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "1215ac55b90a877f50e35d7fb6400db07954f001a19a832808dd99f5a5b69128"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "992af6ac68c72b6402707d628ece9009e7c4c3d792ba78773a2bced000e0c5a0"
+    sha256 cellar: :any_skip_relocation, monterey:       "e24d29d88cf2dd79b390e0ba44941df7b967f3497d4a14d038a2819ba5d99f56"
+    sha256 cellar: :any_skip_relocation, big_sur:        "fa6b3399af0503d4da750997e60cb90f2ba0f4815867d2b7ae0da977de229413"
+    sha256 cellar: :any_skip_relocation, catalina:       "01bb753829b181d6ed04cfa834f3b2d87b9283a55c9197649b7572662d7e4ed6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b466b8cb62e7fc6439a39738f2d9588f9d404915b09a5b742db9a03283e7a413"
   end
 
   depends_on "cmake" => :build
+  depends_on "python@3.10" => :build
 
   def install
-    mkdir "build" do
-      system "cmake", "..", *std_cmake_args
-      system "make"
-      system "make", "install"
+    args = %w[
+      -DBUILD_EXTERNAL=OFF
+      -DENABLE_CTEST=OFF
+    ]
 
-      # Version 3.0 of glslang does not respect the overridden CMAKE_INSTALL_PREFIX. This has
-      # been fixed in master [1] so when that is released, the manual install commands should
-      # be removed.
-      #
-      # 1. https://github.com/KhronosGroup/glslang/commit/4cbf748b133aef3e2532b9970d7365304347117a
-      bin.install Dir["install/bin/*"]
-      lib.install Dir["install/lib/*"]
-    end
+    system "cmake", ".", *std_cmake_args, *args
+    system "make"
+    system "make", "install"
   end
 
   test do

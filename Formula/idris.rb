@@ -1,29 +1,29 @@
-require "language/haskell"
-
 class Idris < Formula
-  include Language::Haskell::Cabal
-
   desc "Pure functional programming language with dependent types"
   homepage "https://www.idris-lang.org/"
-  url "https://github.com/idris-lang/Idris-dev/archive/v1.2.0.tar.gz"
-  sha256 "a5160da66cdfb376df0ed87f0abb9dbc7feaa4efe77bcc7f9cc3b97425bc57f7"
-  head "https://github.com/idris-lang/Idris-dev.git"
+  url "https://github.com/idris-lang/Idris-dev/archive/v1.3.4.tar.gz"
+  sha256 "7289f5e2501b7a543d81035252ca9714003f834f58b558f45a16427a3c926c0f"
+  license "BSD-3-Clause"
+  head "https://github.com/idris-lang/Idris-dev.git", branch: "master"
 
   bottle do
-    sha256 "7d878126d8a6317d8325f3f434884eb52fadb6dd712433e18437979531e1e2df" => :high_sierra
-    sha256 "2944aae8e9baf286e1c46814d88e0487f08a0bdd8279859475de0a9128f772df" => :sierra
-    sha256 "6e9af20653598297ee21e83c9b7cb44240b7a8797d22bf918548a8cde6f45fdf" => :el_capitan
+    sha256 monterey:     "704add14a985699c70650b364a9069f1a2b4ad52f9238890067d695744db63e4"
+    sha256 big_sur:      "19ad0c1b5aed35799c1a7199418e96b509b19b5fdad8dcf6492ca0ec10b14676"
+    sha256 catalina:     "c38a0f42b48ace8818f060ed26834d9e395e614f12fe6449b1e48513c73dcec8"
+    sha256 x86_64_linux: "f85bad06ae4d62578f441d915a3c0d47e3bb1064c1615883ebaa90f2a51c106c"
   end
 
   depends_on "cabal-install" => :build
-  depends_on "ghc" => :build
   depends_on "pkg-config" => :build
+  depends_on "ghc@8.8"
   depends_on "libffi"
 
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
+
   def install
-    args = ["-f", "FFI"]
-    args << "-f" << "release" if build.stable?
-    install_cabal_package *args
+    system "cabal", "v2-update"
+    system "cabal", "--storedir=#{libexec}", "v2-install", *std_cabal_v2_args
   end
 
   test do
@@ -36,17 +36,15 @@ class Idris < Formula
     system bin/"idris", "hello.idr", "-o", "hello"
     assert_equal "Hello, Homebrew!", shell_output("./hello").chomp
 
-    if build.with? "libffi"
-      (testpath/"ffi.idr").write <<~EOS
-        module Main
-        puts: String -> IO ()
-        puts x = foreign FFI_C "puts" (String -> IO ()) x
-        main : IO ()
-        main = puts "Hello, interpreter!"
-      EOS
+    (testpath/"ffi.idr").write <<~EOS
+      module Main
+      puts: String -> IO ()
+      puts x = foreign FFI_C "puts" (String -> IO ()) x
+      main : IO ()
+      main = puts "Hello, interpreter!"
+    EOS
 
-      system bin/"idris", "ffi.idr", "-o", "ffi"
-      assert_equal "Hello, interpreter!", shell_output("./ffi").chomp
-    end
+    system bin/"idris", "ffi.idr", "-o", "ffi"
+    assert_equal "Hello, interpreter!", shell_output("./ffi").chomp
   end
 end

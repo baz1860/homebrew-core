@@ -1,19 +1,20 @@
 class Telnetd < Formula
-  desc "TELNET server (built from macOS Sierra sources)"
+  desc "TELNET server"
   homepage "https://opensource.apple.com/"
-  url "https://opensource.apple.com/tarballs/remote_cmds/remote_cmds-54.50.1.tar.gz"
-  sha256 "156ddec946c81af1cbbad5cc6e601135245f7300d134a239cda45ff5efd75930"
+  url "https://github.com/apple-oss-distributions/remote_cmds/archive/refs/tags/remote_cmds-64.tar.gz"
+  sha256 "9beae91af0ac788227119c4ed17c707cd3bb3e4ed71422ab6ed230129cbb9362"
+  license all_of: ["BSD-4-Clause-UC", "BSD-3-Clause"]
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "491a7002f9649077f12835b8c94e22e240862cd48b833d80076de26b41399812" => :high_sierra
-    sha256 "933c4dcd343225ea93f09981bb7a92d152f0ad766214b4efd5fbbe8756a72873" => :sierra
-    sha256 "73e799af3062f0b86f86f34840bc2b6b82b0ac5d17d0b451ad52155182a69983" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "e0f71c7ca40e07b2d12cc1ebcb547960381088891b4800637752d29999e3fdca"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "e1227d7bf27eb7a58adac93e1a210a93c88d940dff07d48017d2858464ddc3b9"
+    sha256 cellar: :any_skip_relocation, monterey:       "70b9f81f506d83c50ba321e3920553aaeaa272c35ce798560afdd15da6e259a9"
+    sha256 cellar: :any_skip_relocation, big_sur:        "3fdf31a5dc2042a8ef17900ba7c2d7e87457d27fc656336b023f1b29caaaeac0"
+    sha256 cellar: :any_skip_relocation, catalina:       "5e463bafef10793f46d7c38905445a8a8d4141fac5f2ddfcb38710cc8b802210"
   end
 
-  keg_only :provided_pre_high_sierra
-
-  depends_on :xcode => :build
+  depends_on xcode: :build
+  depends_on :macos
 
   resource "libtelnet" do
     url "https://opensource.apple.com/tarballs/libtelnet/libtelnet-13.tar.gz"
@@ -22,20 +23,22 @@ class Telnetd < Formula
 
   def install
     resource("libtelnet").stage do
-      xcodebuild "SYMROOT=build"
+      xcodebuild "SYMROOT=build", "-arch", Hardware::CPU.arch
 
       libtelnet_dst = buildpath/"telnetd.tproj/build/Products"
       libtelnet_dst.install "build/Release/libtelnet.a"
       libtelnet_dst.install "build/Release/usr/local/include/libtelnet/"
     end
 
-    system "make",
-           "-C", "telnetd.tproj",
-           "OBJROOT=build/Intermediates",
-           "SYMROOT=build/Products",
-           "DSTROOT=build/Archive",
-           "CFLAGS=$(CC_Flags) -isystembuild/Products/",
-           "LDFLAGS=$(LD_Flags) -Lbuild/Products/"
+    ENV.append_to_cflags "-isystembuild/Products/"
+    system "make", "-C", "telnetd.tproj",
+                   "OBJROOT=build/Intermediates",
+                   "SYMROOT=build/Products",
+                   "DSTROOT=build/Archive",
+                   "CC=#{ENV.cc}",
+                   "CFLAGS=$(CC_Flags) #{ENV.cflags}",
+                   "LDFLAGS=$(LD_Flags) -Lbuild/Products/",
+                   "RC_ARCHS=#{Hardware::CPU.arch}"
 
     sbin.install "telnetd.tproj/build/Products/telnetd"
     man8.install "telnetd.tproj/telnetd.8"

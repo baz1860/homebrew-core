@@ -1,25 +1,28 @@
 require "language/node"
 
 class Jhipster < Formula
-  desc "Generate, develop and deploy Spring Boot + Angular applications"
-  homepage "https://jhipster.github.io/"
-  url "https://registry.npmjs.org/generator-jhipster/-/generator-jhipster-4.14.0.tgz"
-  sha256 "c7cec8c46c1df36fe3b8ed7b5ec7851f68f6ef6108a72d62aae8a3212cdd13dd"
+  desc "Generate, develop and deploy Spring Boot + Angular/React applications"
+  homepage "https://www.jhipster.tech/"
+  url "https://registry.npmjs.org/generator-jhipster/-/generator-jhipster-7.8.1.tgz"
+  sha256 "c39921657dc50a106e0533229492915304b30a85d647e9a65788e19546ed4ed0"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "18ca023b7f062c2ba2edd0c8fdff480c2fc2deb8aa346a8da41e672baa409c2d" => :high_sierra
-    sha256 "e7b863fe1915417f275db7907baf410b6d2a68e4f1bc58274c6902043359ad87" => :sierra
-    sha256 "fc6d13a469f8a19d86bce0ccee2b5b30d44cda085adebafb2a8a4433c8bceac8" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "27c1b3541a20bdab8d9351401eabdf18548afebc85f94af1fa82dbe841d445ba"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "27c1b3541a20bdab8d9351401eabdf18548afebc85f94af1fa82dbe841d445ba"
+    sha256 cellar: :any_skip_relocation, monterey:       "f250319b1919080ce509ff83066ea2483fa6a8359627b6f722a7a9bcd45c8c54"
+    sha256 cellar: :any_skip_relocation, big_sur:        "f250319b1919080ce509ff83066ea2483fa6a8359627b6f722a7a9bcd45c8c54"
+    sha256 cellar: :any_skip_relocation, catalina:       "f250319b1919080ce509ff83066ea2483fa6a8359627b6f722a7a9bcd45c8c54"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "27c1b3541a20bdab8d9351401eabdf18548afebc85f94af1fa82dbe841d445ba"
   end
 
   depends_on "node"
-  depends_on "yarn"
-  depends_on :java => "1.8+"
+  depends_on "openjdk"
 
   def install
     system "npm", "install", *Language::Node.std_npm_install_args(libexec)
-    bin.install_symlink Dir["#{libexec}/bin/*"]
+    bin.install Dir["#{libexec}/bin/*"]
+    bin.env_script_all_files libexec/"bin", Language::Java.overridable_java_home_env
   end
 
   test do

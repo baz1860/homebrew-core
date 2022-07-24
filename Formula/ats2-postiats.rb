@@ -1,14 +1,23 @@
 class Ats2Postiats < Formula
   desc "Programming language with formal specification features"
   homepage "http://www.ats-lang.org/"
-  url "https://downloads.sourceforge.net/project/ats2-lang/ats2-lang/ats2-postiats-0.3.9/ATS2-Postiats-0.3.9.tgz"
-  sha256 "c69a7c58964df26227e77656659129ca4c05205d2ebcacc7084edba818fb6e81"
+  url "https://downloads.sourceforge.net/project/ats2-lang/ats2-lang/ats2-postiats-0.4.2/ATS2-Postiats-0.4.2.tgz"
+  sha256 "51b8e75e62321f5e3e97d7996d605c46a90c6721b568b9b52fe00c19944134d3"
+  license "GPL-3.0-only"
+  revision 1
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/ATS2-Postiats[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "45a0f5428914af012b5292a062bf7af032d9955c49b66e4d12b638505b2ad03d" => :high_sierra
-    sha256 "305068e69e2519a2d1ecb212e7b3f32d22fc98932088c6d959fddb3c76cb2c73" => :sierra
-    sha256 "1a2f22aa7d162b238a171dcebe7d87675601ec8028638f3f5aec55eaba8838fc" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "bd07b22230211e0dd486209ccf7e4e370ae0f23cd651b57ad53ecd897143affd"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "9e1df17625267408944c93dc245b69d4d9fbbc94a2c61352d4ec1a23a88168e0"
+    sha256 cellar: :any_skip_relocation, monterey:       "ea6fbabe5daedb333244e591027f092c335a08ca202863df9ea045f36d983661"
+    sha256 cellar: :any_skip_relocation, big_sur:        "747125c30964abb7ad33c827104ca58fdacbba8010f19e3cbf9c0590d3b95734"
+    sha256 cellar: :any_skip_relocation, catalina:       "c6906922f37376e8edc668995c8cbbf965f0da4faa63940388f26bd3d0a455af"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "6a8f6e305de82f8adcdd01b2533de14fe9d9209d3cf9f0253ec64e5088dcc155"
   end
 
   depends_on "gmp"

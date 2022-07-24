@@ -1,46 +1,65 @@
 class Sdl2Mixer < Formula
   desc "Sample multi-channel audio mixer library"
-  homepage "https://www.libsdl.org/projects/SDL_mixer/"
-  url "https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-2.0.2.tar.gz"
-  sha256 "4e615e27efca4f439df9af6aa2c6de84150d17cbfd12174b54868c12f19c83bb"
-  revision 3
-  head "https://hg.libsdl.org/SDL_mixer", :using => :hg
+  homepage "https://github.com/libsdl-org/SDL_mixer"
+  url "https://github.com/libsdl-org/SDL_mixer/releases/download/release-2.6.0/SDL2_mixer-2.6.0.tar.gz"
+  sha256 "f94a4d3e878cb191c386a714be561838240012250fe17d496f4ff4341d59a391"
+  license "Zlib"
+
+  # This formula uses a file from a GitHub release, so we check the latest
+  # release version instead of Git tags.
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "294939d7e15b8e173e9d52dc2abfedec5c49d42f98a806db3fa5277f464202b1" => :high_sierra
-    sha256 "6551ecd136aa19fec2a6e6234f34da4a4ffe6d0a5ed2461e7e0cd184f76ba45e" => :sierra
-    sha256 "effd6b19570fca9ee6c57483f96cc87cc48fe308bc272a9dffee66e68c77a793" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "d6b6b29cc6681cc4007160f3cc6550bf93eb648802d12c0e3c051558bf4ce3b6"
+    sha256 cellar: :any,                 arm64_big_sur:  "6292ec831d3b011033d3d1c39b62416566bfcfe0765ebc6765434573b2717908"
+    sha256 cellar: :any,                 monterey:       "ae3440fea6ed195556c35d219f994fc9d1aa0a890f371ab92feecdf88089c70c"
+    sha256 cellar: :any,                 big_sur:        "596454b3f76224043a3fa5868759af52863db0e53786ea2c24f8ef6e9f569d9a"
+    sha256 cellar: :any,                 catalina:       "6f53dbfeecb85112c38ad1cb03b46096d00ee25feda58173ef63c8797cddf64d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3653463a39485ebd265e0ffa747d2bfe652ba7acec1bfe32782da62ac816494b"
+  end
+
+  head do
+    url "https://github.com/libsdl-org/SDL_mixer.git", branch: "main"
+
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
 
   depends_on "pkg-config" => :build
+  depends_on "flac"
   depends_on "libmodplug"
   depends_on "libvorbis"
+  depends_on "mpg123"
   depends_on "sdl2"
-  depends_on "flac" => :optional
-  depends_on "fluid-synth" => :optional
-  depends_on "libmikmod" => :optional
-  depends_on "mpg123" => :optional
 
   def install
     inreplace "SDL2_mixer.pc.in", "@prefix@", HOMEBREW_PREFIX
 
+    if build.head?
+      mkdir "build"
+      system "./autogen.sh"
+    end
+
     args = %W[
-      --prefix=#{prefix} --disable-dependency-tracking
-      --enable-music-ogg --disable-music-ogg-shared
+      --prefix=#{prefix}
+      --disable-dependency-tracking
+      --enable-music-flac
       --disable-music-flac-shared
+      --disable-music-midi-fluidsynth
       --disable-music-midi-fluidsynth-shared
       --disable-music-mod-mikmod-shared
-      --enable-music-mod-modplug
       --disable-music-mod-modplug-shared
-      --disable-music-mp3-smpeg
       --disable-music-mp3-mpg123-shared
+      --disable-music-ogg-shared
+      --enable-music-mod-mikmod
+      --enable-music-mod-modplug
+      --enable-music-ogg
+      --enable-music-mp3-mpg123
     ]
-
-    args << "--disable-music-flac" if build.without? "flac"
-    args << "--disable-music-midi-fluidsynth" if build.without? "fluid-synth"
-    args << "--enable-music-mod-mikmod" if build.with? "libmikmod"
-    args << "--disable-music-mp3-mpg123" if build.without? "mpg123"
 
     system "./configure", *args
     system "make", "install"
@@ -57,7 +76,8 @@ class Sdl2Mixer < Formula
           return success;
       }
     EOS
-    system ENV.cc, "-L#{lib}", "-lsdl2_mixer", "test.c", "-o", "test"
+    system ENV.cc, "-I#{Formula["sdl2"].opt_include}/SDL2",
+           "test.c", "-L#{lib}", "-lSDL2_mixer", "-o", "test"
     system "./test"
   end
 end

@@ -1,27 +1,35 @@
 class GupnpTools < Formula
   desc "Free replacements of Intel's UPnP tools"
   homepage "https://wiki.gnome.org/GUPnP/"
-  url "https://download.gnome.org/sources/gupnp-tools/0.8/gupnp-tools-0.8.14.tar.xz"
-  sha256 "682b952b3cf43818c7d27549c152ea52e43320500820ab3392cf5a29a95e7efa"
+  url "https://download.gnome.org/sources/gupnp-tools/0.10/gupnp-tools-0.10.3.tar.xz"
+  sha256 "457f4d923935b078415cd2ba88d78db60079b725926b7ee106e4565efe3204de"
+  license all_of: ["GPL-2.0-or-later", "LGPL-2.0-or-later"]
 
   bottle do
-    sha256 "f94a0481678341db562af6a1977d69649b458eddb62971d17c92af750e010931" => :high_sierra
-    sha256 "035592c93a08a17f3ead3010f656495b43ea17f4f2c535178e67070653d1daba" => :sierra
-    sha256 "efa1f750e2768d384a60680e53ac08fd549dc13c36625d96fd61bae36db31c10" => :el_capitan
+    sha256 arm64_monterey: "4a8eeaa71391a753f942f64f84a8f025b513e0252c773f7e819516323dfa7be9"
+    sha256 arm64_big_sur:  "4a89ac625c324da31a85f5c00a109dd40074da7546219596ed57ec640950f6f2"
+    sha256 monterey:       "01c141f24a86702b11699b6e4bd0544b0e0ecbc3a4bc5e8936603bcf383df8b0"
+    sha256 big_sur:        "1c0669b9521ee028984176288ebe98da99f05092da4e887d286317e39a9b1df4"
+    sha256 catalina:       "745c99c44c7aab8b7c609ee679d4867cda900468759ce3abbb2624222649af2e"
+    sha256 x86_64_linux:   "002c5f55aa4ac266d215a73ae4336dcab858f3aea5da1977b5c77e532d3699b7"
   end
 
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
   depends_on "gettext"
+  depends_on "gtk+3"
+  depends_on "gtksourceview4"
   depends_on "gupnp"
   depends_on "gupnp-av"
-  depends_on "gtk+3"
-  depends_on "gtksourceview3"
+  depends_on "libsoup@2"
 
   def install
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do

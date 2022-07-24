@@ -1,31 +1,29 @@
 class Afsctool < Formula
-  desc "Utility for manipulating HFS+ compressed files"
+  desc "Utility for manipulating APFS and ZFS compressed files"
   homepage "https://brkirch.wordpress.com/afsctool/"
-  url "https://docs.google.com/uc?export=download&id=0BwQlnXqL939ZQjBQNEhRQUo0aUk"
-  version "1.6.4"
-  sha256 "bb6a84370526af6ec1cee2c1a7199134806e691d1093f4aef060df080cd3866d"
-  revision 1
-
-  # Fixes Sierra "Unable to compress" issue; reported upstream on 24 July 2017
-  patch do
-    url "https://github.com/vfx01j/afsctool/commit/26293a3809c9ad1db5f9bff9dffaefb8e201a089.diff?full_index=1"
-    sha256 "a541526679eb5d2471b3f257dab6103300d950f7b2f9d49bbfeb9f27dfc48542"
-  end
+  url "https://github.com/RJVB/afsctool/archive/refs/tags/1.7.2.tar.gz"
+  sha256 "a0d01953e36a333c29369a126a81b905b70a5603533caeebc2f04bbd3aa1b0df"
+  license all_of: ["GPL-3.0-only", "BSL-1.0"]
+  head "https://github.com/RJVB/afsctool.git"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "8f1d0020beff7bcfd80530f69d29ca7f6bf053623c84a9957ef7dd5cd4fa3536" => :high_sierra
-    sha256 "7f11c9c16fb0f5f148fb80f1888cfa1053296e8f552b11cc196a6c3fcf0afade" => :sierra
-    sha256 "0751efedf08e3d0c4efed48861aaddf150bec2fdabc7099306f576a8c63c4971" => :el_capitan
-    sha256 "a05524c78e0153712e5a9d1a73fe70ed2e5f0e5e20a91ae38fedf9115d2e87a4" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "eb8354b43a3be62e15b67539367e0fc34fa818f56b758f5d8875811d1eb683d2"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "0ad2029644ef5a0597750a5ef27f4da1f04441a49c2b9da63cf9d75e342ecff7"
+    sha256 cellar: :any_skip_relocation, monterey:       "0a31f139ac8d56aa796446d6458f02a7a700d425e33e66824b407deeece709a9"
+    sha256 cellar: :any_skip_relocation, big_sur:        "4d4d08188fb559874d969a3e17ec43f3758f2f884db81a917cb839fa2da0d3b2"
+    sha256 cellar: :any_skip_relocation, catalina:       "699723059b23cd7c9b91df35a38d0f0d308c61dc6ee3bcadd18b893ace2c9757"
   end
 
+  depends_on "cmake" => :build
+  depends_on "google-sparsehash" => :build
+  depends_on "pkg-config" => :build
+  depends_on :macos
+
   def install
-    cd "afsctool_34" do
-      system ENV.cc, ENV.cflags, "-lz", "afsctool.c",
-                     "-framework", "CoreServices", "-o", "afsctool"
-      bin.install "afsctool"
-    end
+    system "cmake", ".", *std_cmake_args
+    system "cmake", "--build", "."
+    bin.install "afsctool"
+    bin.install "zfsctool"
   end
 
   test do
@@ -33,5 +31,8 @@ class Afsctool < Formula
     path.write "some text here."
     system "#{bin}/afsctool", "-c", path
     system "#{bin}/afsctool", "-v", path
+
+    system "#{bin}/zfsctool", "-c", path
+    system "#{bin}/zfsctool", "-v", path
   end
 end

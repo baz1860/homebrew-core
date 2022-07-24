@@ -1,19 +1,31 @@
 class Cproto < Formula
   desc "Generate function prototypes for functions in input files"
   homepage "https://invisible-island.net/cproto/"
-  url "https://invisible-mirror.net/archives/cproto/cproto-4.7m.tgz"
-  mirror "https://mirrors.kernel.org/debian/pool/main/c/cproto/cproto_4.7m.orig.tar.gz"
-  sha256 "4b482e80f1b492e94f8dcda74d25a7bd0381c870eb500c18e7970ceacdc07c89"
+  url "https://invisible-mirror.net/archives/cproto/cproto-4.7t.tgz"
+  mirror "https://deb.debian.org/debian/pool/main/c/cproto/cproto_4.7t.orig.tar.gz"
+  sha256 "3cce82a71687b69e0a3e23489fe825ba72e693e559ccf193395208ac0eb96fe5"
+  license all_of: [
+    :public_domain,
+    "MIT",
+    "GPL-3.0-or-later" => { with: "Autoconf-exception-3.0" },
+  ]
+
+  livecheck do
+    url "https://invisible-mirror.net/archives/cproto/"
+    regex(/href=.*?cproto[._-]v?(\d+(?:\.\d+)+[a-z]?)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "4f557a3b96ce60956b1fed9abc873f9bd844ca93492731db3971fd0ada78fa15" => :high_sierra
-    sha256 "4dcee9160c276855b7bd94235dc15e4d153c161b4f81f8a1e041fda8da5b4cc7" => :sierra
-    sha256 "21d0972269ad52cd7098b921f2500bb8bf827fabe1e0718c24fdfd2d844b7f7e" => :el_capitan
-    sha256 "4bd2276c002322ce4d28030d60c0858e1efd4311e0f9de5460917cc5b70bc362" => :yosemite
-    sha256 "a73eaa28daa6281fc987fb22b2bb50bd9962f4a4d4857e7371b8edf605822ca7" => :mavericks
-    sha256 "8eedeacb18a2f3316171a4646f2a7cd2ec993005fd3a930072fbbc9fbd76c598" => :mountain_lion
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "13b780ef3e9078c16847e134c3bf54ca9b8af8504b3cf5f4ed3bf493bad1493f"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "71bca925406cc678f69551bb66d465d44376bc1f1854aba91003218dae5cdadf"
+    sha256 cellar: :any_skip_relocation, monterey:       "6079a4a6df45f570734658bfda2197d6b9542a706cf0176f39be008f9e327a45"
+    sha256 cellar: :any_skip_relocation, big_sur:        "90f6050bc98803612e77e1464bdacd518fbbf0f62607508ab1018553f0d59713"
+    sha256 cellar: :any_skip_relocation, catalina:       "9f2cdd0ade5c49f112c2e87c5a18c9990805bc8447ad4e0350fafa26b08ac244"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2cac5bb9129add6096d8890380543218b9e8028566074e4239d7b0072d519f2d"
   end
+
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
 
   def install
     system "./configure", "--disable-debug",

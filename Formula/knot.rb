@@ -1,36 +1,43 @@
 class Knot < Formula
   desc "High-performance authoritative-only DNS server"
   homepage "https://www.knot-dns.cz/"
-  url "https://secure.nic.cz/files/knot-dns/knot-2.6.5.tar.xz"
-  sha256 "33cd676706e2baeb37cf3879ccbc91a1e1cd1ee5d7a082adff4d1e753ce49d46"
+  url "https://secure.nic.cz/files/knot-dns/knot-3.1.8.tar.xz"
+  sha256 "767e458a56277a1270b359294c3be6c63fd734884d62a045e01756a46507aa94"
+  license all_of: ["GPL-3.0-or-later", "0BSD", "BSD-3-Clause", "LGPL-2.0-or-later", "MIT"]
+
+  livecheck do
+    url "https://secure.nic.cz/files/knot-dns/"
+    regex(/href=.*?knot[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "d972c47af7dd0af6f6b993679fdad536a5608880f1e6a1c8be75aa60488ab1f1" => :high_sierra
-    sha256 "a08a3a161f845c3c3fdde06c62b2edaca3ba32610b9abffb51e28c1559709b4a" => :sierra
-    sha256 "1d24871eb07b2b143d310c2753406f33d19a21c79a0f7bea6afc60dadb706fdc" => :el_capitan
+    sha256 arm64_monterey: "2843f3ea9f5aafc680598a79bf786b64f455a4d6d57947cbb6b20b221506d5ab"
+    sha256 arm64_big_sur:  "bf7ab03d621deb91fa988611d46c8c90bbbfad7a901cf9ca291ad66feae779b0"
+    sha256 monterey:       "c875486df40331a4a4d7767b4a35d7a9278fadca5b0f6450c150dc864390d21c"
+    sha256 big_sur:        "7939327484b0a39f12fa9bb166794c18529db1a1e066b74bfe3dc718043ed971"
+    sha256 catalina:       "9d636fe56cfd264ead4e02588516d6eb3a9f7a361541c7ce8949b62b2963d88d"
+    sha256 x86_64_linux:   "eaa94c2574125bbf737e8a84ec6c1724070a59d8324ca1513ac171de56ad8023"
   end
 
   head do
     url "https://gitlab.labs.nic.cz/knot/knot-dns.git"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  # due to AT_REMOVEDIR
-  depends_on :macos => :yosemite
-
   depends_on "pkg-config" => :build
   depends_on "sphinx-doc" => :build
-  depends_on "gnutls"
-  depends_on "jansson"
-  depends_on "libidn"
-  depends_on "nettle"
-  depends_on "openssl"
-  depends_on "userspace-rcu"
-  depends_on "protobuf-c"
   depends_on "fstrm"
+  depends_on "gnutls"
+  depends_on "libidn2"
+  depends_on "libnghttp2"
+  depends_on "lmdb"
+  depends_on "protobuf-c"
+  depends_on "userspace-rcu"
+
+  uses_from_macos "libedit"
 
   def install
     system "autoreconf", "-fvi" if build.head?
@@ -40,13 +47,12 @@ class Knot < Formula
                           "--with-storage=#{var}/knot",
                           "--with-rundir=#{var}/run/knot",
                           "--prefix=#{prefix}",
-                          "--with-bash-completions=#{bash_completion}",
+                          "--with-module-dnstap",
                           "--enable-dnstap"
 
     inreplace "samples/Makefile", "install-data-local:", "disable-install-data-local:"
 
     system "make"
-    system "make", "check"
     system "make", "install"
     system "make", "install-singlehtml"
 
@@ -58,57 +64,36 @@ class Knot < Formula
     (var/"knot").mkpath
   end
 
-  def knot_conf; <<~EOS
-    server:
-      rundir: "#{var}/knot"
-      listen: [ "0.0.0.0@53", "::@53" ]
+  def knot_conf
+    <<~EOS
+      server:
+        rundir: "#{var}/knot"
+        listen: [ "0.0.0.0@53", "::@53" ]
 
-    log:
-      - target: "stderr"
-        any: "info"
+      log:
+        - target: "stderr"
+          any: "info"
 
-    control:
-      listen: "knot.sock"
+      control:
+        listen: "knot.sock"
 
-    template:
-      - id: "default"
-        storage: "#{var}/knot"
+      template:
+        - id: "default"
+          storage: "#{var}/knot"
     EOS
   end
 
-  plist_options :startup => true
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>EnableTransactions</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_sbin}/knotd</string>
-        <string>-c</string>
-        <string>#{etc}/knot.conf</string>
-      </array>
-      <key>StandardInPath</key>
-      <string>/dev/null</string>
-      <key>StandardOutPath</key>
-      <string>/dev/null</string>
-      <key>StandardErrorPath</key>
-      <string>#{var}/log/knot.log</string>
-    </dict>
-    </plist>
-    EOS
+  plist_options startup: true
+  service do
+    run opt_sbin/"knotd"
+    input_path "/dev/null"
+    log_path "/dev/null"
+    error_log_path var/"log/knot.log"
   end
 
   test do
     system bin/"kdig", "www.knot-dns.cz"
     system bin/"khost", "brew.sh"
-    system sbin/"knotc", "-c", etc/"knot.conf", "conf-check"
+    system sbin/"knotc", "conf-check"
   end
 end

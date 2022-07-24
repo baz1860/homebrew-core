@@ -1,57 +1,49 @@
 class Postgis < Formula
   desc "Adds support for geographic objects to PostgreSQL"
   homepage "https://postgis.net/"
-  url "https://download.osgeo.org/postgis/source/postgis-2.4.3.tar.gz"
-  sha256 "ea5374c5db6b645ba5628ddcb08f71d3b3d90a464d366b4e1d20d5a268bde4b9"
+  url "https://download.osgeo.org/postgis/source/postgis-3.2.1.tar.gz"
+  sha256 "fbab68dde6ca3934b24ba08c8ab0cff2594f57f93deab41a15c82ae1bb69893e"
+  license "GPL-2.0-or-later"
+  revision 5
+
+  livecheck do
+    url "https://download.osgeo.org/postgis/source/"
+    regex(/href=.*?postgis[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "1b3bc57b9ab2b9d9fc1aedb757bfec8e649f23da5cc8572bae8b5183d0239021" => :high_sierra
-    sha256 "af980db4cca9a02dbf1c2bcc92274a48e98bd2119779811a37a3d9f1e07b0eef" => :sierra
-    sha256 "cf9cfba0227e88332e0c2640caa87b5958efb63acedaacfa3fa153508187d087" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "1af079e34a2e4a2becfa5eed12e9300f3d320f3155d119671dce965a7a0ce278"
+    sha256 cellar: :any,                 arm64_big_sur:  "77e71bc31a5c2006bb7bb9b0cc2fec2c63eba5ec22a44bf8b4627fe881260571"
+    sha256 cellar: :any,                 monterey:       "05de01ea7cd23c574835ab54be6ae42fd10a0bd597fa52820b91f83e32fc1657"
+    sha256 cellar: :any,                 big_sur:        "37feb757f1256e15df2c4d9f647a42171cec604b56e8398ebe3a7d2fba1d1d2b"
+    sha256 cellar: :any,                 catalina:       "2147c60af3abf6d0a62fbf3c3c2867c92a69d30aa53b4a94a17f214620922c99"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5dd2180459ddba0c0656ea9884f2ca77e2ff155246f51f13018dae88215a4618"
   end
 
   head do
-    url "https://svn.osgeo.org/postgis/trunk/"
+    url "https://git.osgeo.org/gitea/postgis/postgis.git", branch: "master"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  option "with-gui", "Build shp2pgsql-gui in addition to command line tools"
-  option "without-gdal", "Disable postgis raster support"
-  option "with-html-docs", "Generate multi-file HTML documentation"
-  option "with-api-docs", "Generate developer API documentation (long process)"
-  option "with-protobuf-c", "Build with protobuf-c to enable Geobuf and Mapbox Vector Tile support"
-
-  depends_on "pkg-config" => :build
   depends_on "gpp" => :build
+  depends_on "pkg-config" => :build
+  depends_on "gdal" # for GeoJSON and raster handling
+  depends_on "geos"
+  depends_on "json-c" # for GeoJSON and raster handling
+  depends_on "pcre2"
   depends_on "postgresql"
   depends_on "proj"
-  depends_on "geos"
+  depends_on "protobuf-c" # for MVT (map vector tiles) support
+  depends_on "sfcgal" # for advanced 2D/3D functions
 
-  depends_on "gtk+" if build.with? "gui"
-
-  # For GeoJSON and raster handling
-  depends_on "json-c"
-  depends_on "gdal" => :recommended
-  depends_on "pcre" if build.with? "gdal"
-
-  # For advanced 2D/3D functions
-  depends_on "sfcgal" => :recommended
-
-  if build.with? "html-docs"
-    depends_on "imagemagick"
-    depends_on "docbook-xsl"
+  on_linux do
+    depends_on "gcc"
   end
 
-  if build.with? "api-docs"
-    depends_on "graphviz"
-    depends_on "doxygen"
-  end
-
-  depends_on "protobuf-c" => :optional
+  fails_with gcc: "5"
 
   def install
     ENV.deparallelize
@@ -60,6 +52,7 @@ class Postgis < Formula
       "--with-projdir=#{Formula["proj"].opt_prefix}",
       "--with-jsondir=#{Formula["json-c"].opt_prefix}",
       "--with-pgconfig=#{Formula["postgresql"].opt_bin}/pg_config",
+      "--with-protobufdir=#{Formula["protobuf-c"].opt_bin}",
       # Unfortunately, NLS support causes all kinds of headaches because
       # PostGIS gets all of its compiler flags from the PGXS makefiles. This
       # makes it nigh impossible to tell the buildsystem where our keg-only
@@ -67,40 +60,27 @@ class Postgis < Formula
       "--disable-nls",
     ]
 
-    args << "--with-gui" if build.with? "gui"
-    args << "--without-raster" if build.without? "gdal"
-    args << "--with-xsldir=#{Formula["docbook-xsl"].opt_prefix}/docbook-xsl" if build.with? "html-docs"
-    args << "--with-protobufdir=#{Formula["protobuf-c"].opt_bin}" if build.with? "protobuf-c"
-
     system "./autogen.sh" if build.head?
     system "./configure", *args
     system "make"
 
-    if build.with? "html-docs"
-      cd "doc" do
-        ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
-        system "make", "chunked-html"
-        doc.install "html"
-      end
-    end
-
-    if build.with? "api-docs"
-      cd "doc" do
-        system "make", "doxygen"
-        doc.install "doxygen/html" => "api"
-      end
-    end
-
+    # Install to a staging directory to circumvent the hardcoded install paths
+    # set by the PGXS makefiles.
     mkdir "stage"
     system "make", "install", "DESTDIR=#{buildpath}/stage"
 
-    bin.install Dir["stage/**/bin/*"]
-    lib.install Dir["stage/**/lib/*"]
-    include.install Dir["stage/**/include/*"]
-    (doc/"postgresql/extension").install Dir["stage/**/share/doc/postgresql/extension/*"]
-    (share/"postgresql/extension").install Dir["stage/**/share/postgresql/extension/*"]
-    pkgshare.install Dir["stage/**/contrib/postgis-*/*"]
-    (share/"postgis_topology").install Dir["stage/**/contrib/postgis_topology-*/*"]
+    # Some files are stored in the stage directory with the cellar prefix of
+    # the version of postgresql used to build postgis.  Since we copy these
+    # files into the postgis keg and symlink them to HOMEBREW_PREFIX, postgis
+    # only needs to be rebuilt when there is a new major version of postgresql.
+    postgresql_prefix = Formula["postgresql"].prefix.realpath
+    postgresql_stage_path = File.join("stage", postgresql_prefix)
+    bin.install (buildpath/postgresql_stage_path/"bin").children
+    doc.install (buildpath/postgresql_stage_path/"share/doc").children
+
+    stage_path = File.join("stage", HOMEBREW_PREFIX)
+    lib.install (buildpath/stage_path/"lib").children
+    share.install (buildpath/stage_path/"share").children
 
     # Extension scripts
     bin.install %w[
@@ -113,29 +93,14 @@ class Postgis < Formula
       utils/test_geography_joinestimation.pl
       utils/test_joinestimation.pl
     ]
-
-    man1.install Dir["doc/**/*.1"]
-  end
-
-  def caveats
-    <<~EOS
-      To create a spatially-enabled database, see the documentation:
-        https://postgis.net/docs/manual-2.4/postgis_installation.html#create_new_db_extensions
-      If you are currently using PostGIS 2.0+, you can go the soft upgrade path:
-        ALTER EXTENSION postgis UPDATE TO "#{version}";
-      Users of 1.5 and below will need to go the hard-upgrade path, see here:
-        https://postgis.net/docs/manual-2.4/postgis_installation.html#upgrading
-
-      PostGIS SQL scripts installed to:
-        #{opt_pkgshare}
-      PostGIS plugin libraries installed to:
-        #{HOMEBREW_PREFIX}/lib
-      PostGIS extension modules installed to:
-        #{HOMEBREW_PREFIX}/share/postgresql/extension
-      EOS
   end
 
   test do
+    pg_version = Formula["postgresql"].version.major
+    expected = /'PostGIS built for PostgreSQL % cannot be loaded in PostgreSQL %',\s+#{pg_version}\.\d,/
+    postgis_version = Formula["postgis"].version.major_minor
+    assert_match expected, (share/"postgresql/contrib/postgis-#{postgis_version}/postgis.sql").read
+
     require "base64"
     (testpath/"brew.shp").write ::Base64.decode64 <<~EOS
       AAAnCgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoOgDAAALAAAAAAAAAAAAAAAA
@@ -169,7 +134,7 @@ class Postgis < Formula
       igAAABI=
     EOS
     result = shell_output("#{bin}/shp2pgsql #{testpath}/brew.shp")
-    assert_match /Point/, result
-    assert_match /AddGeometryColumn/, result
+    assert_match "Point", result
+    assert_match "AddGeometryColumn", result
   end
 end

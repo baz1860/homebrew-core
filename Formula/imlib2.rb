@@ -1,37 +1,36 @@
 class Imlib2 < Formula
   desc "Image loading and rendering library"
   homepage "https://sourceforge.net/projects/enlightenment/"
-  url "https://downloads.sourceforge.net/project/enlightenment/imlib2-src/1.4.10/imlib2-1.4.10.tar.bz2"
-  sha256 "3f698cd285cbbfc251c1d6405f249b99fafffafa5e0a5ecf0ca7ae49bbc0a272"
-  revision 1
+  url "https://downloads.sourceforge.net/project/enlightenment/imlib2-src/1.9.1/imlib2-1.9.1.tar.gz"
+  sha256 "c319292f5bcab33b91bffaa6f7b0842f9e2d1b90df6c9a2a39db4f24d538b35b"
+  license "Imlib2"
 
   bottle do
-    rebuild 1
-    sha256 "b4ca64f45e433cfa1779ed0a8616f2b8130d63b8e15796dea55ff390cbeaff46" => :high_sierra
-    sha256 "8ee074fbc1fa4ec9b48151518cc4dcfaf02ad15a9001288f636d94684e7172a1" => :sierra
-    sha256 "139bf652a1e3b056f9100d33adeab3a576cd87cc86e7d7566cf1acadd8638fda" => :el_capitan
-    sha256 "c817b22453401f614d195af1009aaa3a94d0e5c08db2d4ef34cf76a1c74720b5" => :yosemite
+    sha256 arm64_monterey: "296de1a8aa74eaca3f8f7eba32d8d34152aa02f56cb30c36c5008c9076aef3fe"
+    sha256 arm64_big_sur:  "153b96c3fc1fe5e69e9cb473b9e5b8561dab9d84b33291fce1bb4cd1ba794cd8"
+    sha256 monterey:       "1cdde4e46948424b4cfc8d9913ed43f28245e72fb3f507ea2aaac9d2f3b37d43"
+    sha256 big_sur:        "9b86cac71be3a227b3ae6b54ff7818a304bce206c20a5d7d4ea1a397ce635255"
+    sha256 catalina:       "b81a47752d753827da8ef5f67257a1fbd8a87047ebba869b4d22dc420a4fd06e"
+    sha256 x86_64_linux:   "d39b5dce347d1b8bdfb1bf0384b1d37fc4f393bac3cdb6ce722e448319764ec8"
   end
-
-  deprecated_option "without-x" => "without-x11"
 
   depends_on "pkg-config" => :build
   depends_on "freetype"
-  depends_on "libpng" => :recommended
-  depends_on "jpeg" => :recommended
-  depends_on "giflib" => :recommended
-  depends_on "libtiff" => :recommended
-  depends_on "libid3tag" => :optional
-  depends_on :x11 => :recommended
+  depends_on "giflib"
+  depends_on "jpeg"
+  depends_on "libpng"
+  depends_on "libtiff"
+  depends_on "libx11"
+  depends_on "libxcb"
+  depends_on "libxext"
 
   def install
     args = %W[
       --disable-dependency-tracking
       --prefix=#{prefix}
       --enable-amd64=no
+      --without-id3
     ]
-    args << "--without-x" if build.without? "x11"
-    args << "--without-id3" if build.without? "libid3tag"
 
     system "./configure", *args
     system "make", "install"

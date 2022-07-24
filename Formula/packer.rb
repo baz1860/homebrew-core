@@ -1,48 +1,34 @@
 class Packer < Formula
   desc "Tool for creating identical machine images for multiple platforms"
   homepage "https://packer.io"
-  url "https://github.com/hashicorp/packer.git",
-      :tag => "v1.2.1",
-      :revision => "0b740f508f4f9b63442879a8c8f7a197b9a83dc1"
-  head "https://github.com/hashicorp/packer.git"
+  url "https://github.com/hashicorp/packer/archive/v1.8.2.tar.gz"
+  sha256 "aa14a0a53d4f06331d556dca6bd6d10dcbbac538061bf5c1a7888311ef5572f0"
+  license "MPL-2.0"
+  head "https://github.com/hashicorp/packer.git", branch: "main"
+
+  livecheck do
+    url "https://releases.hashicorp.com/packer/"
+    regex(%r{href=.*?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "10ed514ee743fea1d39e8d0684ea930a65969f2ce9b2f2bb87a7eb51df534989" => :high_sierra
-    sha256 "8334e14b29ce519ec92d741de6ab936163228a782c8cfaf388bbc0b9b777cee9" => :sierra
-    sha256 "58b198bc7b759cd9c3493f4095ca45ad007b2712f37b4684c115ca5764b79bed" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a54982fe5bb4c6d5cf543d425389f83fa318776ed236a399e709b20f319cdf98"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "bbf39fb83ad1296979d6a11c9bf167d6316e20a6a49316310a5a0157e75ed3a5"
+    sha256 cellar: :any_skip_relocation, monterey:       "f8a0663aacc5eb8c7c0c0ee755ede4de91249c77049cdefce8765c15241fb4b3"
+    sha256 cellar: :any_skip_relocation, big_sur:        "fd9bf699d687d18eaf5ee7210f367395a2609588af7773ad752f1c6f304cbc5d"
+    sha256 cellar: :any_skip_relocation, catalina:       "d58410e68c44b6653cbdea1d1d2525b51401489a941dcd79551615bb2324928e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "cb2e7376f606050ea184dedd2093f9fa64a0eb5a6655531490172e413c173a96"
   end
 
   depends_on "go" => :build
-  depends_on "govendor" => :build
-  depends_on "gox" => :build
 
   def install
-    ENV["XC_OS"] = "darwin"
-    ENV["XC_ARCH"] = MacOS.prefer_64_bit? ? "amd64" : "386"
-    ENV["GOPATH"] = buildpath
+    system "go", "build", *std_go_args(ldflags: "-s -w")
 
-    packerpath = buildpath/"src/github.com/hashicorp/packer"
-    packerpath.install Dir["{*,.git}"]
+    # Allow packer to find plugins in Homebrew prefix
+    bin.env_script_all_files libexec/"bin", PACKER_PLUGIN_PATH: "$PACKER_PLUGIN_PATH:#{HOMEBREW_PREFIX/"bin"}"
 
-    cd packerpath do
-      # Avoid running `go get`
-      inreplace "Makefile" do |s|
-        s.gsub! "go get github.com/mitchellh/gox", ""
-        s.gsub! "go get golang.org/x/tools/cmd/stringer", ""
-        s.gsub! "go get github.com/kardianos/govendor", ""
-      end
-
-      (buildpath/"bin").mkpath
-      if build.head?
-        system "make", "bin"
-      else
-        system "make", "releasebin"
-      end
-      bin.install buildpath/"bin/packer"
-      zsh_completion.install "contrib/zsh-completion/_packer"
-      prefix.install_metafiles
-    end
+    zsh_completion.install "contrib/zsh-completion/_packer"
   end
 
   test do
@@ -66,6 +52,6 @@ class Packer < Formula
         }]
       }
     EOS
-    system "#{bin}/packer", "validate", minimal
+    system "#{bin}/packer", "validate", "-syntax-only", minimal
   end
 end

@@ -2,51 +2,60 @@ class Sfml < Formula
   # Don't update SFML until there's a corresponding CSFML release
   desc "Multi-media library with bindings for multiple languages"
   homepage "https://www.sfml-dev.org/"
-  url "https://www.sfml-dev.org/files/SFML-2.4.2-sources.zip"
-  sha256 "8ba04f6fde6a7b42527d69742c49da2ac529354f71f553409f9f821d618de4b6"
+  url "https://www.sfml-dev.org/files/SFML-2.5.1-sources.zip"
+  sha256 "bf1e0643acb92369b24572b703473af60bac82caf5af61e77c063b779471bb7f"
+  license "Zlib"
   revision 1
-  head "https://github.com/SFML/SFML.git"
+  head "https://github.com/SFML/SFML.git", branch: "master"
 
   bottle do
-    cellar :any
     rebuild 1
-    sha256 "ed02627dfaff55b60f9271379256d99adfb010df3f4842b0e33fd366eb62df6e" => :high_sierra
-    sha256 "76c3949dad4b907b87d219f10eb2dae44d43cb76963a083f70935f138832d13c" => :sierra
-    sha256 "976560145b126bd482696148767f333ceda470d847064a5682abcd5c329937bd" => :el_capitan
-    sha256 "43dbf56a522f7bce55db7e5354ee0810b7abad63b97178a1ed7a73356c52577c" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "1c47115d6352b6c60d3d99630532107ee64aa55d1e4f0c0e4cb5da969c6e99fb"
+    sha256 cellar: :any,                 arm64_big_sur:  "ef472896cd55333ffe21c531b3edb055e487f5a675174feacfa6e02269877a6d"
+    sha256 cellar: :any,                 monterey:       "62789446ecdd1939ae40c7a793c5089d44a945245b7169c66c0423e5e76c845d"
+    sha256 cellar: :any,                 big_sur:        "3b8efaafe447f0f3a218eb81a65d92715c35e3a703373256031cb0c3d9d21084"
+    sha256 cellar: :any,                 catalina:       "12898a75c1d21de54fef1ca9c42c2d115d30ffcc9d7b10546c9c8d7428b467fa"
+    sha256 cellar: :any,                 mojave:         "c45c383d9e0049ad94cbadb1f5bdd7b870bb01a9cdc8804f495e3ac48e8955d3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "35d1a87aeb3e38917032e7cd318742cbe3edc159deb39cfe70534c9ff149d7a1"
   end
 
   depends_on "cmake" => :build
-  depends_on "doxygen" => :optional
+  depends_on "doxygen" => :build
   depends_on "flac"
   depends_on "freetype"
-  depends_on "jpeg"
   depends_on "libogg"
   depends_on "libvorbis"
-  depends_on "openal-soft" => :optional
 
-  # https://github.com/Homebrew/homebrew/issues/40301
-  depends_on :macos => :lion
+  on_linux do
+    depends_on "libx11"
+    depends_on "libxrandr"
+    depends_on "mesa"
+    depends_on "mesa-glu"
+    depends_on "openal-soft"
+    depends_on "systemd"
+  end
 
   def install
-    # Install pkg-config files, adding the CMake flag below isn't enough, as
-    # the CMakeLists.txt file currently doesn't consider MacOS X.
-    # This was fixed upstream for the future 2.5.0 release on 2016-12-19 in:
-    # https://github.com/SFML/SFML/commit/5fe5e5d6d7792e37685a437551ffa8ed5161fcc1
-    inreplace "CMakeLists.txt",
-              "if(SFML_OS_LINUX OR SFML_OS_FREEBSD)",
-              "if(SFML_OS_LINUX OR SFML_OS_FREEBSD OR SFML_OS_MACOSX)"
-
-    args = std_cmake_args << "-DSFML_INSTALL_PKGCONFIG_FILES=TRUE"
-    args << "-DSFML_BUILD_DOC=TRUE" if build.with? "doxygen"
+    # Fix "fatal error: 'os/availability.h' file not found" on 10.11 and
+    # "error: expected function body after function declarator" on 10.12
+    # Requires the CLT to be the active developer directory if Xcode is installed
+    ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version <= :sierra
 
     # Always remove the "extlibs" to avoid install_name_tool failure
     # (https://github.com/Homebrew/homebrew/pull/35279) but leave the
     # headers that were moved there in https://github.com/SFML/SFML/pull/795
     rm_rf Dir["extlibs/*"] - ["extlibs/headers"]
 
-    system "cmake", ".", *args
-    system "make", "install"
+    args = ["-DCMAKE_INSTALL_RPATH=#{opt_lib}",
+            "-DSFML_MISC_INSTALL_PREFIX=#{share}/SFML",
+            "-DSFML_INSTALL_PKGCONFIG_FILES=TRUE",
+            "-DSFML_BUILD_DOC=TRUE"]
+
+    args << "-DSFML_USE_SYSTEM_DEPS=ON" if OS.linux?
+
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
@@ -57,8 +66,8 @@ class Sfml < Formula
         return 0;
       }
     EOS
-    system ENV.cxx, "-I#{include}/SFML/System", "-L#{lib}", "-lsfml-system",
-           testpath/"test.cpp", "-o", "test"
+    system ENV.cxx, "-I#{include}/SFML/System", testpath/"test.cpp",
+           "-L#{lib}", "-lsfml-system", "-o", "test"
     system "./test"
   end
 end

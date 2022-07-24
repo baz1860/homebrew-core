@@ -1,27 +1,27 @@
 class Kafka < Formula
-  desc "Publish-subscribe messaging rethought as a distributed commit log"
+  desc "Open-source distributed event streaming platform"
   homepage "https://kafka.apache.org/"
-  url "https://www.apache.org/dyn/closer.cgi?path=/kafka/1.0.0/kafka_2.12-1.0.0.tgz"
-  mirror "https://archive.apache.org/dist/kafka/1.0.0/kafka_2.12-1.0.0.tgz"
-  sha256 "d5b1d00752252d9c129e9284f26f8280e9899dd374167f257e29d5346eb544b3"
+  url "https://www.apache.org/dyn/closer.lua?path=kafka/3.2.0/kafka_2.13-3.2.0.tgz"
+  mirror "https://archive.apache.org/dist/kafka/3.2.0/kafka_2.13-3.2.0.tgz"
+  sha256 "cf1599bf4d1e235fb5772f74642fc66643b9ba0749694fbc75299e38a5ced63b"
+  license "Apache-2.0"
+
+  livecheck do
+    url "https://kafka.apache.org/downloads"
+    regex(/href=.*?kafka[._-]v?\d+(?:\.\d+)+-(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "b7cf01a3db765e85c0cc38399348822e7f628c43c36561d42fa241f119c5b0f3" => :high_sierra
-    sha256 "b7cf01a3db765e85c0cc38399348822e7f628c43c36561d42fa241f119c5b0f3" => :sierra
-    sha256 "b7cf01a3db765e85c0cc38399348822e7f628c43c36561d42fa241f119c5b0f3" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a9952d0b9669f253332aba682afbcc9580cecef33bd00eb2b73fdd04e9d6a535"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "a9952d0b9669f253332aba682afbcc9580cecef33bd00eb2b73fdd04e9d6a535"
+    sha256 cellar: :any_skip_relocation, monterey:       "c540696b2edfa9d39bb0c422c4f5c4bc6c5554fb3bdd43ab2ce7785ec8d81277"
+    sha256 cellar: :any_skip_relocation, big_sur:        "c540696b2edfa9d39bb0c422c4f5c4bc6c5554fb3bdd43ab2ce7785ec8d81277"
+    sha256 cellar: :any_skip_relocation, catalina:       "c540696b2edfa9d39bb0c422c4f5c4bc6c5554fb3bdd43ab2ce7785ec8d81277"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a9952d0b9669f253332aba682afbcc9580cecef33bd00eb2b73fdd04e9d6a535"
   end
 
+  depends_on "openjdk"
   depends_on "zookeeper"
-  depends_on :java => "1.8"
-
-  # Related to https://issues.apache.org/jira/browse/KAFKA-2034
-  # Since Kafka does not currently set the source or target compability version inside build.gradle
-  # if you do not have Java 1.8 installed you cannot used the bottled version of Kafka
-  pour_bottle? do
-    reason "The bottle requires Java 1.8."
-    satisfy { quiet_system("/usr/libexec/java_home --version 1.8 --failfast") }
-  end
 
   def install
     data = var/"lib"
@@ -37,7 +37,7 @@ class Kafka < Formula
     libexec.install "libs"
 
     prefix.install "bin"
-    bin.env_script_all_files(libexec/"bin", Language::Java.java_home_env("1.8"))
+    bin.env_script_all_files(libexec/"bin", Language::Java.java_home_env)
     Dir["#{bin}/*.sh"].each { |f| mv f, f.to_s.gsub(/.sh$/, "") }
 
     mv "config", "kafka"
@@ -48,33 +48,12 @@ class Kafka < Formula
     (var+"log/kafka").mkpath
   end
 
-  plist_options :manual => "zookeeper-server-start #{HOMEBREW_PREFIX}/etc/kafka/zookeeper.properties & kafka-server-start #{HOMEBREW_PREFIX}/etc/kafka/server.properties"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_bin}/kafka-server-start</string>
-            <string>#{etc}/kafka/server.properties</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/kafka/kafka_output.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/kafka/kafka_output.log</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"kafka-server-start", etc/"kafka/server.properties"]
+    keep_alive true
+    working_dir HOMEBREW_PREFIX
+    log_path var/"log/kafka/kafka_output.log"
+    error_log_path var/"log/kafka/kafka_output.log"
   end
 
   test do
@@ -86,29 +65,44 @@ class Kafka < Formula
     inreplace "#{testpath}/kafka/zookeeper.properties", "#{var}/lib", testpath
     inreplace "#{testpath}/kafka/server.properties", "#{var}/lib", testpath
 
+    zk_port = free_port
+    kafka_port = free_port
+    inreplace "#{testpath}/kafka/zookeeper.properties", "clientPort=2181", "clientPort=#{zk_port}"
+    inreplace "#{testpath}/kafka/server.properties" do |s|
+      s.gsub! "zookeeper.connect=localhost:2181", "zookeeper.connect=localhost:#{zk_port}"
+      s.gsub! "#listeners=PLAINTEXT://:9092", "listeners=PLAINTEXT://:#{kafka_port}"
+    end
+
     begin
       fork do
-        exec "#{bin}/zookeeper-server-start #{testpath}/kafka/zookeeper.properties > #{testpath}/test.zookeeper-server-start.log 2>&1"
+        exec "#{bin}/zookeeper-server-start #{testpath}/kafka/zookeeper.properties " \
+             "> #{testpath}/test.zookeeper-server-start.log 2>&1"
       end
 
       sleep 15
 
       fork do
-        exec "#{bin}/kafka-server-start #{testpath}/kafka/server.properties > #{testpath}/test.kafka-server-start.log 2>&1"
+        exec "#{bin}/kafka-server-start #{testpath}/kafka/server.properties " \
+             "> #{testpath}/test.kafka-server-start.log 2>&1"
       end
 
       sleep 30
 
-      system "#{bin}/kafka-topics --zookeeper localhost:2181 --create --if-not-exists --replication-factor 1 --partitions 1 --topic test > #{testpath}/kafka/demo.out 2>/dev/null"
-      pipe_output("#{bin}/kafka-console-producer --broker-list localhost:9092 --topic test 2>/dev/null", "test message")
-      system "#{bin}/kafka-console-consumer --zookeeper localhost:2181 --topic test --from-beginning --max-messages 1 >> #{testpath}/kafka/demo.out 2>/dev/null"
-      system "#{bin}/kafka-topics --zookeeper localhost:2181 --delete --topic test >> #{testpath}/kafka/demo.out 2>/dev/null"
+      system "#{bin}/kafka-topics --bootstrap-server localhost:#{kafka_port} --create --if-not-exists " \
+             "--replication-factor 1 --partitions 1 --topic test > #{testpath}/kafka/demo.out " \
+             "2>/dev/null"
+      pipe_output "#{bin}/kafka-console-producer --bootstrap-server localhost:#{kafka_port} --topic test 2>/dev/null",
+                  "test message"
+      system "#{bin}/kafka-console-consumer --bootstrap-server localhost:#{kafka_port} --topic test " \
+             "--from-beginning --max-messages 1 >> #{testpath}/kafka/demo.out 2>/dev/null"
+      system "#{bin}/kafka-topics --bootstrap-server localhost:#{kafka_port} --delete --topic test " \
+             ">> #{testpath}/kafka/demo.out 2>/dev/null"
     ensure
       system "#{bin}/kafka-server-stop"
       system "#{bin}/zookeeper-server-stop"
       sleep 10
     end
 
-    assert_match /test message/, IO.read("#{testpath}/kafka/demo.out")
+    assert_match(/test message/, File.read("#{testpath}/kafka/demo.out"))
   end
 end

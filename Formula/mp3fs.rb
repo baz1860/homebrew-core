@@ -1,30 +1,47 @@
 class Mp3fs < Formula
   desc "Read-only FUSE file system: transcodes audio formats to MP3"
   homepage "https://khenriks.github.io/mp3fs/"
-  url "https://github.com/khenriks/mp3fs/releases/download/v0.91/mp3fs-0.91.tar.gz"
-  sha256 "a47b5e351b7660e6f535a3c5b489c5a8191209957f8c0b8d066a5c221e8ecf92"
+  url "https://github.com/khenriks/mp3fs/releases/download/v1.1.1/mp3fs-1.1.1.tar.gz"
+  sha256 "942b588fb623ea58ce8cac8844e6ff2829ad4bc9b4c163bba58e3fa9ebc15608"
+  license "GPL-3.0-or-later"
+  revision 2
 
   bottle do
-    cellar :any
-    sha256 "7eec592abb48a4e5acb0b77ba4138b0e2ce8c01817dadf9ace35cdbbcfdd5ea5" => :high_sierra
-    sha256 "e711d5da3c4c5f838911938bf5a5e8b754ffacae41c8824caa1ea0576d194718" => :sierra
-    sha256 "ac57948842d987524def18895ffe171aaf036e4503315c64eb5152003f67027b" => :el_capitan
-    sha256 "a1f89f74c8de87c9559fe1dc2f26ec0af5ee5d9d60d1f8962f6eaa1af243f25b" => :yosemite
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "b47a2250f894f7a92d828e26cdc0cb9f67e8ee9720c6af30e47cd03e8512f062"
   end
 
   depends_on "pkg-config" => :build
+  depends_on "flac"
   depends_on "lame"
   depends_on "libid3tag"
-  depends_on "flac"
-  depends_on :osxfuse
+  depends_on "libvorbis"
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse@2"
+  end
 
   def install
-    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
+    system "./configure", *std_configure_args
     system "make", "install"
   end
 
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
+
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
+  end
+
   test do
-    assert_match /mp3fs version: #{Regexp.escape(version)}/,
-                 shell_output("#{bin}/mp3fs -V")
+    assert_match "mp3fs version: #{version}", shell_output("#{bin}/mp3fs -V")
   end
 end

@@ -1,15 +1,17 @@
 class Roll < Formula
   desc "CLI program for rolling a dice sequence"
   homepage "https://matteocorti.github.io/roll/"
-  url "https://github.com/matteocorti/roll/releases/download/v2.1.1/roll-2.1.1.tar.gz"
-  sha256 "5d499c690d30cbe93dc571eb8e3f11d1505ce4595c8151646777548ef89a7997"
+  url "https://github.com/matteocorti/roll/releases/download/v2.6.1/roll-2.6.1.tar.gz"
+  sha256 "399bd4958d92f82fb75ff308decb2d482c9a8db80234014f6d42f6513b144179"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "7b7feb2bbfc8c8b9fe26f5f0403353da6edc3d61d0e885b6f70c69a59a0b8c2c" => :high_sierra
-    sha256 "bf42fe63830aa9b363962c6cfbdeb79065cad24b70b32710dfe0eaefe47a1dfc" => :sierra
-    sha256 "67d9f2bfdfa266bcc01a76b494eb9d897f0a9385f9ae4d9dd12783ec675b8e99" => :el_capitan
-    sha256 "018dc40d3339a486b49401fa7ba43fae3c27879dbec29c3fbea73cc64c51f647" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "3a8e1ac1b898c674f5a752ca03e7952d011f7b115529d3ab1f92f745392ecfe4"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "14b4457a32902e96d331fca1fd85fbbf3d5f515914091da2c61dec741bf3d73b"
+    sha256 cellar: :any_skip_relocation, monterey:       "6f3f061734bc251d233b72aa805dc1cc3d7865e276c3e3c6c75854686ac06fdb"
+    sha256 cellar: :any_skip_relocation, big_sur:        "123c5c66e945afdfac73b0cf5b553df895c8b03ac22c32124ab6ff98e52e3478"
+    sha256 cellar: :any_skip_relocation, catalina:       "c62fd4ce38c97e3f2a41203420feda3601359815a4cf20a6d68e3a9aa37bdcf2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e98554d4358ec561afd285196543baf10606cfcb0a6b842ba4949cf7b477894d"
   end
 
   head do

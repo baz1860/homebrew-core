@@ -1,23 +1,43 @@
 class Xrootd < Formula
   desc "High performance, scalable, fault-tolerant access to data"
-  homepage "http://xrootd.org"
-  url "http://xrootd.org/download/v4.8.1/xrootd-4.8.1.tar.gz"
-  sha256 "edee2673d941daf7a6e5c963d339d4a69b4db5c4b6f77b4548b3129b42198029"
-  head "https://github.com/xrootd/xrootd.git"
+  homepage "https://xrootd.slac.stanford.edu/"
+  url "https://xrootd.slac.stanford.edu/download/v5.4.3/xrootd-5.4.3.tar.gz"
+  sha256 "2d58210161ef61fabad7c86a038f2ef71c2ba1a0e782fcb6b8c92a1ba5f2a2b3"
+  license "LGPL-3.0-or-later"
+  head "https://github.com/xrootd/xrootd.git", branch: "master"
+
+  livecheck do
+    url "https://xrootd.slac.stanford.edu/dload.html"
+    regex(/href=.*?xrootd[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "17fd0df59c94f95e6c849c62155527a1cc61b14c1324c35e424175bd7847c49d" => :high_sierra
-    sha256 "a9cf8e475ec61737b216d287354d9f953f66e6ed2e0ef2af71476bb37374b306" => :sierra
-    sha256 "76ce93c37b9d8543816c985b32c8c9a9d519815891e42f909d040a35c70f9fb4" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "081154adf4c5367d22755db6cf6e3176032a611c277953abde1bd1e4693078bc"
+    sha256 cellar: :any,                 arm64_big_sur:  "55dbcea7a5f8ac03ff3f04358006dc20cd182591569fd5d1617776b2d4a71aed"
+    sha256 cellar: :any,                 monterey:       "823cf1ec31a5703948c43a900a1670523308fbccb0f99c152066971ec2c52ee7"
+    sha256 cellar: :any,                 big_sur:        "5a522c694b8fc5de0b9f60268ddebfd7eb80785c5ef50fa2df714a6f27394ac2"
+    sha256 cellar: :any,                 catalina:       "2a95ac777ed1a5b4ee9fcee3e095024f4b5a3d587ca6961788bf10e5bf2827f2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c278ef074bee0cf1f54aececf039097819722a7494c13b5c2dfbf8d7afb0ec2a"
   end
 
   depends_on "cmake" => :build
-  depends_on "openssl"
+  depends_on "openssl@1.1"
+  depends_on "readline"
+
+  uses_from_macos "libxcrypt"
+  uses_from_macos "libxml2"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "util-linux"
+  end
 
   def install
     mkdir "build" do
-      system "cmake", "..", *std_cmake_args
+      system "cmake", "..", *std_cmake_args,
+                            "-DENABLE_PYTHON=OFF",
+                            "-DCMAKE_INSTALL_RPATH=#{rpath}"
       system "make", "install"
     end
   end

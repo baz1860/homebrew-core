@@ -1,38 +1,48 @@
 class Mydumper < Formula
   desc "How MySQL DBA & support engineer would imagine 'mysqldump' ;-)"
   homepage "https://launchpad.net/mydumper"
-  url "https://launchpad.net/mydumper/0.9/0.9.1/+download/mydumper-0.9.1.tar.gz"
-  sha256 "aefab5dc4192acb043d685b6bb952c87557fbea5e083b8547c68ccfec878171f"
+  url "https://github.com/mydumper/mydumper/archive/v0.12.5-3.tar.gz"
+  sha256 "2fc5af9643a27eaca0a2ab37ba11ccac4d82f20bd8a9c14c886961453aafdf24"
+  license "GPL-3.0-or-later"
 
   bottle do
-    cellar :any
-    sha256 "c89dcb48858188c3d4bf61bed5691199cf6c58a7574770836c13a05a0fb237e2" => :high_sierra
-    sha256 "29b94d510931602a7b0f26eabc3f256b59b79af7d0fff2c42024c8912b60d1af" => :sierra
-    sha256 "8dcd810f09fe2e8acaa447db3ed5557c7f15d49cb1f448b366d2bd9ab0bc13a1" => :el_capitan
-    sha256 "884224a200374ef892c40f844ef4f85bc33345a1ccd7387575deac52d2de8387" => :yosemite
-    sha256 "a2faa115d33c1029d49eb1dd684bc52b069d9df9bc6efb59bd21bd50cd8a4491" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "e5599dca1e1ab5f7f591c8f6e3e286561065925c8413df446c1a497c34e3fa31"
+    sha256 cellar: :any,                 arm64_big_sur:  "02678d600f5e9f5b61c97f86257b17bd4ffeb16036b1f7018fbb14a09d506aee"
+    sha256 cellar: :any,                 monterey:       "5abc3e7f947d591430d659bf00126e37e6ab10865e25102dc3e64d71814eaa5a"
+    sha256 cellar: :any,                 big_sur:        "38c194f3ee2c16d038ad3f8d0201941d88ad31aa17b9003623b9e4a652fbcab3"
+    sha256 cellar: :any,                 catalina:       "d596ebed1de4da2c66302bf26edfbafae0154bfd911b5909d142e12469f80eb5"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f348f0a1ab90a7579da2ae42482b2013bdee1e859d7e690283216a7809ac62b7"
   end
-
-  option "without-docs", "Don't build man pages"
 
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
-  depends_on "sphinx-doc" => :build if build.with? "docs"
+  depends_on "sphinx-doc" => :build
   depends_on "glib"
-  depends_on "mysql"
+  depends_on "mysql-client"
+  depends_on "openssl@1.1"
   depends_on "pcre"
-  depends_on "openssl"
 
-  # This patch allows cmake to find .dylib shared libs in macOS. A bug report has
-  # been filed upstream here: https://bugs.launchpad.net/mydumper/+bug/1517966
-  # It also ignores .a libs because of an issue with glib's static libraries now
-  # being included by default in homebrew.
-  patch :p0, :DATA
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
-    args = std_cmake_args
-
-    args << "-DBUILD_DOCS=OFF" if build.without? "docs"
+    # Override location of mysql-client
+    args = std_cmake_args + %W[
+      -DMYSQL_CONFIG_PREFER_PATH=#{Formula["mysql-client"].opt_bin}
+      -DMYSQL_LIBRARIES=#{Formula["mysql-client"].opt_lib/shared_library("libmysqlclient")}
+    ]
+    # find_package(ZLIB) has trouble on Big Sur since physical libz.dylib
+    # doesn't exist on the filesystem.  Instead provide details ourselves:
+    if OS.mac?
+      args << "-DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=1"
+      args << "-DZLIB_INCLUDE_DIRS=/usr/include"
+      args << "-DZLIB_LIBRARIES=-lz"
+    end
 
     system "cmake", ".", *args
     system "make", "install"
@@ -42,16 +52,3 @@ class Mydumper < Formula
     system bin/"mydumper", "--help"
   end
 end
-
-__END__
---- cmake/modules/FindMySQL.cmake	2015-09-16 16:11:34.000000000 -0400
-+++ cmake/modules/FindMySQL.cmake	2015-09-16 16:10:56.000000000 -0400
-@@ -84,7 +84,7 @@
- )
-
- set(TMP_MYSQL_LIBRARIES "")
--set(CMAKE_FIND_LIBRARY_SUFFIXES .so .a .lib)
-+set(CMAKE_FIND_LIBRARY_SUFFIXES .so .lib .dylib)
- foreach(MY_LIB ${MYSQL_ADD_LIBRARIES})
-     find_library("MYSQL_LIBRARIES_${MY_LIB}" NAMES ${MY_LIB}
-         HINTS

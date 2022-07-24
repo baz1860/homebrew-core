@@ -1,159 +1,127 @@
-require "language/haskell"
-
 class Ghc < Formula
-  include Language::Haskell::Cabal
-
   desc "Glorious Glasgow Haskell Compilation System"
   homepage "https://haskell.org/ghc/"
-  url "https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-src.tar.xz"
-  sha256 "bb8ec3634aa132d09faa270bbd604b82dfa61f04855655af6f9d14a9eedc05fc"
+  url "https://downloads.haskell.org/~ghc/8.10.7/ghc-8.10.7-src.tar.xz"
+  sha256 "e3eef6229ce9908dfe1ea41436befb0455fefb1932559e860ad4c606b0d03c9d"
+  # We bundle a static GMP so GHC inherits GMP's license
+  license all_of: [
+    "BSD-3-Clause",
+    any_of: ["LGPL-3.0-or-later", "GPL-2.0-or-later"],
+  ]
+  revision 1
+
+  livecheck do
+    url "https://www.haskell.org/ghc/download.html"
+    regex(/href=.*?download[._-]ghc[._-][^"' >]+?\.html[^>]*?>\s*?v?(8(?:\.\d+)+)\s*?</i)
+  end
 
   bottle do
-    sha256 "85937c1fca6a2979a8b0d0634b8353e44319fd21d27e7dd0e67e23270fb94a3b" => :high_sierra
-    sha256 "2c482188bcc18cc7976d7519258fe9a81adee93587a84af5c314eac9660cf624" => :sierra
-    sha256 "e12f013930d7ca6b988fb946ace0b58be5b5c057270fd3c3433524739f9af374" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "41e846a0479f930390ae2c65cf7ae0f3ea3755ff26df56822fb999722fb4932e"
+    sha256 cellar: :any,                 arm64_big_sur:  "7ddd8e8dabdb5654f167aa079ef9a1290e20aa151ce3580eed24042d95d47b57"
+    sha256                               monterey:       "c50034c3553a0f6099e2dfc3c7c33ca148256fedc8bc9be492cc942284bb473e"
+    sha256                               big_sur:        "68f447996de80ef0aa655b9b0f5cc048503a09366b17edf77b101f9c1a38fe0b"
+    sha256                               catalina:       "14f6f4c4faa2ef0e4de7b225346c3b084de3356f069ac77eed05768046c70e28"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "bea0a8011b453e37e99855a6640642303d60c6611db366cb5f2d02a7546da19b"
   end
 
-  head do
-    url "https://git.haskell.org/ghc.git", :branch => "ghc-8.2"
+  depends_on "python@3.9" => :build
+  depends_on "sphinx-doc" => :build
 
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
+  uses_from_macos "m4" => :build
+  uses_from_macos "ncurses"
 
-    resource "cabal" do
-      url "https://hackage.haskell.org/package/cabal-install-1.24.0.2/cabal-install-1.24.0.2.tar.gz"
-      sha256 "2ac8819238a0e57fff9c3c857e97b8705b1b5fef2e46cd2829e85d96e2a00fe0"
-    end
+  on_linux do
+    depends_on "gmp" => :build
   end
 
-  option "with-test", "Verify the build using the testsuite"
-  option "without-docs", "Do not build documentation (including man page)"
-  deprecated_option "tests" => "with-test"
-  deprecated_option "with-tests" => "with-test"
-
-  depends_on :macos => :lion
-  depends_on "python3" => :build if build.bottle? || build.with?("test")
-  depends_on "sphinx-doc" => :build if build.with? "docs"
+  # GHC 8.10.7 user manual recommend use LLVM 9 through 12
+  # https://downloads.haskell.org/~ghc/8.10.7/docs/html/users_guide/8.10.7-notes.html
+  # and we met some unknown issue w/ LLVM 13 before https://gitlab.haskell.org/ghc/ghc/-/issues/20559
+  # so conservatively use LLVM 12 here
+  on_arm do
+    depends_on "llvm@12"
+  end
 
   resource "gmp" do
-    url "https://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz"
-    mirror "https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz"
-    mirror "https://ftpmirror.gnu.org/gmp/gmp-6.1.2.tar.xz"
-    sha256 "87b565e89a9a684fe4ebeeddb8399dce2599f9c9049854ca8c0dfbdea0e21912"
-  end
-
-  if MacOS.version <= :lion
-    fails_with :clang do
-      cause <<~EOS
-        Fails to bootstrap ghc-cabal. Error is:
-          libraries/Cabal/Cabal/Distribution/Compat/Binary/Class.hs:398:14:
-              The last statement in a 'do' block must be an expression
-                n <- get :: Get Int getMany n
-      EOS
+    on_macos do
+      url "https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz"
+      mirror "https://gmplib.org/download/gmp/gmp-6.2.1.tar.xz"
+      mirror "https://ftpmirror.gnu.org/gmp/gmp-6.2.1.tar.xz"
+      sha256 "fd4829912cddd12f84181c3451cc752be224643e87fac497b69edddadc49b4f2"
     end
   end
 
-  # https://www.haskell.org/ghc/download_ghc_8_0_1#macosx_x86_64
+  # https://www.haskell.org/ghc/download_ghc_8_10_7.html#macosx_x86_64
   # "This is a distribution for Mac OS X, 10.7 or later."
+  # A binary of ghc is needed to bootstrap ghc
   resource "binary" do
-    url "https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-x86_64-apple-darwin.tar.xz"
-    sha256 "f90fcf62f7e0936a6dfc3601cf663729bfe9bbf85097d2d75f0a16f8c2e95c27"
-  end
+    on_macos do
+      on_intel do
+        url "https://downloads.haskell.org/~ghc/8.10.7/ghc-8.10.7-x86_64-apple-darwin.tar.xz"
+        sha256 "287db0f9c338c9f53123bfa8731b0996803ee50f6ee847fe388092e5e5132047"
+      end
+      on_arm do
+        url "https://downloads.haskell.org/ghc/8.10.7/ghc-8.10.7-aarch64-apple-darwin.tar.xz"
+        sha256 "dc469fc3c35fd2a33a5a575ffce87f13de7b98c2d349a41002e200a56d9bba1c"
+      end
+    end
 
-  resource "testsuite" do
-    url "https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-testsuite.tar.xz"
-    sha256 "927ff939f46a0f79aa87e16e56e0a024a288c78259bed874cb15aa96a653566c"
+    on_linux do
+      url "https://downloads.haskell.org/~ghc/8.10.7/ghc-8.10.7-x86_64-deb9-linux.tar.xz"
+      sha256 "ced9870ea351af64fb48274b81a664cdb6a9266775f1598a79cbb6fdd5770a23"
+    end
   end
 
   def install
     ENV["CC"] = ENV.cc
     ENV["LD"] = "ld"
+    ENV["PYTHON"] = Formula["python@3.9"].opt_bin/"python3"
 
-    # Setting -march=native, which is what --build-from-source does, fails
-    # on Skylake (and possibly other architectures as well) with the error
-    # "Segmentation fault: 11" for at least the following files:
-    #   utils/haddock/dist/build/Haddock/Backends/Hyperlinker/Types.dyn_o
-    #   utils/haddock/dist/build/Documentation/Haddock/Types.dyn_o
-    #   utils/haddock/dist/build/Haddock/GhcUtils.dyn_o
-    #   utils/haddock/dist/build/Paths_haddock.dyn_o
-    #   utils/haddock/dist/build/ResponseFile.dyn_o
-    # Setting -march=core2 works around the bug.
-    # Reported 22 May 2016: https://ghc.haskell.org/trac/ghc/ticket/12100
-    # Note that `unless build.bottle?` avoids overriding --bottle-arch=[...].
-    ENV["HOMEBREW_OPTFLAGS"] = "-march=#{Hardware.oldest_cpu}" unless build.bottle?
+    args = %w[--enable-numa=no]
+    if OS.mac?
+      # Build a static gmp rather than in-tree gmp, otherwise all ghc-compiled
+      # executables link to Homebrew's GMP.
+      gmp = libexec/"integer-gmp"
 
-    # Build a static gmp rather than in-tree gmp, otherwise it links to brew's.
-    gmp = libexec/"integer-gmp"
+      # GMP *does not* use PIC by default without shared libs so --with-pic
+      # is mandatory or else you'll get "illegal text relocs" errors.
+      resource("gmp").stage do
+        cpu = Hardware::CPU.arm? ? "aarch64" : Hardware.oldest_cpu
+        system "./configure", "--prefix=#{gmp}", "--with-pic", "--disable-shared",
+                              "--build=#{cpu}-apple-darwin#{OS.kernel_version.major}"
+        system "make"
+        system "make", "install"
+      end
 
-    # MPN_PATH: The lowest common denominator asm paths that work on Darwin,
-    # corresponding to Yonah and Merom. Obviates --disable-assembly.
-    ENV["MPN_PATH"] = "x86_64/fastsse x86_64/core2 x86_64 generic" if build.bottle?
-
-    # GMP *does not* use PIC by default without shared libs  so --with-pic
-    # is mandatory or else you'll get "illegal text relocs" errors.
-    resource("gmp").stage do
-      system "./configure", "--prefix=#{gmp}", "--with-pic", "--disable-shared"
-      system "make"
-      system "make", "check"
-      ENV.deparallelize { system "make", "install" }
-    end
-
-    args = ["--with-gmp-includes=#{gmp}/include",
-            "--with-gmp-libraries=#{gmp}/lib"]
-
-    # As of Xcode 7.3 (and the corresponding CLT) `nm` is a symlink to `llvm-nm`
-    # and the old `nm` is renamed `nm-classic`. Building with the new `nm`, a
-    # segfault occurs with the following error:
-    #   make[1]: * [compiler/stage2/dll-split.stamp] Segmentation fault: 11
-    # Upstream is aware of the issue and is recommending the use of nm-classic
-    # until Apple restores POSIX compliance:
-    # https://ghc.haskell.org/trac/ghc/ticket/11744
-    # https://ghc.haskell.org/trac/ghc/ticket/11823
-    # https://mail.haskell.org/pipermail/ghc-devs/2016-April/011862.html
-    # LLVM itself has already fixed the bug: llvm-mirror/llvm@ae7cf585
-    # rdar://25311883 and rdar://25299678
-    if DevelopmentTools.clang_build_version >= 703 && DevelopmentTools.clang_build_version < 800
-      args << "--with-nm=#{`xcrun --find nm-classic`.chomp}"
+      args = ["--with-gmp-includes=#{gmp}/include",
+              "--with-gmp-libraries=#{gmp}/lib"]
     end
 
     resource("binary").stage do
       binary = buildpath/"binary"
 
-      system "./configure", "--prefix=#{binary}", *args
+      binary_args = args
+      if OS.linux?
+        binary_args << "--with-gmp-includes=#{Formula["gmp"].opt_include}"
+        binary_args << "--with-gmp-libraries=#{Formula["gmp"].opt_lib}"
+      end
+
+      system "./configure", "--prefix=#{binary}", *binary_args
       ENV.deparallelize { system "make", "install" }
 
       ENV.prepend_path "PATH", binary/"bin"
     end
 
-    if build.head?
-      resource("cabal").stage do
-        system "sh", "bootstrap.sh", "--sandbox"
-        (buildpath/"bootstrap-tools/bin").install ".cabal-sandbox/bin/cabal"
-      end
+    args << "--with-intree-gmp" if OS.linux?
 
-      ENV.prepend_path "PATH", buildpath/"bootstrap-tools/bin"
-
-      cabal_sandbox do
-        cabal_install "--only-dependencies", "happy", "alex"
-        cabal_install "--prefix=#{buildpath}/bootstrap-tools", "happy", "alex"
-      end
-
-      system "./boot"
-    end
     system "./configure", "--prefix=#{prefix}", *args
     system "make"
 
-    if build.bottle? || build.with?("test")
-      resource("testsuite").stage { buildpath.install Dir["*"] }
-      cd "testsuite" do
-        system "make", "clean"
-        system "make", "CLEANUP=1", "THREADS=#{ENV.make_jobs}", "fast"
-      end
-    end
-
     ENV.deparallelize { system "make", "install" }
     Dir.glob(lib/"*/package.conf.d/package.cache") { |f| rm f }
+    Dir.glob(lib/"*/package.conf.d/package.cache.lock") { |f| rm f }
+
+    bin.env_script_all_files libexec, PATH: "${PATH}:#{Formula["llvm@12"].opt_bin}" if Hardware::CPU.arm?
   end
 
   def post_install
@@ -162,6 +130,6 @@ class Ghc < Formula
 
   test do
     (testpath/"hello.hs").write('main = putStrLn "Hello Homebrew"')
-    system "#{bin}/runghc", testpath/"hello.hs"
+    assert_match "Hello Homebrew", shell_output("#{bin}/runghc hello.hs")
   end
 end

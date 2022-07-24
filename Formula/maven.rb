@@ -1,18 +1,28 @@
 class Maven < Formula
   desc "Java-based project management"
   homepage "https://maven.apache.org/"
+  url "https://www.apache.org/dyn/closer.lua?path=maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz"
+  mirror "https://archive.apache.org/dist/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz"
+  sha256 "c7047a48deb626abf26f71ab3643d296db9b1e67f1faa7d988637deac876b5a9"
+  license "Apache-2.0"
 
-  stable do
-    url "https://www.apache.org/dyn/closer.cgi?path=maven/maven-3/3.5.2/binaries/apache-maven-3.5.2-bin.tar.gz"
-    mirror "https://archive.apache.org/dist/maven/maven-3/3.5.2/binaries/apache-maven-3.5.2-bin.tar.gz"
-    sha256 "707b1f6e390a65bde4af4cdaf2a24d45fc19a6ded00fff02e91626e3e42ceaff"
+  livecheck do
+    url "https://maven.apache.org/download.cgi"
+    regex(/href=.*?apache-maven[._-]v?(\d+(?:\.\d+)+)-bin\.t/i)
   end
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "0468fde1ed91dda88ce1be54ca222c23f9436e579e5e45a2ca38c26dda304e7f"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "0468fde1ed91dda88ce1be54ca222c23f9436e579e5e45a2ca38c26dda304e7f"
+    sha256 cellar: :any_skip_relocation, monterey:       "016e037ae5ca2e5ec6e3268839bec1dbc2e4af0e30960efd16ef12ed0aa56969"
+    sha256 cellar: :any_skip_relocation, big_sur:        "016e037ae5ca2e5ec6e3268839bec1dbc2e4af0e30960efd16ef12ed0aa56969"
+    sha256 cellar: :any_skip_relocation, catalina:       "016e037ae5ca2e5ec6e3268839bec1dbc2e4af0e30960efd16ef12ed0aa56969"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0468fde1ed91dda88ce1be54ca222c23f9436e579e5e45a2ca38c26dda304e7f"
+  end
 
-  depends_on :java => "1.7+"
+  depends_on "openjdk"
 
-  conflicts_with "mvnvm", :because => "also installs a 'mvn' executable"
+  conflicts_with "mvnvm", because: "also installs a 'mvn' executable"
 
   def install
     # Remove windows files
@@ -27,8 +37,10 @@ class Maven < Formula
     # file will be found relative to it
     Pathname.glob("#{libexec}/bin/*") do |file|
       next if file.directory?
+
       basename = file.basename
       next if basename.to_s == "m2.conf"
+
       (bin/basename).write_env_script file, Language::Java.overridable_java_home_env
     end
   end

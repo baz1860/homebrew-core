@@ -1,39 +1,43 @@
 class Openexr < Formula
   desc "High dynamic-range image file format"
   homepage "https://www.openexr.com/"
-  url "https://savannah.nongnu.org/download/openexr/openexr-2.2.0.tar.gz"
-  sha256 "36a012f6c43213f840ce29a8b182700f6cf6b214bea0d5735594136b44914231"
+  # NOTE: Please keep these values in sync with imath.rb when updating.
+  url "https://github.com/AcademySoftwareFoundation/openexr/archive/v3.1.5.tar.gz"
+  sha256 "93925805c1fc4f8162b35f0ae109c4a75344e6decae5a240afdfce25f8a433ec"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "12c2585a07369da6668cacffe07ddd7a6b0f9750d107f0d053eefcb992e4df85" => :high_sierra
-    sha256 "0220d0edcb161cb56a1cbe8477cc2ecd45fee320ce48f99c114454421a527198" => :sierra
-    sha256 "a73d66076b03d20908db659b965cee768d82408ddca5196fef8164b779091765" => :el_capitan
-    sha256 "ad973fc780bb731a5ee8be347283903e8343448913e46a23fbdede0145ef980a" => :yosemite
-    sha256 "9c21b70caff58d8d699a58a50249f220b03c23f450a219276782827e6c03ff33" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "633811a87f2087ee77e05aeb3bdbaea9cede0c010c0e4ddf5212b1f7dc773369"
+    sha256 cellar: :any,                 arm64_big_sur:  "a86f1c3252e421bb3c511fd17d02031eb62d19fc35be4e332835ef8023bc6903"
+    sha256 cellar: :any,                 monterey:       "7b5eac70a2b63764fe1dc4efa787b04f65f7566413b2727a3f5366256b007723"
+    sha256 cellar: :any,                 big_sur:        "db79b777e18b0c58f9b9d856e681a62e54ce91e54c8a1a5faaf4a6a98e515871"
+    sha256 cellar: :any,                 catalina:       "264da60466034171be1337d9b18f9293122ad82c364de5d037e7fab468525196"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "37824df7fbc74d4e2f2b9837e14917b707fffdc94bbec39fe0babda17d0c9781"
   end
 
+  depends_on "cmake" => :build
   depends_on "pkg-config" => :build
-  depends_on "ilmbase"
+  depends_on "imath"
+
+  uses_from_macos "zlib"
+
+  # These used to be provided by `ilmbase`
+  link_overwrite "include/OpenEXR"
+  link_overwrite "lib/libIex.dylib"
+  link_overwrite "lib/libIex.so"
+  link_overwrite "lib/libIlmThread.dylib"
+  link_overwrite "lib/libIlmThread.so"
 
   resource "exr" do
-    url "https://github.com/openexr/openexr-images/raw/master/TestImages/AllHalfValues.exr"
+    url "https://github.com/AcademySoftwareFoundation/openexr-images/raw/master/TestImages/AllHalfValues.exr"
     sha256 "eede573a0b59b79f21de15ee9d3b7649d58d8f2a8e7787ea34f192db3b3c84a4"
   end
 
-  # Fixes builds on 32-bit targets due to incorrect long literals
-  # Patches are already applied in the upstream git repo.
-  patch do
-    url "https://raw.githubusercontent.com/Homebrew/formula-patches/f1a3ea4f69b7a54d8123e2f16488864d52202de8/openexr/64bit_types.patch"
-    sha256 "c95374d8fdcc41ddc2f7c5b3c6f295a56dd5a6249bc26d0829548e70f5bd2dc9"
-  end
-
   def install
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args
+      system "make", "install"
+    end
   end
 
   test do

@@ -1,31 +1,45 @@
 class Libnice < Formula
   desc "GLib ICE implementation"
   homepage "https://wiki.freedesktop.org/nice/"
-  url "https://nice.freedesktop.org/releases/libnice-0.1.14.tar.gz"
-  sha256 "be120ba95d4490436f0da077ffa8f767bf727b82decf2bf499e39becc027809c"
+  url "https://nice.freedesktop.org/releases/libnice-0.1.19.tar.gz"
+  sha256 "6747af710998cf708a2e8ceef51cccd181373d94201dd4b8d40797a070ed47cc"
+  license any_of: ["LGPL-2.1-only", "MPL-1.1"]
 
-  bottle do
-    cellar :any
-    sha256 "978bc59e76b4477c1742896550cd4a9d5b1a215518fb88785c3064ec2995bfaa" => :high_sierra
-    sha256 "3782f1868a247063e772f0ac5b9f59524ed6c0ad5a72e1d96af7078e5a36f526" => :sierra
-    sha256 "f9247e1697faac654fa25fc461f080486731d8fbcffc7855c46ab9c716fa62fc" => :el_capitan
-    sha256 "2cbf1077ed2e87caf285188031d47710bedc3bfb801f1f0a87ca0fbb081c8e30" => :yosemite
+  livecheck do
+    url "https://github.com/libnice/libnice.git"
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
+  bottle do
+    sha256 cellar: :any, arm64_monterey: "5bed5cac01c337d9e89b9b40b52cb6c260490bfbcabd7c9e11f6067206958dc2"
+    sha256 cellar: :any, arm64_big_sur:  "e444324c67b7c97ec4f44493fd60e02eeffac29fc0c083c666a0f531bd274602"
+    sha256 cellar: :any, monterey:       "dd813088a88deeb96ea22eced7583d870fa1e116f79c2987c1a7040eaa46a78d"
+    sha256 cellar: :any, big_sur:        "f29c7cad45b224ae2d071cb42fe1cbcd9e0207642d965088a4030057e3244af3"
+    sha256 cellar: :any, catalina:       "a3dd3ec0a451c3cfa51d405930234c470cbab8854e3dafcbb9e24588a0869bcd"
+    sha256               x86_64_linux:   "39864bd802e7e78eee47b607ff85e22eacf97636187f79e6f857901e64eef25b"
+  end
+
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "glib"
   depends_on "gnutls"
   depends_on "gstreamer"
 
+  on_linux do
+    depends_on "intltool" => :build
+  end
+
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   test do
-    # Based on https://github.com/libnice/libnice/blob/master/examples/simple-example.c
+    # Based on https://github.com/libnice/libnice/blob/HEAD/examples/simple-example.c
     (testpath/"test.c").write <<~EOS
       #include <agent.h>
       int main(int argc, char *argv[]) {
@@ -58,10 +72,10 @@ class Libnice < Formula
       -lgio-2.0
       -lglib-2.0
       -lgobject-2.0
-      -lintl
       -lnice
     ]
-    system ENV.cc, *flags, "test.c", "-o", "test"
+    flags << "-lintl" if OS.mac?
+    system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end
 end

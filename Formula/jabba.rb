@@ -1,22 +1,28 @@
 class Jabba < Formula
   desc "Cross-platform Java Version Manager"
   homepage "https://github.com/shyiko/jabba"
-  url "https://github.com/shyiko/jabba/archive/0.9.2.tar.gz"
-  sha256 "884da1fc23818db1396a8eeb4a10d40c7c008684b7642e2eec88bf264f47e071"
-  head "https://github.com/shyiko/jabba.git"
+  url "https://github.com/shyiko/jabba/archive/0.11.2.tar.gz"
+  sha256 "33874c81387f03fe1a27c64cb6fb585a458c1a2c1548b4b86694da5f81164355"
+  license "Apache-2.0"
+  head "https://github.com/shyiko/jabba.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "1c23d02756f7701a08fa4805bd6e6ae267fb51e3587b7e2748d267b76cfb7e06" => :high_sierra
-    sha256 "1194d7753a570997667238c59ef05ca0c5f8c34029986b5cf7289fe48c656f15" => :sierra
-    sha256 "177f97bc1d5da9cc38c187d75e213a292f7b526de424e095efcc8446225fdf14" => :el_capitan
+    rebuild 3
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "93e599fb7c61971f2d76c7c37254dfe5a407e604c3e64b27ba026e46124a8f96"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "72cd725e75b0d214c6cbc03bc87fcb15d9b824ea24eba43f267cdfc768edf460"
+    sha256 cellar: :any_skip_relocation, monterey:       "8f142b8c305812437a8927250d4164b94015af9ed28282bc008e1d034a227000"
+    sha256 cellar: :any_skip_relocation, big_sur:        "72c397a12fe10181efb7fca300d78d3244160c9a0a4dcbe2cd17c179df678db4"
+    sha256 cellar: :any_skip_relocation, catalina:       "146e37a3138b919c497da279eecd2d282d5f6f5e0f1b9aa94257df2fbf19efba"
+    sha256 cellar: :any_skip_relocation, mojave:         "6f2d27333e0b8d73ba2166c4abb960642d64a3efcd394ee5683e6c71b8d0c305"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "359b80689e628a11217fe33067133d61eb52970610e45d54ace41705ccb06b5d"
   end
 
-  depends_on "go" => :build
   depends_on "glide" => :build
+  depends_on "go" => :build
 
   def install
     ENV["GOPATH"] = buildpath
+    ENV["GO111MODULE"] = "auto"
     ENV["GLIDE_HOME"] = HOMEBREW_CACHE/"glide_home/#{name}"
     dir = buildpath/"src/github.com/shyiko/jabba"
     dir.install buildpath.children
@@ -29,10 +35,15 @@ class Jabba < Formula
   end
 
   test do
+    jdk_version = "zulu@1.16.0-0"
+    version_check ='openjdk version "16'
+
     ENV["JABBA_HOME"] = testpath/"jabba_home"
-    system bin/"jabba", "install", "1.9.0"
-    jdk_path = Utils.popen_read("#{bin}/jabba which 1.9.0").strip
-    assert_match 'java version "9.0.1"',
-                 shell_output("#{jdk_path}/Contents/Home/bin/java -version 2>&1")
+
+    system bin/"jabba", "install", jdk_version
+    jdk_path = shell_output("#{bin}/jabba which #{jdk_version}").strip
+    jdk_path += "/Contents/Home" if OS.mac?
+    assert_match version_check,
+                 shell_output("#{jdk_path}/bin/java -version 2>&1")
   end
 end

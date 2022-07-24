@@ -1,28 +1,26 @@
 class Terragrunt < Formula
   desc "Thin wrapper for Terraform e.g. for locking state"
-  homepage "https://github.com/gruntwork-io/terragrunt"
-  url "https://github.com/gruntwork-io/terragrunt/archive/v0.14.1.tar.gz"
-  sha256 "189c03ec01da91e075706703bf4668f13a4b2c833cb47a9ced26844fffb85ecf"
-  head "https://github.com/gruntwork-io/terragrunt.git"
+  homepage "https://terragrunt.gruntwork.io/"
+  url "https://github.com/gruntwork-io/terragrunt/archive/v0.38.6.tar.gz"
+  sha256 "22602e5556e8c15b4ac65f1c9b57534f5549b4630ad734d228c1cc929a3e5b95"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "d28184c3d767c2712f59c1b2cf89e2df2dba833027b5578c6ec9c9af06a8431c" => :high_sierra
-    sha256 "c0e12da3c38fc95209bf3e1b41bf4c14855b746c68b0954cef8c4b3737d8b8b5" => :sierra
-    sha256 "366bfc2683028eb16023928a6b543adebd2ef0ffecf9421e01f2713ce084b3a7" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a67fc9934700064557947f6917233b25eefbb22fcad5037e2da91c829a19ac5d"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "a27ba8bd343bc2accb6a3cb5e800dd4e8e104793c49f934bc69772a2ed03a529"
+    sha256 cellar: :any_skip_relocation, monterey:       "98d42ac51fbd86906aa2b3978739fc498b711dbdec2c92dc06a1f7b2a6799440"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ed4c3c21e4cbcebacb5f57ebfdd75f607dd87e34f3a9e4ddd8a34bb3f1b4074b"
+    sha256 cellar: :any_skip_relocation, catalina:       "b343b74f8cc5303eef100bf94245a3a0c3da023ea4db8f107a8e6a3ee45e8c4f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0bab7fae7b29d833b2cd6978b6695fc9a4e6a754c1236dc5f9859b40f33bc96d"
   end
 
-  depends_on "glide" => :build
   depends_on "go" => :build
   depends_on "terraform"
 
+  conflicts_with "tgenv", because: "tgenv symlinks terragrunt binaries"
+
   def install
-    ENV["GOPATH"] = buildpath
-    ENV["GLIDE_HOME"] = HOMEBREW_CACHE/"glide_home/#{name}"
-    mkdir_p buildpath/"src/github.com/gruntwork-io/"
-    ln_s buildpath, buildpath/"src/github.com/gruntwork-io/terragrunt"
-    system "glide", "install"
-    system "go", "build", "-o", bin/"terragrunt", "-ldflags", "-X main.VERSION=v#{version}"
+    system "go", "build", *std_go_args(ldflags: "-s -w -X main.VERSION=v#{version}")
   end
 
   test do

@@ -1,42 +1,50 @@
 class Libssh2 < Formula
   desc "C library implementing the SSH2 protocol"
-  homepage "https://libssh2.org/"
-  url "https://libssh2.org/download/libssh2-1.8.0.tar.gz"
-  sha256 "39f34e2f6835f4b992cafe8625073a88e5a28ba78f83e8099610a7b3af4676d4"
+  homepage "https://www.libssh2.org/"
+  url "https://www.libssh2.org/download/libssh2-1.10.0.tar.gz"
+  mirror "https://github.com/libssh2/libssh2/releases/download/libssh2-1.10.0/libssh2-1.10.0.tar.gz"
+  mirror "http://download.openpkg.org/components/cache/libssh2/libssh2-1.10.0.tar.gz"
+  sha256 "2d64e90f3ded394b91d3a2e774ca203a4179f69aebee03003e5a6fa621e41d51"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url "https://www.libssh2.org/download/"
+    regex(/href=.*?libssh2[._-]v?(\d+(?:\.\d+)+)\./i)
+  end
 
   bottle do
-    cellar :any
-    rebuild 1
-    sha256 "22327eb5bbff660935db0c5106d5a43069ee23e5cb33d5125bad4e144e83ee34" => :high_sierra
-    sha256 "4a1e39137bc9461d779a7a84626354928788aeb0650fb0fed75e0fbecb95c0cd" => :sierra
-    sha256 "d6693c1417f0deb8f1b0c6a7c338491a7f60f2cc516675186e572329c1fcaa6c" => :el_capitan
-    sha256 "f7fab0024a104c43a3139b0e70cbc04606c20409b36ffb6deebb326c168c4547" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "f9dab718cfa591fa90dc716a337e4c2c1da2db651b669565c3cc08e6a6074f28"
+    sha256 cellar: :any,                 arm64_big_sur:  "db07a7c502116b5a80ae01e82e7f5c54633a8ac7343d369af25af6cc2c7e5bbb"
+    sha256 cellar: :any,                 monterey:       "97126a03685c5538a9ddc95f1cae7f5b4ff9e7e7aba7fd8ebda0e2b48e76575a"
+    sha256 cellar: :any,                 big_sur:        "56dd017876fd446d7283c7db7a6a0729eeebd34016094fdbf9f46b6711c0e26d"
+    sha256 cellar: :any,                 catalina:       "5b30fe11d2ced21be876b56787e5d6900cb991fdd7e6ad3a6058401aa59ee9d7"
+    sha256 cellar: :any,                 mojave:         "70c0928f2cb9034ad07c6242517ebc0e4cfb92b1ab74518f7b510a2ac36e81fe"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2ff0fe65fb281d51dab44a53b15ef40ebeebf09a7f4d28e86dfc0cc18e49bbc1"
   end
 
   head do
-    url "https://github.com/libssh2/libssh2.git"
+    url "https://github.com/libssh2/libssh2.git", branch: "master"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  depends_on "openssl"
+  depends_on "openssl@1.1"
+
+  uses_from_macos "zlib"
 
   def install
     args = %W[
-      --prefix=#{prefix}
-      --disable-debug
-      --disable-dependency-tracking
       --disable-silent-rules
       --disable-examples-build
       --with-openssl
       --with-libz
-      --with-libssl-prefix=#{Formula["openssl"].opt_prefix}
+      --with-libssl-prefix=#{Formula["openssl@1.1"].opt_prefix}
     ]
 
     system "./buildconf" if build.head?
-    system "./configure", *args
+    system "./configure", *std_configure_args, *args
     system "make", "install"
   end
 

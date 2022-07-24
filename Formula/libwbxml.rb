@@ -1,40 +1,38 @@
 class Libwbxml < Formula
   desc "Library and tools to parse and encode WBXML documents"
-  homepage "https://sourceforge.net/projects/libwbxml/"
-  url "https://downloads.sourceforge.net/project/libwbxml/libwbxml/0.11.6/libwbxml-0.11.6.tar.bz2"
-  sha256 "2f5ffe6f59986b34f9032bfbf013e32cabf426e654c160d208a99dc1b6284d29"
-  head "https://github.com/libwbxml/libwbxml.git"
+  homepage "https://github.com/libwbxml/libwbxml"
+  url "https://github.com/libwbxml/libwbxml/archive/libwbxml-0.11.8.tar.gz"
+  sha256 "a6fe0e55369280c1a7698859a5c2bb37c8615c57a919b574cd8c16458279db66"
+  license "LGPL-2.1"
+  head "https://github.com/libwbxml/libwbxml.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "d9793123d4fde1307610f37fe64251bd4d92da7bbb531289868867a9b5bc1fdf" => :high_sierra
-    sha256 "137d796ea2bcd0263c51d4d92ce96527ce73c23e933d66f226270baa97d1359f" => :sierra
-    sha256 "56dd0a5203520961413655ecbc8d60058b639179ac5c704848005a3a5179d78f" => :el_capitan
-    sha256 "6d3e97ce2d8a218780186f5be0005682768eb823ed0aec2c2275dabca8caafe3" => :yosemite
+    rebuild 1
+    sha256 cellar: :any,                 arm64_monterey: "fe2ac6ea506094bb84685b873d59cb9b0ea225b2ce56cb13b2fc1197bcd6b906"
+    sha256 cellar: :any,                 arm64_big_sur:  "ac5e42ae5a76a5d3cf1d731b80b40ae019ffd90c0cef0ea4ad24d700958f3dc3"
+    sha256 cellar: :any,                 monterey:       "08e5267c81b874f8115b1fb110a3a0553553863b139c950e60aeead99701ac7f"
+    sha256 cellar: :any,                 big_sur:        "1d656b5fd3c1c1486db641b7e00a129b71071c1f26a522dad2bc29795d6c2a85"
+    sha256 cellar: :any,                 catalina:       "1a5739cb2c803bc0580ef5cab2c58effaa2d849f7f0d55060f325a5cd9cf8ec2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ec4cdd3a2ead2da218798ef2a020fe2ef66f18b44d6a995977838af60257e8a2"
   end
-
-  option "with-docs", "Build the documentation with Doxygen and Graphviz"
-  option "with-verbose", "Build with verbose logging support"
-  deprecated_option "docs" => "with-docs"
 
   depends_on "cmake" => :build
-  depends_on "wget" => :optional
+  depends_on "doxygen" => :build
+  depends_on "graphviz" => :build
+  depends_on "wget"
 
-  if build.with? "docs"
-    depends_on "doxygen" => :build
-    depends_on "graphviz" => :build
-  end
+  uses_from_macos "expat"
 
   def install
     # Sandbox fix:
-    # Install in Cellar & then automatically symlink into top-level Module path.
-    inreplace "cmake/CMakeLists.txt", "${CMAKE_ROOT}/Modules/", "#{share}/cmake/Modules"
+    # Install in Cellar & then automatically symlink into top-level Module path
+    inreplace "cmake/CMakeLists.txt", "${CMAKE_ROOT}/Modules/",
+                                      "#{share}/cmake/Modules"
 
     mkdir "build" do
-      args = std_cmake_args
-      args << "-DBUILD_DOCUMENTATION=ON" if build.with? "docs"
-      args << "-DWBXML_LIB_VERBOSE=ON" if build.with? "verbose"
-      system "cmake", "..", *args
+      system "cmake", "..", *std_cmake_args,
+                            "-DBUILD_DOCUMENTATION=ON",
+                            "-DCMAKE_INSTALL_RPATH=#{rpath}"
       system "make", "install"
     end
   end

@@ -1,35 +1,44 @@
 class Treefrog < Formula
   desc "High-speed C++ MVC Framework for Web Application"
-  homepage "http://www.treefrogframework.org/"
-  url "https://github.com/treefrogframework/treefrog-framework/archive/v1.20.0.tar.gz"
-  sha256 "72d22e3051cea9c42ad163c9f2a706d0b47640648c594ec7c4beebb0899ee57b"
-  head "https://github.com/treefrogframework/treefrog-framework.git"
+  homepage "https://www.treefrogframework.org/"
+  url "https://github.com/treefrogframework/treefrog-framework/archive/v2.3.1.tar.gz"
+  sha256 "1877efe236d8407ce401c6e21670a0b0714a6dd07f786714c8ea885d8c6393de"
+  license "BSD-3-Clause"
+  head "https://github.com/treefrogframework/treefrog-framework.git", branch: "master"
 
-  bottle do
-    sha256 "f1a48752ac8103cc489909e828e33acc71757b27dd15ec507caff708037f96c4" => :high_sierra
-    sha256 "6c8b7fa1940f50371cae7e0f2851423babf889a2644b775d39e94b9c10108bac" => :sierra
-    sha256 "cb407f8bc9eaf7b6bbb1a28e8305f32819216bb2bf4c4836ed942b0d33a6d0e3" => :el_capitan
+  livecheck do
+    url :head
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  deprecated_option "with-qt5" => "with-qt"
+  bottle do
+    sha256 arm64_monterey: "80a7272e904c060938ddaa19c090822240446e1cf66c2dad5d6ee68b1f451048"
+    sha256 arm64_big_sur:  "c9afe4515ec107bf744805b7525faaee6a166f7c12b31d36dc8cd9f13d0b11cc"
+    sha256 monterey:       "0f4080bde815c4a090e93e7945991f7e2edb36818243626cc65d45418402a826"
+    sha256 big_sur:        "370e03b7c0de69daea6f7d3204d0d3bd07fdc4381134ea46e2991b678cdcedde"
+    sha256 catalina:       "b558f6d8c06e8c592ee2a57a8bfa1fdb918b5bc3dc344276b81fb132ac4eec20"
+    sha256 x86_64_linux:   "02f14ab3da6f135ed0a214c8b8ddb0bb1ca49b7a8dd55c86f4abdcca9c2be6d3"
+  end
 
-  option "with-mysql", "enable --with-mysql option for Qt build"
-  option "with-postgresql", "enable --with-postgresql option for Qt build"
-  option "with-qt", "build and link with QtGui module"
+  depends_on xcode: :build
+  depends_on "mongo-c-driver"
+  depends_on "qt"
 
-  depends_on :macos => :el_capitan
-  depends_on :xcode => [:build, "8.0"]
+  on_linux do
+    depends_on "gcc"
+  end
 
-  qt_build_options = []
-  qt_build_options << "with-mysql" if build.with?("mysql")
-  qt_build_options << "with-postgresql" if build.with?("postgresql")
-  depends_on "qt" => qt_build_options
+  fails_with gcc: "5"
 
   def install
-    args = ["--prefix=#{prefix}"]
-    args << "--enable-gui-mod" if build.with? "qt"
+    # src/corelib.pro hardcodes different paths for mongo-c-driver headers on macOS and Linux.
+    if OS.mac?
+      inreplace "src/corelib.pro", "/usr/local", HOMEBREW_PREFIX
+    else
+      inreplace "src/corelib.pro", "/usr/include", HOMEBREW_PREFIX/"include"
+    end
 
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}", "--enable-shared-mongoc"
 
     cd "src" do
       system "make"
@@ -43,11 +52,12 @@ class Treefrog < Formula
   end
 
   test do
+    ENV.delete "CPATH"
     system bin/"tspawn", "new", "hello"
     assert_predicate testpath/"hello", :exist?
     cd "hello" do
       assert_predicate Pathname.pwd/"hello.pro", :exist?
-      system HOMEBREW_PREFIX/"opt/qt/bin/qmake"
+      system Formula["qt"].opt_bin/"qmake"
       assert_predicate Pathname.pwd/"Makefile", :exist?
       system "make"
       system bin/"treefrog", "-v"

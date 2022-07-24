@@ -1,17 +1,26 @@
 class Cweb < Formula
   desc "Literate documentation system for C, C++, and Java"
   homepage "https://cs.stanford.edu/~knuth/cweb.html"
-  # curl: (9) Server denied you to change to the given directory
-  # ftp://ftp.cs.stanford.edu/pub/cweb/cweb-3.64b.tar.gz
-  url "https://www.ctan.org/tex-archive/web/c_cpp/cweb/cweb-3.64b.tar.gz"
-  sha256 "038b0bf4d8297f0a98051ca2b4664abbf9d72b0b67963a2c7700d2f11cd25595"
+  url "https://github.com/ascherer/cweb/archive/cweb-4.8.1.tar.gz"
+  sha256 "3d1468408aaf2853bc8fbbc64b0f06e9be9c3c89638d78da907bf6f4656d52ce"
+  # See disucssions in this thread, https://github.com/ascherer/cweb/issues/29
+  license :cannot_represent
+
+  livecheck do
+    url :stable
+    regex(/^cweb[._-]v?(\d+(?:\.\d+)+[a-z]*?)$/i)
+  end
 
   bottle do
-    sha256 "e6888449565ebd6620ebc6851dbef48765a0654b3e5d429cfffb617ca33e2479" => :high_sierra
-    sha256 "377a987173b8274ab97de6d8978816372d6f380a0fe4c9e0b09cfcd7d27ab66e" => :sierra
-    sha256 "86ff3ceca459e8f087644249378a19a7f53f4ebbd5c74ddfbbe6ea795003a1a2" => :el_capitan
-    sha256 "27c017af8f2e004888240d99a14b29ea9ac8d1fa5339d228b6a79ecda8031e4e" => :yosemite
+    sha256                               arm64_monterey: "5de3449dadd66c5759b4aa073884336c9c935b3a4481d4355303b050897c3948"
+    sha256                               arm64_big_sur:  "1ae7da8bf50cadb46c67c6e3ece21e992942f354dba9e9ba4dd940b4150db086"
+    sha256                               monterey:       "3f29dcb1e90489af30f71b1d2080f1da44aa54523c03955a3d8390867d8fbb10"
+    sha256                               big_sur:        "5b04f2fc775e7997bd22d4fdff71bdd5d4e8776de60f7c7a79b68280b3b9df09"
+    sha256                               catalina:       "abb227be400bc74150619772ced22aa90bb2c1721b1ceca347f83259d6da6904"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7a01ccf4b26f6d1afb455970164dec856d58a0c523653726e873ca4db412ce08"
   end
+
+  conflicts_with "texlive", because: "both install `cweb` binaries"
 
   def install
     ENV.deparallelize

@@ -1,51 +1,48 @@
 class Htop < Formula
   desc "Improved top (interactive process viewer)"
-  homepage "https://hisham.hm/htop/"
-  revision 2
+  homepage "https://htop.dev/"
+  url "https://github.com/htop-dev/htop/archive/3.2.1.tar.gz"
+  sha256 "b5ffac1949a8daaabcffa659c0964360b5008782aae4dfa7702d2323cfb4f438"
+  license "GPL-2.0-or-later"
+  head "https://github.com/htop-dev/htop.git", branch: "main"
 
-  stable do
-    url "https://hisham.hm/htop/releases/2.0.2/htop-2.0.2.tar.gz"
-    sha256 "179be9dccb80cee0c5e1a1f58c8f72ce7b2328ede30fb71dcdf336539be2f487"
-
-    # Running htop can lead to system freezes on macOS 10.13
-    # https://github.com/hishamhm/htop/issues/682
-    if MacOS.version >= :high_sierra
-      patch do
-        url "https://github.com/hishamhm/htop/commit/b2771218.patch?full_index=1"
-        sha256 "3369f8aed21706d809db062f25fd46bf9c0677712a624697bc5415aa45d5d104"
-      end
-    end
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
   bottle do
-    sha256 "4e65d1d92ef616935ee5b6e498e05ad92e733ced3a41a408c2b30ce7a6b5a1ed" => :high_sierra
-    sha256 "4e9fe44dc41ca415f3465b8445d06df7ed319ca50522758dc44298daff9d9de5" => :sierra
-    sha256 "adf2b63b4fa6d96efc9cfb7c5726d14f5b70a6f38c8e7cea38e0befd26c6ca7f" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "50735eb9e09ec8087f04640430d4bdac4941a0ce584dd1e52ec8ec8a58d743ed"
+    sha256 cellar: :any,                 arm64_big_sur:  "02e592c85dbfe7ee6bb0a2bf5275cc6434710aaa30d7756d11a363946a5cb76e"
+    sha256 cellar: :any,                 monterey:       "13ede571c82f9ed6f55d8ef081bd7db0f11ca8945dc306594465384f38f693f4"
+    sha256 cellar: :any,                 big_sur:        "3004679265a03a1d4d5162895e79de630535a7d6ebe0c59592cb307ed9aeb5d5"
+    sha256 cellar: :any,                 catalina:       "6a0040374a95b5adf832d15b69ee80fbe3fc24190f523f46e199e0cb60fd9057"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "864f057daa4b3361cf076523e9a532763153a512cbd7da90bfb6b10ecfca0c05"
   end
 
-  head do
-    url "https://github.com/hishamhm/htop.git"
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "ncurses" # enables mouse scroll
 
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-    depends_on "pkg-config" => :build
+  on_linux do
+    depends_on "lm-sensors"
   end
-
-  option "with-ncurses", "Build using homebrew ncurses (enables mouse scroll)"
-
-  depends_on "ncurses" => :optional
 
   def install
-    system "./autogen.sh" if build.head?
-    system "./configure", "--prefix=#{prefix}"
+    system "./autogen.sh"
+    args = ["--prefix=#{prefix}"]
+    args << "--enable-sensors" if OS.linux?
+    system "./configure", *args
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    htop requires root privileges to correctly display all running processes,
-    so you will need to run `sudo htop`.
-    You should be certain that you trust any software you grant root privileges.
+  def caveats
+    <<~EOS
+      htop requires root privileges to correctly display all running processes,
+      so you will need to run `sudo htop`.
+      You should be certain that you trust any software you grant root privileges.
     EOS
   end
 

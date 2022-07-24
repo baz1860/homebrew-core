@@ -1,53 +1,78 @@
 class Folly < Formula
   desc "Collection of reusable C++ library artifacts developed at Facebook"
   homepage "https://github.com/facebook/folly"
-  url "https://github.com/facebook/folly/archive/v2018.02.26.00.tar.gz"
-  sha256 "633eb1bec1fb89625155445bcadc54a4f78371147b1338b3748f664aae2495ac"
-  head "https://github.com/facebook/folly.git"
+  url "https://github.com/facebook/folly/archive/v2022.07.04.00.tar.gz"
+  sha256 "6b270c1865c53b39f5d815cc2d97879a17dde6c77c5c127ede2a962ef3ab24b1"
+  license "Apache-2.0"
+  head "https://github.com/facebook/folly.git", branch: "main"
 
   bottle do
-    cellar :any
-    sha256 "2aa61c8df202a8546f1b228bb4a6fddd816edd9f6173d8c6facc5307d1ade31a" => :high_sierra
-    sha256 "e1e98cd18b04be434f078a42542ffb8da76299419f202a9cdbd0e946b62c0166" => :sierra
-    sha256 "e937d5708d13c070353da1b4db7df8a6f2d3113118c5b121d50fdde711251f5c" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "03f9148ba3607548d9a4607f63e868d9353cfade1a3e5c2a198e832ec17747d4"
+    sha256 cellar: :any,                 arm64_big_sur:  "67036d5d4eb0b321c37a789ce604f1f0f2b641b5e88d19e810b79c73f11f050d"
+    sha256 cellar: :any,                 monterey:       "6462097eaf7026ddbe101e01ff03f0d1e3fc393178b87f80b21a11de6358077f"
+    sha256 cellar: :any,                 big_sur:        "863ade220942581d663f5d62f547ee825b85bac65ce54a36ddc22584d526a0fb"
+    sha256 cellar: :any,                 catalina:       "5e1e1cb25d7590ed3aa3c3ce8558065c3cf89061a04020aa349448760b143308"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "86dfe421565dfdbaef318c48b40bfb3eb339af8460ca3e3a8a3f87ed89ee2b35"
   end
 
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
+  depends_on "cmake" => :build
   depends_on "pkg-config" => :build
-  depends_on "double-conversion"
-  depends_on "glog"
-  depends_on "gflags"
   depends_on "boost"
+  depends_on "double-conversion"
+  depends_on "fmt"
+  depends_on "gflags"
+  depends_on "glog"
   depends_on "libevent"
-  depends_on "xz"
-  depends_on "snappy"
   depends_on "lz4"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
+  depends_on "snappy"
+  depends_on "xz"
+  depends_on "zstd"
 
-  # https://github.com/facebook/folly/issues/451
-  depends_on :macos => :el_capitan
+  on_macos do
+    depends_on "llvm" if DevelopmentTools.clang_build_version <= 1100
+  end
 
-  needs :cxx11
+  on_linux do
+    depends_on "gcc"
+  end
 
-  # Known issue upstream. They're working on it:
-  # https://github.com/facebook/folly/pull/445
-  fails_with :gcc => "6"
+  fails_with :clang do
+    build 1100
+    # https://github.com/facebook/folly/issues/1545
+    cause <<-EOS
+      Undefined symbols for architecture x86_64:
+        "std::__1::__fs::filesystem::path::lexically_normal() const"
+    EOS
+  end
+
+  fails_with gcc: "5"
 
   def install
-    ENV.cxx11
+    ENV.llvm_clang if OS.mac? && (DevelopmentTools.clang_build_version <= 1100)
 
-    cd "folly" do
-      system "autoreconf", "-fvi"
-      system "./configure", "--prefix=#{prefix}", "--disable-silent-rules",
-                            "--disable-dependency-tracking"
-      system "make"
-      system "make", "install"
-    end
+    args = std_cmake_args + %w[
+      -DFOLLY_USE_JEMALLOC=OFF
+    ]
+
+    system "cmake", "-S", ".", "-B", "build/shared",
+                    "-DBUILD_SHARED_LIBS=ON",
+                    "-DCMAKE_INSTALL_RPATH=#{rpath}",
+                    *args
+    system "cmake", "--build", "build/shared"
+    system "cmake", "--install", "build/shared"
+
+    system "cmake", "-S", ".", "-B", "build/static",
+                    "-DBUILD_SHARED_LIBS=OFF",
+                    *args
+    system "cmake", "--build", "build/static"
+    lib.install "build/static/libfolly.a", "build/static/folly/libfollybenchmark.a"
   end
 
   test do
+    # Force use of Clang rather than LLVM Clang
+    ENV.clang if OS.mac?
+
     (testpath/"test.cc").write <<~EOS
       #include <folly/FBVector.h>
       int main() {
@@ -60,7 +85,7 @@ class Folly < Formula
         return 0;
       }
     EOS
-    system ENV.cxx, "-std=c++11", "test.cc", "-I#{include}", "-L#{lib}",
+    system ENV.cxx, "-std=c++14", "test.cc", "-I#{include}", "-L#{lib}",
                     "-lfolly", "-o", "test"
     system "./test"
   end

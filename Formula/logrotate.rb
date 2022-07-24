@@ -1,19 +1,20 @@
 class Logrotate < Formula
   desc "Rotates, compresses, and mails system logs"
   homepage "https://github.com/logrotate/logrotate"
-  url "https://github.com/logrotate/logrotate/releases/download/3.13.0/logrotate-3.13.0.tar.gz"
-  sha256 "2ea33f69176dd2668fb85307210d7ed0411ff2a0429e4a0a2d881e740160e4b0"
+  url "https://github.com/logrotate/logrotate/releases/download/3.20.1/logrotate-3.20.1.tar.xz"
+  sha256 "742f6d6e18eceffa49a4bacd933686d3e42931cfccfb694d7f6369b704e5d094"
+  license "GPL-2.0"
 
   bottle do
-    sha256 "e1f19be946b643cdac9c24bf6085a4130e6cd5224355059b2a1b6a3c95094c28" => :high_sierra
-    sha256 "c05cad8c62e0121cf9f7c65cda3f1bad72793af7e31b51dc45c84ade68121615" => :sierra
-    sha256 "220fec6f092f5878158b8028f13c4184a41145faa9b681da7288fa42d87e4e20" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "20bb6473a71d54801b2d141f8bb5fd57211bc4f4df3ec9e1d5f4b3c650a33cd2"
+    sha256 cellar: :any,                 arm64_big_sur:  "333fd71f9f463920a1a76f04cfdb700563477168d25675237a1863ec5fae8727"
+    sha256 cellar: :any,                 monterey:       "91cd5a2ed4988f3de33a607d22b77c4f629aba32b550810c4e5f6956a355fe39"
+    sha256 cellar: :any,                 big_sur:        "7fe8e0c87218bf3b58125ffea6278287d586855663c73a20ca8fa07d4d22737f"
+    sha256 cellar: :any,                 catalina:       "fded0c8e4a465b9fbed0f83bb371f3b3d950c75ab0e9bb786591455f4401ef05"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8a3d7d0e82594615a2fd4c0912aba1fee56fde87477a155054e771ae25cd5eeb"
   end
 
   depends_on "popt"
-
-  # Adapt the default config for Homebrew
-  patch :DATA
 
   def install
     system "./configure", "--disable-dependency-tracking",
@@ -23,37 +24,15 @@ class Logrotate < Formula
                           "--with-state-file-path=#{var}/lib/logrotate.status"
     system "make", "install"
 
-    inreplace "examples/logrotate-default", "/etc/logrotate.d", "#{etc}/logrotate.d"
-    etc.install "examples/logrotate-default" => "logrotate.conf"
+    inreplace "examples/logrotate.conf", "/etc/logrotate.d", "#{etc}/logrotate.d"
+    etc.install "examples/logrotate.conf" => "logrotate.conf"
     (etc/"logrotate.d").mkpath
   end
 
-  plist_options :manual => "logrotate"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{sbin}/logrotate</string>
-          <string>#{etc}/logrotate.conf</string>
-        </array>
-        <key>RunAtLoad</key>
-        <false/>
-        <key>StartCalendarInterval</key>
-        <dict>
-          <key>Hour</key>
-          <integer>6</integer>
-          <key>Minute</key>
-          <integer>25</integer>
-        </dict>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_sbin/"logrotate", etc/"logrotate.conf"]
+    run_type :cron
+    cron "25 6 * * *"
   end
 
   test do
@@ -68,34 +47,3 @@ class Logrotate < Formula
     assert(File.size?("test.log").nil?, "File is not zero length!")
   end
 end
-
-__END__
-diff --git i/examples/logrotate-default w/examples/logrotate-default
-index 39a092d..c61a33a 100644
---- i/examples/logrotate-default
-+++ w/examples/logrotate-default
-@@ -14,23 +14,7 @@ dateext
- # uncomment this if you want your log files compressed
- #compress
-
--# RPM packages drop log rotation information into this directory
-+# Homebrew packages drop log rotation information into this directory
- include /etc/logrotate.d
-
--# no packages own wtmp and btmp -- we'll rotate them here
--/var/log/wtmp {
--    missingok
--    monthly
--    create 0664 root utmp
--    minsize 1M
--    rotate 1
--}
--
--/var/log/btmp {
--    missingok
--    monthly
--    create 0600 root utmp
--    rotate 1
--}
--
- # system-specific logs may be also be configured here.

@@ -1,35 +1,38 @@
 class Simh < Formula
   desc "Portable, multi-system simulator"
   homepage "http://simh.trailing-edge.com/"
-  url "http://simh.trailing-edge.com/sources/simhv39-0.zip"
-  version "3.9-0"
-  sha256 "e49b259b66ad6311ca9066dee3d3693cd915106a6938a52ed685cdbada8eda3b"
+  url "https://github.com/simh/simh/archive/v3.12-2.tar.gz"
+  version "3.12.2"
+  sha256 "bd8b01c24e62d9ba930f41a7ae7c87bf0c1e5794e27ff689c1b058ed75ebc3e8"
+  license "MIT"
+  head "https://github.com/simh/simh.git", branch: "master"
 
-  head "https://github.com/simh/simh.git"
+  # At the time this check was added, the "latest" release on GitHub was several
+  # versions behind the actual latest version, so we check the Git tags instead.
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+(?:-\d+)?)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "48f8dbc43fbcec170807bc4a0730ace70fd6e99c0619ecb26897e32d3bd3f03b" => :high_sierra
-    sha256 "5b766137d34b8728a8a2ae3357c6c14063e2aabf3fa4e1107118764f05bc7cb0" => :sierra
-    sha256 "38663141007d531b100b6408f27e1f8c3a43d3ec3cb5dc3b0086ac257077ea3f" => :el_capitan
-    sha256 "0aa3e73267250ed3e466465f78d8bc4f286a7bb825c454dae5587af2023a313b" => :yosemite
-    sha256 "e9043ec0dc68a5660a20fe270488dbfbf8741a77aae8dace61441fc348e74234" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "4bbbfacf19e812a3f551b11c3dc6222b30cba2ff789d10b7a0d3431c1c7816f8"
+    sha256 cellar: :any,                 arm64_big_sur:  "226b979de0b16040ceac8d43169acad561cc02de69fedbc3ce7608e08a8dcf99"
+    sha256 cellar: :any,                 monterey:       "a58a7539db5ac84a45dac55d1718b539435b4364b154922b1a12ea689f4f8a0e"
+    sha256 cellar: :any,                 big_sur:        "009a1fd5617b4964e7548754c9047688b3ffbc86a6c5e3acf816ce8462a3489e"
+    sha256 cellar: :any,                 catalina:       "260d5b0236efa26ea9846b5a64807afeb6dda6c0c308f84a4cd0f891a1fa76e7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9ff6b20047316c5efd516276d7029475379b026f43b446e1707e488cff52be10"
   end
 
-  # After 3.9-0 the project moves to https://github.com/simh/simh
-  # It doesn't actually fail, but the makefile queries llvm-gcc -v --help a lot
-  # to determine what flags to throw.  It is simply not designed for clang.
-  # Remove at the next revision that will support clang (see github site).
-  fails_with :clang do
-    build 421
-    cause "The program is closely tied to gcc & llvm-gcc in this revision."
-  end
+  depends_on "libpng"
+  depends_on "sdl2"
+
+  uses_from_macos "zlib"
 
   def install
     ENV.deparallelize unless build.head?
     inreplace "makefile", "GCC = gcc", "GCC = #{ENV.cc}"
     inreplace "makefile", "CFLAGS_O = -O2", "CFLAGS_O = #{ENV.cflags}"
-    system "make", "USE_NETWORK=1", "all"
+    system "make", "all"
     bin.install Dir["BIN/*"]
     Dir["**/*.txt"].each do |f|
       (doc/File.dirname(f)).install f

@@ -5,30 +5,57 @@ class GnuWhich < Formula
   url "https://ftp.gnu.org/gnu/which/which-2.21.tar.gz"
   mirror "https://ftpmirror.gnu.org/which/which-2.21.tar.gz"
   sha256 "f4a245b94124b377d8b49646bf421f9155d36aa7614b6ebf83705d3ffc76eaad"
+  license "GPL-3.0-or-later"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "3932d82472cb95be1af5692a3cdaf55b841f2799f80271ffb2ff22b940210dbc" => :high_sierra
-    sha256 "ad546f7de7825dfbadcfbadd27a493d8acdb44c4a7a6855d02473ef96fb2f716" => :sierra
-    sha256 "c7ed10cf7ef215ef098e2e340d1f491037080acac59a38ade51088ebc09e71c4" => :el_capitan
-    sha256 "469d61be66afe0da2758838d1bde62544a661691568eaa30bc4f5abc16402efc" => :yosemite
-    sha256 "b2649bbc23e1b180e3a7b9d4f88765d674696468904b246d253a7ca39106af61" => :mavericks
-    sha256 "5f9dc6704dbc7599c299c6e0dd186efe19d2cdf6680651010c7a9c3b377a983e" => :mountain_lion
+    rebuild 3
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "8343d2e916151642b540143f2b3f8a79af4a6e22df55e01b846bad2d0e509074"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "873e8ac50fdc7b40699f7ebcf29c73c768d2db8d958f1fdb2d4be13c0b670c3a"
+    sha256 cellar: :any_skip_relocation, monterey:       "21e5e71e2a9aadc88636bdb7e76dc5aef17e5ca31b99e02553bc61263e2c36e8"
+    sha256 cellar: :any_skip_relocation, big_sur:        "eeb493d3cc6252da45b29cf1d2a1d6daca630a6cd467ae690c3979673ea9a589"
+    sha256 cellar: :any_skip_relocation, catalina:       "f9e6512591096a9f53067ea4a0b5b9f8516515b49fd5bdabfc6e31c1c0c876f2"
+    sha256 cellar: :any_skip_relocation, mojave:         "170008e80a4cc5f1e45b3445f9fb6f099d7700aa6dd825602f6d32316c27735b"
+    sha256 cellar: :any_skip_relocation, high_sierra:    "66446416b0dc367076ab38cfc9775d8c201fc571b1a2cd2fc0197daa6b83882a"
+    sha256 cellar: :any_skip_relocation, sierra:         "68ea3522ec318c9b25d711ce4405b4cd6a41edca20b7df008adc499ab794c4fa"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "cf191a85d1f5684e84909ccf5d5df3ec3b9ffd7facc629bc2664f99078bf414e"
   end
 
-  deprecated_option "default-names" => "with-default-names"
-
-  option "with-default-names", "Do not prepend 'g' to the binary"
-
   def install
-    args = ["--prefix=#{prefix}", "--disable-dependency-tracking"]
-    args << "--program-prefix=g" if build.without? "default-names"
+    args = %W[
+      --prefix=#{prefix}
+      --disable-dependency-tracking
+    ]
 
+    args << "--program-prefix=g" if OS.mac?
     system "./configure", *args
     system "make", "install"
+
+    if OS.mac?
+      (libexec/"gnubin").install_symlink bin/"gwhich" => "which"
+      (libexec/"gnuman/man1").install_symlink man1/"gwhich.1" => "which.1"
+    end
+
+    libexec.install_symlink "gnuman" => "man"
+  end
+
+  def caveats
+    on_macos do
+      <<~EOS
+        GNU "which" has been installed as "gwhich".
+        If you need to use it as "which", you can add a "gnubin" directory
+        to your PATH from your bashrc like:
+
+            PATH="#{opt_libexec}/gnubin:$PATH"
+      EOS
+    end
   end
 
   test do
-    system "#{bin}/gwhich", "gcc"
+    if OS.mac?
+      system "#{bin}/gwhich", "gcc"
+      system "#{opt_libexec}/gnubin/which", "gcc"
+    else
+      system "#{bin}/which", "gcc"
+    end
   end
 end

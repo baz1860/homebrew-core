@@ -1,34 +1,25 @@
 class Scons < Formula
+  include Language::Python::Virtualenv
+
   desc "Substitute for classic 'make' tool with autoconf/automake functionality"
-  homepage "http://www.scons.org"
-  url "https://downloads.sourceforge.net/project/scons/scons/3.0.1/scons-3.0.1.tar.gz"
-  sha256 "24475e38d39c19683bc88054524df018fe6949d70fbd4c69e298d39a0269f173"
+  homepage "https://www.scons.org/"
+  url "https://files.pythonhosted.org/packages/64/a1/9dc5c5e43b3d1b1832da34c8ae7b239a8f2847c33509fa0eb011fd8bc1ad/SCons-4.3.0.tar.gz"
+  sha256 "d47081587e3675cc168f1f54f0d74a69b328a2fc90ec4feb85f728677419b879"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "c791b4905477a5fbc33345cef5e412807ffc90ba6ea35bfc9a263f542702aa1c" => :high_sierra
-    sha256 "c791b4905477a5fbc33345cef5e412807ffc90ba6ea35bfc9a263f542702aa1c" => :sierra
-    sha256 "c791b4905477a5fbc33345cef5e412807ffc90ba6ea35bfc9a263f542702aa1c" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "ddbf863043a23a4b42331c2de6ca71bbfdd7a12979a4c43f65694106745d3cb9"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ddbf863043a23a4b42331c2de6ca71bbfdd7a12979a4c43f65694106745d3cb9"
+    sha256 cellar: :any_skip_relocation, monterey:       "a5d0c147ee550cae094922ce5e46bd0eecb978757ee1131677a233c423c9b909"
+    sha256 cellar: :any_skip_relocation, big_sur:        "a5d0c147ee550cae094922ce5e46bd0eecb978757ee1131677a233c423c9b909"
+    sha256 cellar: :any_skip_relocation, catalina:       "a5d0c147ee550cae094922ce5e46bd0eecb978757ee1131677a233c423c9b909"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1cf0cd49fe6d92410f0f77186223735b224dc6ddf82c877a02e380a9612f2898"
   end
 
-  def install
-    man1.install gzip("scons-time.1", "scons.1", "sconsign.1")
-    system "/usr/bin/python", "setup.py", "install",
-             "--prefix=#{prefix}",
-             "--standalone-lib",
-             # SCons gets handsy with sys.path---`scons-local` is one place it
-             # will look when all is said and done.
-             "--install-lib=#{libexec}/scons-local",
-             "--install-scripts=#{bin}",
-             "--install-data=#{libexec}",
-             "--no-version-script", "--no-install-man"
+  depends_on "python@3.10"
 
-    # Re-root scripts to libexec so they can import SCons and symlink back into
-    # bin. Similar tactics are used in the duplicity formula.
-    bin.children.each do |p|
-      mv p, "#{libexec}/#{p.basename}.py"
-      bin.install_symlink "#{libexec}/#{p.basename}.py" => p.basename
-    end
+  def install
+    virtualenv_install_with_resources
   end
 
   test do

@@ -1,18 +1,22 @@
 class Libp11 < Formula
   desc "PKCS#11 wrapper library in C"
   homepage "https://github.com/OpenSC/libp11/wiki"
-  url "https://downloads.sourceforge.net/project/opensc/libp11/libp11-0.2.8.tar.gz"
-  sha256 "a4121015503ade98074b5e2a2517fc8a139f8b28aed10021db2bb77283f40691"
-  revision 1
+  url "https://github.com/OpenSC/libp11/releases/download/libp11-0.4.12/libp11-0.4.12.tar.gz"
+  sha256 "1e1a2533b3fcc45fde4da64c9c00261b1047f14c3f911377ebd1b147b3321cfd"
+  license "LGPL-2.1-or-later"
+
+  livecheck do
+    url :stable
+    regex(/^libp11[._-]v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "9141155e8e615576c62fb4e8b3bb0f7f75d0954104a198423bbbb2a1b741f53e" => :high_sierra
-    sha256 "6be0e0dc2f7dc8dee695cce025a0f55aba0b4f0f13a812ecc3b55047b9966cd8" => :sierra
-    sha256 "9603d653971da9473b55452107f791466b3a66a02c9b6ef29dd78d87ca749331" => :el_capitan
-    sha256 "1daf29346c2b73f53d9df61e42876f7d4c813389c0340e7b9385fb97b3e16a94" => :yosemite
-    sha256 "2cb4d5a038448daee4c6c4078ea53afb88037645d8e28ef6a17e5644785f573d" => :mavericks
-    sha256 "3853daccf8c51561cf882bb2f43e4b7a0ca70aebe9c9680b84f793bfe73d2a2e" => :mountain_lion
+    sha256 cellar: :any,                 arm64_monterey: "7ff9bf5bc261f57e6396cf4db40d78fe76d8abef845b67bc6000b38b1308f34c"
+    sha256 cellar: :any,                 arm64_big_sur:  "fb06eacdf6bdb6f8af71706a81aa5e70fdaaf6f4b8ca0fe285c0687ef9d4cb6f"
+    sha256 cellar: :any,                 monterey:       "58f4862ac40d50e7083ad99703f0302d9ba1269744c82263ea2e6aced957d6a4"
+    sha256 cellar: :any,                 big_sur:        "cc2abf1c58255ebcd610a694e4c45496c6471d31a5fc917c98b15bc6e10fd4d8"
+    sha256 cellar: :any,                 catalina:       "62236e2ad57894cc392306c0e4c1becff52b8054bb88baa65e01431babc8884e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "409cb2e2ff0a554ca1ae763da1065fe9fc499668d305457cd4dc24be09032fbf"
   end
 
   head do
@@ -22,13 +26,21 @@ class Libp11 < Formula
   end
 
   depends_on "pkg-config" => :build
-  depends_on "libtool" => :run
-  depends_on "openssl"
+  depends_on "libtool"
+  depends_on "openssl@1.1"
 
   def install
     system "./bootstrap" if build.head?
     system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
+                          "--prefix=#{prefix}",
+                          "--with-enginesdir=#{lib}/engines-1.1"
     system "make", "install"
+    pkgshare.install "examples/auth.c"
+  end
+
+  test do
+    system ENV.cc, pkgshare/"auth.c", "-I#{Formula["openssl@1.1"].include}",
+                   "-L#{lib}", "-L#{Formula["openssl@1.1"].lib}",
+                   "-lp11", "-lcrypto", "-o", "test"
   end
 end

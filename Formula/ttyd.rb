@@ -1,30 +1,46 @@
 class Ttyd < Formula
   desc "Command-line tool for sharing terminal over the web"
-  homepage "https://github.com/tsl0922/ttyd"
-  url "https://github.com/tsl0922/ttyd/archive/1.4.0.tar.gz"
-  sha256 "757a9b5b5dd3de801d7db8fab6035d97ea144b02a51c78bdab28a8e07bcf05d6"
-  head "https://github.com/tsl0922/ttyd.git"
+  homepage "https://tsl0922.github.io/ttyd/"
+  url "https://github.com/tsl0922/ttyd/archive/1.6.3.tar.gz"
+  sha256 "1116419527edfe73717b71407fb6e06f46098fc8a8e6b0bb778c4c75dc9f64b9"
+  license "MIT"
+  revision 6
+  head "https://github.com/tsl0922/ttyd.git", branch: "main"
 
   bottle do
-    cellar :any
-    sha256 "b6d3b9fd532e3b9c0542fc5566969812fbf43b65230beabf8b68d62cc00e8e6c" => :high_sierra
-    sha256 "4a943020c1f60c595e67725f0deee077cff693e4228c628f2ff60ebd914d8d72" => :sierra
-    sha256 "d230f778b8ee31b696f8c841ef5bbc39aff183fc8a11ff536cf6f979ffd5508c" => :el_capitan
+    sha256 arm64_monterey: "524013d1679fd2515a40deb3960e3e867403ee80ed8492695bea46ba5efcc8fb"
+    sha256 arm64_big_sur:  "d9fc0f9b87ff3a47188bd3b84b1ef6b5fc07028366631e03b2624165b76a1883"
+    sha256 monterey:       "f462684eca351cbb766839e341a8740492ada7fdbb2d37dd2df10b11bd3d689e"
+    sha256 big_sur:        "934bdd58fc7a75c85133e43b5a1d07f20469e3b23e85b04057c2f4c287afd238"
+    sha256 catalina:       "5cbd30c58c342b491fe87f2324afe12e736b70eace5441422c594049369892e6"
+    sha256 x86_64_linux:   "3cba3266866517c20b24f754d769882a461acd858db07e3c86c1fe797348f890"
   end
 
   depends_on "cmake" => :build
-  depends_on "pkg-config" => :build
-  depends_on "openssl"
   depends_on "json-c"
+  depends_on "libevent"
+  depends_on "libuv"
   depends_on "libwebsockets"
+  depends_on "openssl@1.1"
+
+  uses_from_macos "vim" # needed for xxd
 
   def install
-    cmake_args = std_cmake_args + ["-DOPENSSL_ROOT_DIR=#{Formula["openssl"].opt_prefix}"]
-    system "cmake", ".", *cmake_args
-    system "make", "install"
+    system "cmake", "-S", ".", "-B", "build",
+                    "-DOPENSSL_ROOT_DIR=#{Formula["openssl@1.1"].opt_prefix}",
+                    "-Dlibwebsockets_DIR=#{Formula["libwebsockets"].opt_lib/"cmake/libwebsockets"}",
+                    *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/ttyd --version")
+    port = free_port
+    fork do
+      system "#{bin}/ttyd", "--port", port.to_s, "bash"
+    end
+    sleep 5
+
+    system "curl", "-sI", "http://localhost:#{port}"
   end
 end

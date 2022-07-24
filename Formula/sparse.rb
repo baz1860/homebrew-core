@@ -1,23 +1,33 @@
 class Sparse < Formula
   desc "Static C code analysis tool"
   homepage "https://sparse.wiki.kernel.org/"
-  url "https://www.kernel.org/pub/software/devel/sparse/dist/sparse-0.5.0.tar.xz"
-  sha256 "921fcf918c6778d1359f3886ac8cb4cf632faa6242627bc2ae2db75e983488d5"
-  head "https://git.kernel.org/pub/scm/devel/sparse/sparse.git"
+  url "https://www.kernel.org/pub/software/devel/sparse/dist/sparse-0.6.4.tar.xz"
+  sha256 "6ab28b4991bc6aedbd73550291360aa6ab3df41f59206a9bde9690208a6e387c"
+  head "https://git.kernel.org/pub/scm/devel/sparse/sparse.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "679d2e51c1f0ee786339d2715bfe85b24f563318b4b2c1a5873606b0aeb12217" => :high_sierra
-    sha256 "bf8ccfa445389a6f69dbb6a58660b2228b58560e8ecc7a8045a07538c3702a88" => :sierra
-    sha256 "78bc3435fd4818f38848fb1b6c57bfb70f540adf527f71390274d0d2a31efbac" => :el_capitan
-    sha256 "be1693a0ec2050625898d960ffd99468d4ce7471785fe1ae6d6f373da2416b11" => :yosemite
-    sha256 "4c33d0589d81abda44fef8904892dc7f6361e96caa82012a71101e9fefe4425c" => :mavericks
-    sha256 "6dac58ce04e796731ea3f0ed3a239cbe6334ab54648f4238baf60d64c1d04437" => :mountain_lion
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "3afb8b9256e015fcb1fc49608cea9fe6c02e6a93fa1df0a7720a30c5e8057699"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "57f40e26e5b3c4239c2f247705d3b6b27256482ef67c239cb34bc82ec5cea891"
+    sha256 cellar: :any_skip_relocation, monterey:       "7c86940a523d15f63966df796fdea74176c02be7adc8c4071d2f60a194bd30af"
+    sha256 cellar: :any_skip_relocation, big_sur:        "c858bb88d9f4d2d00da1d7498ee130a6d134b77a07d786d9b3906b74fedc90b0"
+    sha256 cellar: :any_skip_relocation, catalina:       "a1517973190e2b8fdf21136344334ad757a0bd4fe24ab65c0846a4e5e64b26df"
+    sha256 cellar: :any_skip_relocation, mojave:         "a42c1376dca39a3708d3c070958e85b1dc50ddbf133b5a26055d4f314319f69c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8c282a77e53c828abe22a69af0b1dd9cb124b333344f9be1b0f0f3d0a55a3fb0"
   end
 
+  depends_on "gcc" if DevelopmentTools.clang_build_version < 1100
+
+  # error: use of unknown builtin '__builtin_clrsb'
+  fails_with :clang if DevelopmentTools.clang_build_version < 1100
+
   def install
-    inreplace "Makefile", /PREFIX=\$\(HOME\)/, "PREFIX=#{prefix}"
-    system "make", "install"
+    # BSD "install" does not understand the GNU -D flag.
+    # Create the parent directories ourselves.
+    inreplace "Makefile", "install -D", "install"
+    bin.mkpath
+    man1.mkpath
+
+    system "make", "install", "PREFIX=#{prefix}"
   end
 
   test do

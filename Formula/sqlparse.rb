@@ -3,17 +3,22 @@ class Sqlparse < Formula
 
   desc "Non-validating SQL parser"
   homepage "https://github.com/andialbrecht/sqlparse"
-  url "https://files.pythonhosted.org/packages/79/3c/2ad76ba49f9e3d88d2b58e135b7821d93741856d1fe49970171f73529303/sqlparse-0.2.4.tar.gz"
-  sha256 "ce028444cfab83be538752a2ffdb56bc417b7784ff35bb9a3062413717807dec"
+  url "https://files.pythonhosted.org/packages/32/fe/8a8575debfd924c8160295686a7ea661107fc34d831429cce212b6442edb/sqlparse-0.4.2.tar.gz"
+  sha256 "0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"
+  license "BSD-3-Clause"
+  revision 1
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "e4ec0cc5f8d0b388deee1a472d90dc3007f97ea34f5850e103b72fd3861242fa" => :high_sierra
-    sha256 "81b99b0f9d66e749b781faaf3beabf199a9381ada9723bb2ef1ebb1b80240154" => :sierra
-    sha256 "7155f5eca1b0f127a1f82846842c50e540460093ebc0b6735b724979594b6a06" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "5917e87d404c93aa04ce10b94b1d036e1b7302b32e118931d86799022f22f671"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "5917e87d404c93aa04ce10b94b1d036e1b7302b32e118931d86799022f22f671"
+    sha256 cellar: :any_skip_relocation, monterey:       "2b655782b25db3c6de626342cc640acdf2226540935546a1e947c4bc064c969c"
+    sha256 cellar: :any_skip_relocation, big_sur:        "2b655782b25db3c6de626342cc640acdf2226540935546a1e947c4bc064c969c"
+    sha256 cellar: :any_skip_relocation, catalina:       "2b655782b25db3c6de626342cc640acdf2226540935546a1e947c4bc064c969c"
+    sha256 cellar: :any_skip_relocation, mojave:         "2b655782b25db3c6de626342cc640acdf2226540935546a1e947c4bc064c969c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "76b4d21dec27b2311986f15e9b279a8ac0cefe6bc5d91a94733ded3746cf3c90"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "python@3.10"
 
   def install
     virtualenv_install_with_resources

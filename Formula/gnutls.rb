@@ -1,59 +1,50 @@
 class Gnutls < Formula
   desc "GNU Transport Layer Security (TLS) Library"
   homepage "https://gnutls.org/"
-  url "https://gnupg.org/ftp/gcrypt/gnutls/v3.5/gnutls-3.5.18.tar.xz"
-  mirror "https://www.mirrorservice.org/sites/ftp.gnupg.org/gcrypt/gnutls/v3.5/gnutls-3.5.18.tar.xz"
-  sha256 "ae2248d9e78747cf9c469dde81ff8f90b56838b707a0637f3f7d4eee90e80234"
+  url "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.6.tar.xz"
+  mirror "https://www.mirrorservice.org/sites/ftp.gnupg.org/gcrypt/gnutls/v3.7/gnutls-3.7.6.tar.xz"
+  sha256 "77065719a345bfb18faa250134be4c53bef70c1bd61f6c0c23ceb8b44f0262ff"
+  license all_of: ["LGPL-2.1-or-later", "GPL-3.0-only"]
 
-  bottle do
-    sha256 "ba36c5fd1956fff7edd9ba56c737cc2821905e7b308efcf66b8fb5f6046c123d" => :high_sierra
-    sha256 "6f47b7360580591ffb10e2e7a2cc1427988f16a06df21b109eeb03f1fa15ffc7" => :sierra
-    sha256 "a9313514b645aad1ed99805bd8d499da84de422d106be985fb64b6a25cda5290" => :el_capitan
+  livecheck do
+    url "https://www.gnutls.org/news.html"
+    regex(/>\s*GnuTLS\s*v?(\d+(?:\.\d+)+)\s*</i)
   end
 
-  devel do
-    url "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.2.tar.xz"
-    mirror "https://www.mirrorservice.org/sites/ftp.gnupg.org/gcrypt/gnutls/v3.6/gnutls-3.6.2.tar.xz"
-    sha256 "bcd5db7b234e02267f36b5d13cf5214baac232b7056a506252b7574ea7738d1f"
+  bottle do
+    sha256 arm64_monterey: "23bf1632f4690a1674f87802590e397b64b72c6b0dfea1cbe4515f6f7f19d026"
+    sha256 arm64_big_sur:  "6c5428d026ae41c3b35dc709aeec17778b29ddccf379fb2858a16e4fa96ced38"
+    sha256 monterey:       "2b8debcdd406402ce7894b418b40ff5daea69ac3075a1dc0e8e47508be2e8b93"
+    sha256 big_sur:        "3439b2b048d1242e14ba8eb10e9e55ed4f0a69c8d58f334279cc4cbfeb0d26c2"
+    sha256 catalina:       "8072b6902e177bd75f6d00989adf07b5a482057ce8193025700ce44198bf4d56"
+    sha256 x86_64_linux:   "daafcb2b610958021e9997b314d1cd437fd5bd562026c6dd7844b6721e10dc82"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "libtasn1"
+  depends_on "ca-certificates"
   depends_on "gmp"
-  depends_on "nettle"
+  depends_on "guile"
+  depends_on "libidn2"
+  depends_on "libtasn1"
   depends_on "libunistring"
-  depends_on "p11-kit" => :recommended
-  depends_on "guile" => :optional
-  depends_on "unbound" => :optional
+  depends_on "nettle"
+  depends_on "p11-kit"
+  depends_on "unbound"
 
   def install
-    # Fix "dyld: lazy symbol binding failed: Symbol not found: _getentropy"
-    # Reported 18 Oct 2016 https://gitlab.com/gnutls/gnutls/issues/142
-    if MacOS.version == "10.11" && MacOS::Xcode.installed? && MacOS::Xcode.version >= "8.0"
-      inreplace "configure", "getentropy(0, 0);", "undefinedgibberish(0, 0);"
-    end
-
     args = %W[
       --disable-dependency-tracking
       --disable-silent-rules
       --disable-static
       --prefix=#{prefix}
       --sysconfdir=#{etc}
-      --with-default-trust-store-file=#{etc}/openssl/cert.pem
+      --with-default-trust-store-file=#{pkgetc}/cert.pem
+      --with-guile-site-dir=#{share}/guile/site/3.0
+      --with-guile-site-ccache-dir=#{lib}/guile/3.0/site-ccache
+      --with-guile-extension-dir=#{lib}/guile/3.0/extensions
       --disable-heartbeat-support
+      --with-p11-kit
     ]
-
-    if build.with? "p11-kit"
-      args << "--with-p11-kit"
-    else
-      args << "--without-p11-kit"
-    end
-
-    if build.with? "guile"
-      args << "--enable-guile" << "--with-guile-site-dir"
-    else
-      args << "--disable-guile"
-    end
 
     system "./configure", *args
     system "make", "install"
@@ -64,28 +55,37 @@ class Gnutls < Formula
   end
 
   def post_install
-    keychains = %w[
-      /System/Library/Keychains/SystemRootCertificates.keychain
-    ]
+    rm_f pkgetc/"cert.pem"
+    pkgetc.install_symlink Formula["ca-certificates"].pkgetc/"cert.pem"
 
-    certs_list = `security find-certificate -a -p #{keychains.join(" ")}`
-    certs = certs_list.scan(/-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----/m)
+    # Touch gnutls.go to avoid Guile recompilation.
+    # See https://github.com/Homebrew/homebrew-core/pull/60307#discussion_r478917491
+    touch lib/"guile/3.0/site-ccache/gnutls.go"
+  end
 
-    valid_certs = certs.select do |cert|
-      IO.popen("openssl x509 -inform pem -checkend 0 -noout", "w") do |openssl_io|
-        openssl_io.write(cert)
-        openssl_io.close_write
-      end
-
-      $CHILD_STATUS.success?
-    end
-
-    openssldir = etc/"openssl"
-    openssldir.mkpath
-    (openssldir/"cert.pem").atomic_write(valid_certs.join("\n"))
+  def caveats
+    <<~EOS
+      If you are going to use the Guile bindings you will need to add the following
+      to your .bashrc or equivalent in order for Guile to find the TLS certificates
+      database:
+        export GUILE_TLS_CERTIFICATE_DIRECTORY=#{pkgetc}/
+    EOS
   end
 
   test do
     system bin/"gnutls-cli", "--version"
+
+    gnutls = testpath/"gnutls.scm"
+    gnutls.write <<~EOS
+      (use-modules (gnutls))
+      (gnutls-version)
+    EOS
+
+    ENV["GUILE_AUTO_COMPILE"] = "0"
+    ENV["GUILE_LOAD_PATH"] = HOMEBREW_PREFIX/"share/guile/site/3.0"
+    ENV["GUILE_LOAD_COMPILED_PATH"] = HOMEBREW_PREFIX/"lib/guile/3.0/site-ccache"
+    ENV["GUILE_SYSTEM_EXTENSIONS_PATH"] = HOMEBREW_PREFIX/"lib/guile/3.0/extensions"
+
+    system "guile", gnutls
   end
 end

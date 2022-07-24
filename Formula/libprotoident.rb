@@ -1,18 +1,33 @@
 class Libprotoident < Formula
   desc "Performs application layer protocol identification for flows"
   homepage "https://research.wand.net.nz/software/libprotoident.php"
-  url "https://research.wand.net.nz/software/libprotoident/libprotoident-2.0.12.tar.gz"
-  sha256 "c09aba4882837c7f9ebf4ad153b637a9a7cbd5a2b4b398e10ddb63e74f270fac"
+  url "https://research.wand.net.nz/software/libprotoident/libprotoident-2.0.13.tar.gz"
+  sha256 "8ca7ccd95b3f23457c3f9eff480364565b553bbcab9b39969f964910738e5672"
+  revision 2
 
-  bottle do
-    cellar :any
-    sha256 "48a4b98343c8a875dc429c11f0e65b2d4afbd66e631aa390deb71eca16dfc55d" => :high_sierra
-    sha256 "e353b002c9c3180965daadadf13273ab2f74fc6ec4701ba99a8231aaf4e9e3e0" => :sierra
-    sha256 "9a631567b1642854a7d8572f047cf4e02fff34bae11c43e7d91dbf16c0529a3b" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(/href=.*?libprotoident[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "libtrace"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "d93974ec737d62f1b54f6aafeec74cccf2632954e81daa60043632e5446292f2"
+    sha256 cellar: :any,                 arm64_big_sur:  "d0686f33c93e2853ca605f256486c9d8569b56b1538d0881b32fa4f0d7a49dfa"
+    sha256 cellar: :any,                 monterey:       "94f6535531ea76727db897dd49009a111652cb1c47fa3a592515c71a97b1aebf"
+    sha256 cellar: :any,                 big_sur:        "1928a4cc164177352292b8872fa6ed498247af16b1c25ffbf6cc80983e6ac43a"
+    sha256 cellar: :any,                 catalina:       "7ea19cf1a0ae1423dcadebe59d08cd2c65433e4210a9e434e9d1e8dfce65abb0"
+    sha256 cellar: :any,                 mojave:         "06f18aa299bc9b53991ac448d20d318625a3f1d55fe6bb093c45045b4accbb5c"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "24938f68759726bc0549a5388e71184d56795bfbaff25f9d341b5cd0f79bc9a0"
+  end
+
   depends_on "libflowmanager"
+  depends_on "libtrace"
+
+  # Fix -flat_namespace being used on Big Sur and later.
+  patch do
+    url "https://raw.githubusercontent.com/Homebrew/formula-patches/03cf8088210822aa2c1ab544ed58ea04c897d9c4/libtool/configure-pre-0.4.2.418-big_sur.diff"
+    sha256 "83af02f2aa2b746bb7225872cab29a253264be49db0ecebb12f841562d9a2923"
+  end
 
   def install
     system "./configure", "--disable-dependency-tracking",

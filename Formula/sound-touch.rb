@@ -1,17 +1,19 @@
 class SoundTouch < Formula
   desc "Audio processing library"
   homepage "https://www.surina.net/soundtouch/"
-  url "https://www.surina.net/soundtouch/soundtouch-2.0.0.tar.gz"
-  sha256 "d224f7d1421b5f8e74a74c85741345bd9802618a40ae30ce5b427a5705c89d25"
+  url "https://codeberg.org/soundtouch/soundtouch/archive/2.3.1.tar.gz"
+  sha256 "42633774f372d8cb0a33333a0ea3b30f357c548626526ac9f6ce018c94042692"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    cellar :any
-    sha256 "5d980f6d661a942650e8b7953e5a0710d0be708421cdf595b68f7da917cdc2be" => :high_sierra
-    sha256 "4861ccccd41fc57f2d553973ece79462e4c85897426f36c258b8fd1756416da1" => :sierra
-    sha256 "7572fff0564f78a49641ed7c5eb9ed062ff557d452d4515e07544a622eaa17e6" => :el_capitan
+    rebuild 1
+    sha256 cellar: :any,                 arm64_monterey: "0d340cfb0bf1d17b2eea238b756e58cd0559a4e394394b0f5e2031114e75506e"
+    sha256 cellar: :any,                 arm64_big_sur:  "1ccbe6750451a745654c3b00c8f14e1706381074254136278bb4cc1f7b88e009"
+    sha256 cellar: :any,                 monterey:       "ecf1be5a1ff7d41f7346f32c238ae3f30f965e58252e994082c4f2c7dd7d2784"
+    sha256 cellar: :any,                 big_sur:        "cbc1dd06e73d9712e1b1fa21c4767967f122a40e2cd92097c912084f002cc4d5"
+    sha256 cellar: :any,                 catalina:       "650c953db2306d78bd309a24206c014037584c08a490e05a89ac5294cef36df4"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "af9833833154ab73181849ccdb563b1f4146848f69fd3cc4b386c9e46a31d8b8"
   end
-
-  option "with-integer-samples", "Build using integer samples? (default is float)"
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
@@ -24,13 +26,12 @@ class SoundTouch < Formula
       --disable-silent-rules
       --prefix=#{prefix}
     ]
-    args << "--enable-integer-samples" if build.with? "integer-samples"
 
     system "./configure", *args
     system "make", "install"
   end
 
   test do
-    assert_match /SoundStretch v#{version} -/, shell_output("#{bin}/soundstretch 2>&1", 255)
+    assert_match "SoundStretch v#{version} -", shell_output("#{bin}/soundstretch 2>&1", 255)
   end
 end

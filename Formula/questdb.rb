@@ -1,71 +1,41 @@
 class Questdb < Formula
   desc "Time Series Database"
-  homepage "https://www.questdb.org"
-  url "https://www.questdb.org/download/questdb-1.0.4-bin.tar.gz"
-  sha256 "a8d907d88c5bf67aeb465540c7e16ad45eccd13d152b34cdcf4e5056ad908739"
-  revision 1
+  homepage "https://questdb.io"
+  url "https://github.com/questdb/questdb/releases/download/6.4.3/questdb-6.4.3-no-jre-bin.tar.gz"
+  sha256 "61be6ef8002c48a8cfb004cec7ff0cb2bd8f91dcc80343a9483643893ac0df7c"
+  license "Apache-2.0"
 
-  bottle :unneeded
-
-  depends_on :java => "1.8"
-
-  def install
-    inreplace "questdb.sh", "1.7+", "1.8"
-    rm_rf "questdb.exe"
-    libexec.install Dir["*"]
-    bin.install_symlink "#{libexec}/questdb.sh" => "questdb"
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "b28b1aa2d4c0fe6750e23031d29891b5157f9784e2e225e45e8e30c4b42dbede"
   end
 
-  plist_options :manual => "questdb start"
+  depends_on "openjdk@11"
 
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>KeepAlive</key>
-        <dict>
-          <key>SuccessfulExit</key>
-          <false/>
-        </dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/questdb</string>
-          <string>start</string>
-          <string>-d</string>
-          <string>var/"questdb"</string>
-          <string>-n</string>
-        </array>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>WorkingDirectory</key>
-        <string>#{var}/questdb</string>
-        <key>StandardErrorPath</key>
-        <string>#{var}/log/questdb.log</string>
-        <key>StandardOutPath</key>
-        <string>#{var}/log/questdb.log</string>
-        <key>SoftResourceLimits</key>
-        <dict>
-          <key>NumberOfFiles</key>
-          <integer>1024</integer>
-        </dict>
-      </dict>
-    </plist>
-    EOS
+  def install
+    rm_rf "questdb.exe"
+    libexec.install Dir["*"]
+    (bin/"questdb").write_env_script libexec/"questdb.sh", Language::Java.overridable_java_home_env("11")
+    inreplace libexec/"questdb.sh", "/usr/local/var/questdb", var/"questdb"
+  end
+
+  service do
+    run [opt_bin/"questdb", "start", "-d", var/"questdb", "-n", "-f"]
+    keep_alive successful_exit: false
+    error_log_path var/"log/questdb.log"
+    log_path var/"log/questdb.log"
+    working_dir var/"questdb"
   end
 
   test do
     mkdir_p testpath/"data"
     begin
       fork do
-        exec "#{bin}/questdb start -d  #{testpath}/data"
+        exec "#{bin}/questdb start -d #{testpath}/data"
       end
-      sleep 2
-      output = shell_output("curl -Is localhost:9000/js?q=x")
-      sleep 1
-      assert_match /questDB/, output
+      sleep 30
+      output = shell_output("curl -Is localhost:9000/index.html")
+      sleep 4
+      assert_match "questDB", output
     ensure
       system "#{bin}/questdb", "stop"
     end

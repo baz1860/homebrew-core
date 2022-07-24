@@ -1,15 +1,21 @@
 class Jbake < Formula
   desc "Java based static site/blog generator"
-  homepage "http://jbake.org"
-  url "http://jbake.org/files/jbake-2.5.1-bin.zip"
-  sha256 "4d3e1fa926b1beab38f4e073cac067e359ac9aef5b74580a2821f58209f286e4"
+  homepage "https://jbake.org/"
+  url "https://github.com/jbake-org/jbake/releases/download/v2.6.7/jbake-2.6.7-bin.zip"
+  sha256 "8d9c2b70fbf26415c5b3e530088b8b7fd1d236d3ce2c98a9c03fff4734bced39"
+  license "MIT"
 
-  bottle :unneeded
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "a42be6c55ddee9fe328892805530b868a71b31d82a3439c003e7246e0666cfb2"
+  end
+
+  depends_on "openjdk"
 
   def install
     rm_f Dir["bin/*.bat"]
     libexec.install Dir["*"]
-    bin.write_jar_script "#{libexec}/jbake-core.jar", "jbake"
+    bin.install libexec/"bin/jbake"
+    bin.env_script_all_files libexec/"bin", JAVA_HOME: Formula["openjdk"].opt_prefix
   end
 
   test do

@@ -1,19 +1,25 @@
 class Tmpreaper < Formula
   desc "Clean up files in directories based on their age"
   homepage "https://packages.debian.org/sid/tmpreaper"
-  url "https://mirrors.ocf.berkeley.edu/debian/pool/main/t/tmpreaper/tmpreaper_1.6.13+nmu1.tar.gz"
-  mirror "https://mirrorservice.org/sites/ftp.debian.org/debian/pool/main/t/tmpreaper/tmpreaper_1.6.13+nmu1.tar.gz"
-  version "1.6.13_nmu1"
-  sha256 "c88f05b5d995b9544edb7aaf36ac5ce55c6fac2a4c21444e5dba655ad310b738"
+  url "https://deb.debian.org/debian/pool/main/t/tmpreaper/tmpreaper_1.6.16.tar.gz"
+  mirror "https://fossies.org/linux/misc/tmpreaper_1.6.16.tar.gz"
+  sha256 "e543acdd55bb50102c42015e6d399e8abb36ad818cbd3ca6cb1c905b5781e202"
+  license "GPL-2.0-only"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "be0cf74a352a88dc2c6f616ad1bd695e37ff0736826f20007a1727e48ce16b84" => :high_sierra
-    sha256 "44d3eb40f2c063642d57ccd7d65460901e7240abda5bda8b54721d77f731d755" => :sierra
-    sha256 "e9992640d7c0e139caef8ccb130af90548f6435b3789b61c8c873f619e55ade9" => :el_capitan
-    sha256 "a027f222a96bde98ae5f3e271d990871884a89fab8578066cc6b1cdb3a01aa2c" => :yosemite
-    sha256 "31519a6cd52a36c1eb9f5a65b67b6f893d3a9f3c9d4601051cc6f33061bc8bf5" => :mavericks
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "3f4f03eff7847b9b95990d19a92ce37a4c713526e9f8bc757499f87e4403d114"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "3b42c830efc19dd09b2c329d20512521bf32a050faaccd4a959b51cc63fd0273"
+    sha256 cellar: :any_skip_relocation, monterey:       "fd319cab825b31c8009633fa518762e94e1f37cd8930aee53506aa61ebcd40bf"
+    sha256 cellar: :any_skip_relocation, big_sur:        "f8252d7a640ef1e750723d91308cec36a281e04179ab119ec454164afca8a378"
+    sha256 cellar: :any_skip_relocation, catalina:       "484c58aff60e28e698cd6e04cac1974a75316d2fce0028f78b4b720c443a27f6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "0f437e1f006c0a44a6e6c92b7de0f932d63cdadd32bc07f5f1866163632c60a3"
+  end
+
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+
+  on_linux do
+    depends_on "e2fsprogs"
   end
 
   def install

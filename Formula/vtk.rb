@@ -1,128 +1,156 @@
 class Vtk < Formula
   desc "Toolkit for 3D computer graphics, image processing, and visualization"
   homepage "https://www.vtk.org/"
-  url "https://www.vtk.org/files/release/8.1/VTK-8.1.0.tar.gz"
-  sha256 "6e269f07b64fb13774f5925161fb4e1f379f4e6a0131c8408c555f6b58ef3cb7"
-  head "https://github.com/Kitware/VTK.git"
+  url "https://www.vtk.org/files/release/9.1/VTK-9.1.0.tar.gz"
+  sha256 "8fed42f4f8f1eb8083107b68eaa9ad71da07110161a3116ad807f43e5ca5ce96"
+  license "BSD-3-Clause"
+  revision 4
+  head "https://github.com/Kitware/VTK.git", branch: "master"
 
   bottle do
-    sha256 "bd0c1cacabb157928251455e38dff513fb9ea68865ddef7c623e91cb20722713" => :high_sierra
-    sha256 "a4eb2f81607d7c9ab1643cbf8b07607cb2b3ac62033c875f3488c642103cdc06" => :sierra
-    sha256 "9e8ab70c3e26b72de63bda9bead81582876c2b2830ff1bf9f2808dc9c2960b7c" => :el_capitan
+    sha256                               arm64_monterey: "235a62257e18547893acd654ab41187e3f8389744b8d291897661c314a35933f"
+    sha256                               arm64_big_sur:  "31e54d21af04cafe66a614ad8e76e490109e4fb49e0fdaf4a3973786b0768862"
+    sha256                               monterey:       "58ba5d2739518e799603193899e9205d10cca25e074d968c95869fb90b735af5"
+    sha256                               big_sur:        "77c0746012492581c64d845aac3557bedb8111c32353b2157fe7992ac39910ce"
+    sha256                               catalina:       "438508b242067e11fb241204b4d0fa09478654f0406344edc864197d39a71c07"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "398378770eb7afc3c2c4c9fd01ada2ce9b938e82d7b3e7c16398ab36ec3a147a"
   end
 
-  option "without-python", "Build without python2 support"
-
-  depends_on "cmake" => :build
+  depends_on "cmake" => [:build, :test]
   depends_on "boost"
+  depends_on "double-conversion"
+  depends_on "eigen"
   depends_on "fontconfig"
+  depends_on "gl2ps"
+  depends_on "glew"
   depends_on "hdf5"
   depends_on "jpeg"
+  depends_on "jsoncpp"
+  depends_on "libogg"
   depends_on "libpng"
   depends_on "libtiff"
+  depends_on "lz4"
   depends_on "netcdf"
-  depends_on "python" => :recommended if MacOS.version <= :snow_leopard
-  depends_on "python3" => :optional
-  depends_on "qt" => :optional
-  depends_on "pyqt" if build.with? "qt"
+  depends_on "pugixml"
+  depends_on "pyqt@5"
+  depends_on "python@3.9"
+  depends_on "qt@5"
+  depends_on "sqlite"
+  depends_on "theora"
+  depends_on "utf8cpp"
+  depends_on "xz"
 
-  needs :cxx11
+  uses_from_macos "expat"
+  uses_from_macos "libxml2"
+  uses_from_macos "tcl-tk"
+  uses_from_macos "zlib"
 
-  def install
-    args = std_cmake_args + %W[
-      -DBUILD_SHARED_LIBS=ON
-      -DBUILD_TESTING=OFF
-      -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib}
-      -DCMAKE_INSTALL_RPATH:STRING=#{lib}
-      -DModule_vtkInfovisBoost=ON
-      -DModule_vtkInfovisBoostGraphAlgorithms=ON
-      -DModule_vtkRenderingFreeTypeFontConfig=ON
-      -DVTK_REQUIRED_OBJCXX_FLAGS=''
-      -DVTK_USE_COCOA=ON
-      -DVTK_USE_SYSTEM_EXPAT=ON
-      -DVTK_USE_SYSTEM_HDF5=ON
-      -DVTK_USE_SYSTEM_JPEG=ON
-      -DVTK_USE_SYSTEM_LIBXML2=ON
-      -DVTK_USE_SYSTEM_NETCDF=ON
-      -DVTK_USE_SYSTEM_PNG=ON
-      -DVTK_USE_SYSTEM_TIFF=ON
-      -DVTK_USE_SYSTEM_ZLIB=ON
-      -DVTK_WRAP_TCL=ON
-    ]
-
-    unless MacOS::CLT.installed?
-      # We are facing an Xcode-only installation, and we have to keep
-      # vtk from using its internal Tk headers (that differ from OSX's).
-      args << "-DTK_INCLUDE_PATH:PATH=#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Headers"
-      args << "-DTK_INTERNAL_PATH:PATH=#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Headers/tk-private"
-    end
-
-    mkdir "build" do
-      if build.with?("python3") && build.with?("python")
-        # VTK Does not support building both python 2 and 3 versions
-        odie "VTK: Does not support building both python 2 and 3 wrappers"
-      elsif build.with?("python") || build.with?("python3")
-        python_executable = `which python`.strip if build.with? "python"
-        python_executable = `which python3`.strip if build.with? "python3"
-
-        python_prefix = `#{python_executable} -c 'import sys;print(sys.prefix)'`.chomp
-        python_include = `#{python_executable} -c 'from distutils import sysconfig;print(sysconfig.get_python_inc(True))'`.chomp
-        python_version = "python" + `#{python_executable} -c 'import sys;print(sys.version[:3])'`.chomp
-        py_site_packages = "#{lib}/#{python_version}/site-packages"
-
-        args << "-DVTK_WRAP_PYTHON=ON"
-        args << "-DPYTHON_EXECUTABLE='#{python_executable}'"
-        args << "-DPYTHON_INCLUDE_DIR='#{python_include}'"
-        # CMake picks up the system's python dylib, even if we have a brewed one.
-        if File.exist? "#{python_prefix}/Python"
-          args << "-DPYTHON_LIBRARY='#{python_prefix}/Python'"
-        elsif File.exist? "#{python_prefix}/lib/lib#{python_version}.a"
-          args << "-DPYTHON_LIBRARY='#{python_prefix}/lib/lib#{python_version}.a'"
-        elsif File.exist? "#{python_prefix}/lib/lib#{python_version}.dylib"
-          args << "-DPYTHON_LIBRARY='#{python_prefix}/lib/lib#{python_version}.dylib'"
-        else
-          odie "No libpythonX.Y.{dylib|a} file found!"
-        end
-        # Set the prefix for the python bindings to the Cellar
-        args << "-DVTK_INSTALL_PYTHON_MODULE_DIR='#{py_site_packages}/'"
-      end
-
-      if build.with? "qt"
-        args << "-DVTK_QT_VERSION:STRING=5" << "-DVTK_Group_Qt=ON"
-        args << "-DVTK_WRAP_PYTHON_SIP=ON"
-        args << "-DSIP_PYQT_DIR='#{Formula["pyqt5"].opt_share}/sip'"
-      end
-
-      system "cmake", "..", *args
-      system "make"
-      system "make", "install"
-    end
+  on_macos do
+    depends_on "llvm" => :build if DevelopmentTools.clang_build_version == 1316 && Hardware::CPU.arm?
   end
 
-  def caveats; <<~EOS
-    Even without the --with-qt option, you can display native VTK render windows
-    from python. Alternatively, you can integrate the RenderWindowInteractor
-    in PyQt5, Tk or Wx at runtime. Read more:
-      import vtk.qt5; help(vtk.qt5) or import vtk.wx; help(vtk.wx)
-    EOS
+  on_linux do
+    depends_on "gcc"
+    depends_on "libaec"
+    depends_on "mesa-glu"
+  end
+
+  fails_with gcc: "5"
+
+  # clang: error: unable to execute command: Segmentation fault: 11
+  # clang: error: clang frontend command failed due to signal (use -v to see invocation)
+  # Apple clang version 13.1.6 (clang-1316.0.21.2)
+  fails_with :clang if DevelopmentTools.clang_build_version == 1316 && Hardware::CPU.arm?
+
+  def install
+    if DevelopmentTools.clang_build_version == 1316 && Hardware::CPU.arm?
+      ENV.remove "HOMEBREW_LIBRARY_PATHS", Formula["llvm"].opt_lib
+      ENV.llvm_clang
+    end
+
+    args = %W[
+      -DBUILD_SHARED_LIBS:BOOL=ON
+      -DBUILD_TESTING:BOOL=OFF
+      -DCMAKE_INSTALL_NAME_DIR:STRING=#{opt_lib}
+      -DCMAKE_INSTALL_RPATH:STRING=#{rpath}
+      -DCMAKE_DISABLE_FIND_PACKAGE_ICU:BOOL=ON
+      -DVTK_WRAP_PYTHON:BOOL=ON
+      -DVTK_PYTHON_VERSION:STRING=3
+      -DVTK_LEGACY_REMOVE:BOOL=ON
+      -DVTK_MODULE_ENABLE_VTK_InfovisBoost:STRING=YES
+      -DVTK_MODULE_ENABLE_VTK_InfovisBoostGraphAlgorithms:STRING=YES
+      -DVTK_MODULE_ENABLE_VTK_RenderingFreeTypeFontConfig:STRING=YES
+      -DVTK_MODULE_USE_EXTERNAL_VTK_doubleconversion:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_eigen:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_expat:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_gl2ps:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_glew:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_hdf5:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_jpeg:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_jsoncpp:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_libxml2:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_lz4:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_lzma:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_netcdf:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_ogg:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_png:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_pugixml:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_sqlite:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_theora:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_tiff:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_utf8:BOOL=ON
+      -DVTK_MODULE_USE_EXTERNAL_VTK_zlib:BOOL=ON
+      -DPython3_EXECUTABLE:FILEPATH=#{Formula["python@3.9"].opt_bin}/python3
+      -DVTK_GROUP_ENABLE_Qt:STRING=YES
+      -DVTK_QT_VERSION:STRING=5
+    ]
+
+    # https://github.com/Homebrew/linuxbrew-core/pull/21654#issuecomment-738549701
+    args << "-DOpenGL_GL_PREFERENCE=LEGACY"
+
+    args << "-DVTK_USE_COCOA:BOOL=ON" if OS.mac?
+
+    system "cmake", "-S", ".", "-B", "build", *std_cmake_args, *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
-    vtk_include = Dir[opt_include/"vtk-*"].first
-    major, minor = vtk_include.match(/.*-(.*)$/)[1].split(".")
+    # Force use of Apple Clang on macOS that needs LLVM to build
+    ENV.clang if DevelopmentTools.clang_build_version == 1316 && Hardware::CPU.arm?
 
-    (testpath/"version.cpp").write <<~EOS
-      #include <vtkVersion.h>
-      #include <assert.h>
-      int main(int, char *[]) {
-        assert (vtkVersion::GetVTKMajorVersion()==#{major});
-        assert (vtkVersion::GetVTKMinorVersion()==#{minor});
-        return EXIT_SUCCESS;
+    (testpath/"CMakeLists.txt").write <<~EOS
+      cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
+      project(Distance2BetweenPoints LANGUAGES CXX)
+      find_package(VTK REQUIRED COMPONENTS vtkCommonCore CONFIG)
+      add_executable(Distance2BetweenPoints Distance2BetweenPoints.cxx)
+      target_link_libraries(Distance2BetweenPoints PRIVATE ${VTK_LIBRARIES})
+    EOS
+
+    (testpath/"Distance2BetweenPoints.cxx").write <<~EOS
+      #include <cassert>
+      #include <vtkMath.h>
+      int main() {
+        double p0[3] = {0.0, 0.0, 0.0};
+        double p1[3] = {1.0, 1.0, 1.0};
+        assert(vtkMath::Distance2BetweenPoints(p0, p1) == 3.0);
+        return 0;
       }
     EOS
 
-    system ENV.cxx, "-std=c++11", "version.cpp", "-I#{vtk_include}"
-    system "./a.out"
-    system "#{bin}/vtkpython", "-c", "exit()"
+    vtk_dir = Dir[opt_lib/"cmake/vtk-*"].first
+    system "cmake", "-DCMAKE_BUILD_TYPE=Debug", "-DCMAKE_VERBOSE_MAKEFILE=ON",
+      "-DVTK_DIR=#{vtk_dir}", "."
+    system "make"
+    system "./Distance2BetweenPoints"
+
+    (testpath/"Distance2BetweenPoints.py").write <<~EOS
+      import vtk
+      p0 = (0, 0, 0)
+      p1 = (1, 1, 1)
+      assert vtk.vtkMath.Distance2BetweenPoints(p0, p1) == 3
+    EOS
+
+    system bin/"vtkpython", "Distance2BetweenPoints.py"
   end
 end

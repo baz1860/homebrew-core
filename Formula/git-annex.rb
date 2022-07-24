@@ -1,41 +1,33 @@
-require "language/haskell"
-
 class GitAnnex < Formula
-  include Language::Haskell::Cabal
-
   desc "Manage files with git without checking in file contents"
   homepage "https://git-annex.branchable.com/"
-  url "https://hackage.haskell.org/package/git-annex-6.20180112/git-annex-6.20180112.tar.gz"
-  sha256 "bc37e98f99f6afd06f50fddc4cf42ebcb4002a7daf4a78a5724aec0f013ac218"
-  head "git://git-annex.branchable.com/"
+  url "https://hackage.haskell.org/package/git-annex-10.20220624/git-annex-10.20220624.tar.gz"
+  sha256 "bfda8cacc8ea8689de125c63d2ca431f5c7ec56fd0930af9aa0e08c311bc2728"
+  license all_of: ["AGPL-3.0-or-later", "BSD-2-Clause", "BSD-3-Clause",
+                   "GPL-2.0-only", "GPL-3.0-or-later", "MIT"]
+  head "git://git-annex.branchable.com/", branch: "master"
 
   bottle do
-    sha256 "d4b3382e1e5943066772b19511b9677dc77fb9f7e7fad969939db866e5d2e102" => :high_sierra
-    sha256 "ad1d3d71360d69cde1bf0173a51ff0f5772b1cebb1ac9978b59e45648f3f5618" => :sierra
-    sha256 "5cb4c93f79d13fff0acdbbec17d8475a6cf7c5a115d0a7f2f7e45af1ec75cc6f" => :el_capitan
+    sha256 cellar: :any,                 monterey:     "5c3ce77843d8a0e2ff119df4b80eb00818218fa636f7dd3d22e48be793b3a26a"
+    sha256 cellar: :any,                 big_sur:      "4a50a15d6af284ce5a0d6d8460e26ca4b91e8323c525d9524e8ddab55d4aa4d8"
+    sha256 cellar: :any,                 catalina:     "5d6fd12aefb663087a48f000fb158c2ce14e81c29f18b0247e27ab0d78b01459"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "1c9bee72757a1bd3db2375ebf2c57c0740a7127abeb9cd748d136999e0c62426"
   end
-
-  option "with-git-union-merge", "Build the git-union-merge tool"
 
   depends_on "cabal-install" => :build
   depends_on "ghc" => :build
   depends_on "pkg-config" => :build
-  depends_on "gsasl"
   depends_on "libmagic"
-  depends_on "quvi"
-  depends_on "xdot" => :recommended
 
   def install
-    install_cabal_package :using => ["alex", "happy", "c2hs"],
-                          :flags => ["s3", "webapp"] do
-      # this can be made the default behavior again once git-union-merge builds properly when bottling
-      if build.with? "git-union-merge"
-        system "make", "git-union-merge", "PREFIX=#{prefix}"
-        bin.install "git-union-merge"
-        system "make", "git-union-merge.1", "PREFIX=#{prefix}"
-      end
-    end
+    system "cabal", "v2-update"
+    system "cabal", "v2-install", *std_cabal_v2_args,
+                    "--flags=+S3"
     bin.install_symlink "git-annex" => "git-annex-shell"
+  end
+
+  service do
+    run [opt_bin/"git-annex", "assistant", "--autostart"]
   end
 
   test do
@@ -48,9 +40,14 @@ class GitAnnex < Formula
     system "git", "annex", "init"
     (testpath/"Hello.txt").write "Hello!"
     assert !File.symlink?("Hello.txt")
-    assert_match "add Hello.txt ok", shell_output("git annex add .")
+    assert_match(/^add Hello.txt.*ok.*\(recording state in git\.\.\.\)/m, shell_output("git annex add ."))
     system "git", "commit", "-a", "-m", "Initial Commit"
     assert File.symlink?("Hello.txt")
+
+    # make sure the various remotes were built
+    assert_match shell_output("git annex version | grep 'remote types:'").chomp,
+                 "remote types: git gcrypt p2p S3 bup directory rsync web bittorrent " \
+                 "webdav adb tahoe glacier ddar git-lfs httpalso borg hook external"
 
     # The steps below are necessary to ensure the directory cleanly deletes.
     # git-annex guards files in a way that isn't entirely friendly of automatically

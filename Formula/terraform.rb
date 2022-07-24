@@ -1,85 +1,76 @@
-require "language/go"
-
 class Terraform < Formula
   desc "Tool to build, change, and version infrastructure"
   homepage "https://www.terraform.io/"
-  url "https://github.com/hashicorp/terraform/archive/v0.11.3.tar.gz"
-  sha256 "5c4ac2fef753eeb0d09a6c2772b81720719c698287d46a625cb5050815dbd63b"
-  head "https://github.com/hashicorp/terraform.git"
+  url "https://github.com/hashicorp/terraform/archive/v1.2.5.tar.gz"
+  sha256 "512669ea88e3e70ef83604d90d0553c1f5b239965bb1b8cbf8f6e8b1df153d15"
+  license "MPL-2.0"
+  head "https://github.com/hashicorp/terraform.git", branch: "main"
+
+  livecheck do
+    url "https://releases.hashicorp.com/terraform/"
+    regex(%r{href=.*?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "85aaeeb50bf775625a9ddd27ff6ebe5ea2fa1560be183b98378d1761ae30aef7" => :high_sierra
-    sha256 "908d7bee816e4dbef4f4c189fafa73e0110be5b2d7942b11b6b21ad6df392071" => :sierra
-    sha256 "2350a923ca995bfe3b3b5b71dda5b30e64d38260b93a3f5e73e71e2adcfb1b8a" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a880296ef6971b7fcdab90955b8e66664fe9c8c38898071f7d18c99843cbe26c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "36e287e5db5040f15ee0ba3e6c25ab6f8dea450a4fa706d0e0dab207c4cc67e3"
+    sha256 cellar: :any_skip_relocation, monterey:       "30afdfb7bf6bddeb74508a7c17a224de5c044fcb25ad5988f63e1ea399d69f99"
+    sha256 cellar: :any_skip_relocation, big_sur:        "de2a9dccdf32ff17669498b4339ac9e2ea16e993cb0e13f15773d4d7183efcd9"
+    sha256 cellar: :any_skip_relocation, catalina:       "5d1200a70bb97429dddbac37b39601c2d9c588ee7a7c533dfb04a1828986175e"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ef96095c394c2f474b925eba6c13b65dbbe5823e7d9c7c052ee492190bd692a8"
   end
 
   depends_on "go" => :build
-  depends_on "gox" => :build
 
-  conflicts_with "tfenv", :because => "tfenv symlinks terraform binaries"
-
-  # stringer is a build tool dependency
-  go_resource "golang.org/x/tools" do
-    url "https://go.googlesource.com/tools.git",
-        :branch => "release-branch.go1.9"
+  on_linux do
+    depends_on "gcc"
   end
 
+  conflicts_with "tfenv", because: "tfenv symlinks terraform binaries"
+
+  # Needs libraries at runtime:
+  # /usr/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by node)
+  fails_with gcc: "5"
+
   def install
-    ENV["GOPATH"] = buildpath
-    ENV.prepend_create_path "PATH", buildpath/"bin"
+    # v0.6.12 - source contains tests which fail if these environment variables are set locally.
+    ENV.delete "AWS_ACCESS_KEY"
+    ENV.delete "AWS_SECRET_KEY"
 
-    dir = buildpath/"src/github.com/hashicorp/terraform"
-    dir.install buildpath.children - [buildpath/".brew_home"]
-    Language::Go.stage_deps resources, buildpath/"src"
+    # resolves issues fetching providers while on a VPN that uses /etc/resolv.conf
+    # https://github.com/hashicorp/terraform/issues/26532#issuecomment-720570774
+    ENV["CGO_ENABLED"] = "1"
 
-    cd "src/golang.org/x/tools/cmd/stringer" do
-      system "go", "install"
-    end
-
-    cd dir do
-      # v0.6.12 - source contains tests which fail if these environment variables are set locally.
-      ENV.delete "AWS_ACCESS_KEY"
-      ENV.delete "AWS_SECRET_KEY"
-
-      arch = MacOS.prefer_64_bit? ? "amd64" : "386"
-      ENV["XC_OS"] = "darwin"
-      ENV["XC_ARCH"] = arch
-      system "make", "test", "vet", "bin"
-
-      bin.install "pkg/darwin_#{arch}/terraform"
-      zsh_completion.install "contrib/zsh-completion/_terraform"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args, "-ldflags", "-s -w"
   end
 
   test do
     minimal = testpath/"minimal.tf"
     minimal.write <<~EOS
       variable "aws_region" {
-          default = "us-west-2"
+        default = "us-west-2"
       }
 
       variable "aws_amis" {
-          default = {
-              eu-west-1 = "ami-b1cf19c6"
-              us-east-1 = "ami-de7ab6b6"
-              us-west-1 = "ami-3f75767a"
-              us-west-2 = "ami-21f78e11"
-          }
+        default = {
+          eu-west-1 = "ami-b1cf19c6"
+          us-east-1 = "ami-de7ab6b6"
+          us-west-1 = "ami-3f75767a"
+          us-west-2 = "ami-21f78e11"
+        }
       }
 
       # Specify the provider and access details
       provider "aws" {
-          access_key = "this_is_a_fake_access"
-          secret_key = "this_is_a_fake_secret"
-          region = "${var.aws_region}"
+        access_key = "this_is_a_fake_access"
+        secret_key = "this_is_a_fake_secret"
+        region     = var.aws_region
       }
 
       resource "aws_instance" "web" {
         instance_type = "m1.small"
-        ami = "${lookup(var.aws_amis, var.aws_region)}"
-        count = 4
+        ami           = var.aws_amis[var.aws_region]
+        count         = 4
       }
     EOS
     system "#{bin}/terraform", "init"

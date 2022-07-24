@@ -1,36 +1,38 @@
 class Whois < Formula
   desc "Lookup tool for domain names and other internet resources"
   homepage "https://packages.debian.org/sid/whois"
-  url "https://mirrors.ocf.berkeley.edu/debian/pool/main/w/whois/whois_5.3.0.tar.xz"
-  mirror "https://mirrorservice.org/sites/ftp.debian.org/debian/pool/main/w/whois/whois_5.3.0.tar.xz"
-  sha256 "4d789c403bfb5833c8ae168a5f31be70e34b045bd5d95a54c82a27b0ff135723"
-  head "https://github.com/rfc1036/whois.git"
+  url "https://deb.debian.org/debian/pool/main/w/whois/whois_5.5.13.tar.xz"
+  sha256 "62e613f116d5635aea6684238db00b030a6602ffc79462e4a0a8e62cb184b5d7"
+  license "GPL-2.0-or-later"
+  head "https://github.com/rfc1036/whois.git", branch: "next"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f3441458153a0a80f3eac4bbd16c1930ca537026f57cec93bf862633592cef6c" => :high_sierra
-    sha256 "80b5709d8e5d8adb705973a0f2cd9004f0c2387b6222a3f00190afaecd682944" => :sierra
-    sha256 "e61d6ce7a5b53c095fb256a520e279be83035e50cfe72a4751d5c3b2463e3f19" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "3b8a8d276e28ba2565cde46aede77fcfdbe014693aa336d50e17002324c9461f"
+    sha256 cellar: :any,                 arm64_big_sur:  "1f6cde04177d329370ef24f19f61f30da1f8a618da92b2184432a72da57a7e4c"
+    sha256 cellar: :any,                 monterey:       "033954b7cc2e31dafcbae6cb07913037247b9cbf21be439889fdd2cfdd2ee437"
+    sha256 cellar: :any,                 big_sur:        "05f047c3e6808289fcd5061fb0c3a96f267b3287fdd282e953ea179e20e60902"
+    sha256 cellar: :any,                 catalina:       "656da1332e3434bcdb20c1a18fab72ea96002433281b0bc8060544e98764c5bc"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ac4e1d3fe13d6e208d613c446820f3838b91e30f04735a5951830c58454e7146"
   end
 
-  option "with-libidn2", "Compile with IDN support"
+  keg_only :provided_by_macos
 
-  depends_on "pkg-config" => :build if build.with? "libidn2"
-  depends_on "libidn2" => :optional
+  depends_on "pkg-config" => :build
+  depends_on "libidn2"
 
   def install
-    ENV.append "LDFLAGS", "-L/usr/lib -liconv"
+    ENV.append "LDFLAGS", "-L/usr/lib -liconv" if OS.mac?
 
-    system "make", "whois", "HAVE_ICONV=1"
+    have_iconv = if OS.mac?
+      "HAVE_ICONV=1"
+    else
+      "HAVE_ICONV=0"
+    end
+
+    system "make", "whois", have_iconv
     bin.install "whois"
     man1.install "whois.1"
     man5.install "whois.conf.5"
-  end
-
-  def caveats; <<~EOS
-    Debian whois has been installed as `whois` and may shadow the
-    system binary of the same name.
-    EOS
   end
 
   test do

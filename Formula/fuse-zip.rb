@@ -1,23 +1,40 @@
 class FuseZip < Formula
   desc "FUSE file system to create & manipulate ZIP archives"
   homepage "https://bitbucket.org/agalanin/fuse-zip"
-  url "https://bitbucket.org/agalanin/fuse-zip/downloads/fuse-zip-0.4.5.tar.gz"
-  sha256 "2c5101f5bcb8d666d1ca602717ba901567dad2e7ad7de9db6e5bb26ac57435d1"
-  head "https://bitbucket.org/agalanin/fuse-zip", :using => :hg
+  url "https://bitbucket.org/agalanin/fuse-zip/downloads/fuse-zip-0.7.2.tar.gz"
+  sha256 "3dd0be005677442f1fd9769a02dfc0b4fcdd39eb167e5697db2f14f4fee58915"
+  license "GPL-3.0-or-later"
+  head "https://bitbucket.org/agalanin/fuse-zip", using: :hg
 
   bottle do
-    cellar :any
-    sha256 "28d48355db992f6b6ac572633483efd83743e6f2d2de5426425dc10e8e4f9bee" => :high_sierra
-    sha256 "08fed5ec5f219ce9c9076451cccf0421c6cb4714af8a4d37eae2652b8ae783f2" => :sierra
-    sha256 "98e9d774573f5bb6c2ea887b3eaa84ddcdbb3b07f7d9be6182a219e3383eee7f" => :el_capitan
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "5e038b72ce4c58d28d4a873c9ea4ba304d9cf6618d772b3397a2d682911cf568"
   end
 
   depends_on "pkg-config" => :build
   depends_on "libzip"
-  depends_on :osxfuse
+
+  on_macos do
+    disable! date: "2021-04-08", because: "requires closed-source macFUSE"
+  end
+
+  on_linux do
+    depends_on "libfuse@2"
+  end
 
   def install
     system "make", "prefix=#{prefix}", "install"
+  end
+
+  def caveats
+    on_macos do
+      <<~EOS
+        The reasons for disabling this formula can be found here:
+          https://github.com/Homebrew/homebrew-core/pull/64491
+
+        An external tap may provide a replacement formula. See:
+          https://docs.brew.sh/Interesting-Taps-and-Forks
+      EOS
+    end
   end
 
   test do

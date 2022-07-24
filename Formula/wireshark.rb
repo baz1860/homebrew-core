@@ -1,120 +1,89 @@
 class Wireshark < Formula
   desc "Graphical network analyzer and capture tool"
   homepage "https://www.wireshark.org"
-  url "https://www.wireshark.org/download/src/all-versions/wireshark-2.4.5.tar.xz"
-  mirror "https://1.eu.dl.wireshark.org/src/wireshark-2.4.5.tar.xz"
-  sha256 "b3b2ec29fba0f4a3a590438abe4054e56f19108d440fc2d61492db9d8ff16fd7"
-  head "https://code.wireshark.org/review/wireshark", :using => :git
+  url "https://www.wireshark.org/download/src/all-versions/wireshark-3.6.6.tar.xz"
+  mirror "https://1.eu.dl.wireshark.org/src/all-versions/wireshark-3.6.6.tar.xz"
+  sha256 "beba27aeb4d3bb78df6202e88dda69e1dba9b0561044957bcac47e68b6ac28ba"
+  license "GPL-2.0-or-later"
+  head "https://gitlab.com/wireshark/wireshark.git", branch: "master"
 
-  bottle do
-    sha256 "ca1e31fd7fb531c14964f26025b590fab0da494d6a9e1edf4cd8802a22fc78f0" => :high_sierra
-    sha256 "88d2140282819858d64da7439a632ffa4d6657625d0b029690114fe05915899e" => :sierra
-    sha256 "472614e31560886bc1adcca76767a7876d9fda034f6912abe8fb30681994e051" => :el_capitan
+  livecheck do
+    url "https://www.wireshark.org/download.html"
+    regex(/Stable Release \((\d+(?:\.\d+)*)/i)
   end
 
-  deprecated_option "with-qt5" => "with-qt"
-
-  option "with-gtk+3", "Build the wireshark command with gtk+3"
-  option "with-gtk+", "Build the wireshark command with gtk+"
-  option "with-qt", "Build the wireshark command with Qt (can be used with or without either GTK option)"
-  option "with-headers", "Install Wireshark library headers for plug-in development"
-  option "with-nghttp2", "Enable HTTP/2 header dissection"
+  bottle do
+    sha256 arm64_monterey: "d39eea1b18910dde7af1dde7b5ae204578aace941bc0a1db35b406eedf670184"
+    sha256 arm64_big_sur:  "ec56cf3f248bec687cb999ed9e26859d03505c6171c4f7b7e8de623b5240ef09"
+    sha256 monterey:       "7cc3a58b204c8c3d2714561119d7fa633adf7c5af414120fe8974da2547a0c7f"
+    sha256 big_sur:        "3ab1bd26ac1fa3659a35ec8065f14c04eb6046492b24d7f9d8556ca914b7ccca"
+    sha256 catalina:       "4c70f91f1c54dde2901a5cc64021a95e129fa9c127ff80f30a9045275f5fbd8c"
+    sha256 x86_64_linux:   "8bf9724add37b2ee244737b9a70cdefd0b659742a040f8ee63c534d1d3a400f3"
+  end
 
   depends_on "cmake" => :build
   depends_on "c-ares"
-  depends_on "geoip"
   depends_on "glib"
   depends_on "gnutls"
   depends_on "libgcrypt"
+  depends_on "libmaxminddb"
+  depends_on "libnghttp2"
+  depends_on "libsmi"
+  depends_on "libssh"
   depends_on "lua"
-  depends_on "libsmi" => :optional
-  depends_on "libssh" => :optional
-  depends_on "nghttp2" => :optional
-  depends_on "portaudio" => :optional
-  depends_on "qt" => :optional
-  depends_on "gtk+3" => :optional
-  depends_on "gtk+" => :optional
-  depends_on "adwaita-icon-theme" if build.with? "gtk+3"
+
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
 
   def install
-    args = std_cmake_args + %w[
+    args = std_cmake_args + %W[
       -DENABLE_CARES=ON
-      -DENABLE_GEOIP=ON
       -DENABLE_GNUTLS=ON
+      -DENABLE_MAXMINDDB=ON
+      -DBUILD_wireshark_gtk=OFF
+      -DENABLE_PORTAUDIO=OFF
       -DENABLE_LUA=ON
+      -DLUA_INCLUDE_DIR=#{Formula["lua"].opt_include}/lua
+      -DLUA_LIBRARY=#{Formula["lua"].opt_lib}/liblua.dylib
+      -DCARES_INCLUDE_DIR=#{Formula["c-ares"].opt_include}
+      -DGCRYPT_INCLUDE_DIR=#{Formula["libgcrypt"].opt_include}
+      -DGNUTLS_INCLUDE_DIR=#{Formula["gnutls"].opt_include}
+      -DMAXMINDDB_INCLUDE_DIR=#{Formula["libmaxminddb"].opt_include}
+      -DENABLE_SMI=ON
+      -DBUILD_sshdump=ON
+      -DBUILD_ciscodump=ON
+      -DENABLE_NGHTTP2=ON
+      -DBUILD_wireshark=OFF
+      -DENABLE_APPLICATION_BUNDLE=OFF
+      -DENABLE_QT5=OFF
+      -DCMAKE_INSTALL_NAME_DIR:STRING=#{lib}
     ]
 
-    if build.with? "qt"
-      args << "-DBUILD_wireshark=ON"
-      args << "-DENABLE_APPLICATION_BUNDLE=ON"
-      args << "-DENABLE_QT5=ON"
-    else
-      args << "-DBUILD_wireshark=OFF"
-      args << "-DENABLE_APPLICATION_BUNDLE=OFF"
-      args << "-DENABLE_QT5=OFF"
-    end
-
-    if build.with?("gtk+3") || build.with?("gtk+")
-      args << "-DBUILD_wireshark_gtk=ON"
-      args << "-DENABLE_GTK3=" + (build.with?("gtk+3") ? "ON" : "OFF")
-      args << "-DENABLE_PORTAUDIO=ON" if build.with? "portaudio"
-    else
-      args << "-DBUILD_wireshark_gtk=OFF"
-      args << "-DENABLE_PORTAUDIO=OFF"
-    end
-
-    if build.with? "libsmi"
-      args << "-DENABLE_SMI=ON"
-    else
-      args << "-DENABLE_SMI=OFF"
-    end
-
-    if build.with? "libssh"
-      args << "-DBUILD_sshdump=ON" << "-DBUILD_ciscodump=ON"
-    else
-      args << "-DBUILD_sshdump=OFF" << "-DBUILD_ciscodump=OFF"
-    end
-
-    if build.with? "nghttp2"
-      args << "-DENABLE_NGHTTP2=ON"
-    else
-      args << "-DENABLE_NGHTTP2=OFF"
-    end
-
-    system "cmake", *args
+    system "cmake", *args, "."
     system "make", "install"
 
-    if build.with? "qt"
-      prefix.install bin/"Wireshark.app"
-      bin.install_symlink prefix/"Wireshark.app/Contents/MacOS/Wireshark" => "wireshark"
-    end
-
-    if build.with? "headers"
-      (include/"wireshark").install Dir["*.h"]
-      (include/"wireshark/epan").install Dir["epan/*.h"]
-      (include/"wireshark/epan/crypt").install Dir["epan/crypt/*.h"]
-      (include/"wireshark/epan/dfilter").install Dir["epan/dfilter/*.h"]
-      (include/"wireshark/epan/dissectors").install Dir["epan/dissectors/*.h"]
-      (include/"wireshark/epan/ftypes").install Dir["epan/ftypes/*.h"]
-      (include/"wireshark/epan/wmem").install Dir["epan/wmem/*.h"]
-      (include/"wireshark/wiretap").install Dir["wiretap/*.h"]
-      (include/"wireshark/wsutil").install Dir["wsutil/*.h"]
-    end
+    # Install headers
+    (include/"wireshark").install Dir["*.h"]
+    (include/"wireshark/epan").install Dir["epan/*.h"]
+    (include/"wireshark/epan/crypt").install Dir["epan/crypt/*.h"]
+    (include/"wireshark/epan/dfilter").install Dir["epan/dfilter/*.h"]
+    (include/"wireshark/epan/dissectors").install Dir["epan/dissectors/*.h"]
+    (include/"wireshark/epan/ftypes").install Dir["epan/ftypes/*.h"]
+    (include/"wireshark/epan/wmem").install Dir["epan/wmem/*.h"]
+    (include/"wireshark/wiretap").install Dir["wiretap/*.h"]
+    (include/"wireshark/wsutil").install Dir["wsutil/*.h"]
   end
 
-  def caveats; <<~EOS
-    This formula only installs the command-line utilities by default.
+  def caveats
+    <<~EOS
+      This formula only installs the command-line utilities by default.
 
-    Wireshark.app can be downloaded directly from the website:
-      https://www.wireshark.org/
+      Install Wireshark.app with Homebrew Cask:
+        brew install --cask wireshark
 
-    Alternatively, install with Homebrew-Cask:
-      brew cask install wireshark
-
-    If your list of available capture interfaces is empty
-    (default macOS behavior), install ChmodBPF:
-
-      brew cask install wireshark-chmodbpf
+      If your list of available capture interfaces is empty
+      (default macOS behavior), install ChmodBPF:
+        brew install --cask wireshark-chmodbpf
     EOS
   end
 

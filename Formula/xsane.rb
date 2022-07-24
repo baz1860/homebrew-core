@@ -1,15 +1,26 @@
 class Xsane < Formula
   desc "Graphical scanning frontend"
-  homepage "http://www.xsane.org"
-  url "http://www.xsane.org/download/xsane-0.999.tar.gz"
+  homepage "https://wiki.ubuntuusers.de/XSane/"
+  url "https://ftp.osuosl.org/pub/blfs/conglomeration/xsane/xsane-0.999.tar.gz"
+  mirror "https://fossies.org/linux/misc/xsane-0.999.tar.gz"
   sha256 "5782d23e67dc961c81eef13a87b17eb0144cae3d1ffc5cf7e0322da751482b4b"
-  revision 2
+  revision 4
+
+  livecheck do
+    url "https://ftp.osuosl.org/pub/blfs/conglomeration/xsane/"
+    regex(/href=.*?xsane[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    sha256 "d3c47e5c3dcd90837128d8f9651f16a8961a5717ef9de3b8c541d19cd491febf" => :high_sierra
-    sha256 "c1a94d6bdeaf042c47843ec56572e66770de3b20e67ea6dfa7860de3852f9693" => :sierra
-    sha256 "e0bc65a90a76de12679aa853be48f2b3b4a5a9ddae3070a8409c84ec093642aa" => :el_capitan
-    sha256 "bcd6cdaf240371d79ed0385a41e2e3eaec76616d2086be93fdd3b673c2aa9187" => :yosemite
+    sha256 arm64_monterey: "9b9d063702e8b647286c8fa1fdfdd67bddf442248c6c41eb10a6b4c5f73865a1"
+    sha256 arm64_big_sur:  "716cd7c1b0cf30e363953817aab54187e9bb5f7dcba2cb74f03bc06b3e3c7d72"
+    sha256 monterey:       "510446e88d36d104aa1e30cf08a7445ffba12c3280ea3dee90232a91da4bfbe3"
+    sha256 big_sur:        "1908941949c06e32e9185ea8e069454bd1946110670362ab9e46de7687258a2e"
+    sha256 catalina:       "1b87500430dca49d717fa39d92214da59f08d4f7ec63ea477056bc5b2b920de4"
+    sha256 mojave:         "93064b6ec70657f6815a0aba5d52c8b7e54e9ef6f223c608351b790887c62b92"
+    sha256 high_sierra:    "4242d28d56f5ed634f7f8632d41e441e1cbeaf60a362628796a436ba2f8eac11"
+    sha256 sierra:         "f247067d49d44f8c0662cd64c99524f13c4b3a18ef7e49a19dd377bb449c859d"
+    sha256 x86_64_linux:   "133b3933b827ee30467074ccda832be05c14563290f83cb3e829ac25c088a5dc"
   end
 
   depends_on "pkg-config" => :build
@@ -23,11 +34,15 @@ class Xsane < Formula
   end
 
   def install
+    ENV.append "CFLAGS", "-Wno-implicit-function-declaration" if OS.mac?
     system "./configure", "--prefix=#{prefix}"
     system "make", "install"
   end
 
   test do
+    # (xsane:27015): Gtk-WARNING **: 12:58:53.105: cannot open display
+    return if OS.linux? && ENV["HOMEBREW_GITHUB_ACTIONS"]
+
     system "#{bin}/xsane", "--version"
   end
 end

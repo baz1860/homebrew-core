@@ -1,67 +1,45 @@
 class Putty < Formula
   desc "Implementation of Telnet and SSH"
   homepage "https://www.chiark.greenend.org.uk/~sgtatham/putty/"
-  url "https://the.earth.li/~sgtatham/putty/0.70/putty-0.70.tar.gz"
-  sha256 "bb8aa49d6e96c5a8e18a057f3150a1695ed99a24eef699e783651d1f24e7b0be"
+  url "https://the.earth.li/~sgtatham/putty/0.77/putty-0.77.tar.gz"
+  sha256 "419a76f45238fd45f2c76b42438993056e74fa78374f136052aaa843085beae5"
+  license "MIT"
+  head "https://git.tartarus.org/simon/putty.git", branch: "main"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "832bf75b4d9927e461c853e802a7951724522fd083a0774f0609141965c06c82" => :high_sierra
-    sha256 "b212b6d5db7478c43d0f6883c459373e257219f9bfc4aa24abe2992d82f9294e" => :sierra
-    sha256 "658a1736398dedd1dc5bc1c267c08b126a6bd9b2653fb2ef3b425f401a14f293" => :el_capitan
-    sha256 "ef3e944e9b322ce16da3264e68bce6a23f58a23f45f8d84d27954670a8d71379" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "16327c91d5c76a3c249fe2efb6f6e3af697106bbc37ecc3a3bc4770145e450f2"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "46e4e087744f4e4af5a5e451204b79adcff104131c6cf6c67dbe125c0858750b"
+    sha256 cellar: :any_skip_relocation, monterey:       "c97140487bccfe8ad8ce35fc558853c9e6445e9cbc1f5468311f2a9561175bf1"
+    sha256 cellar: :any_skip_relocation, big_sur:        "3dc3675e19f89f21febb8a7a91c7dfa28bcbcad42528db1f20864dd8870b93e8"
+    sha256 cellar: :any_skip_relocation, catalina:       "1aa26acec81e867eabb8e7efc35cdc68f3d7ee3395baccb104d566bd1d5d405d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "df00c3b65018b7e6080871a2aed03bea797ea69df1a9d0cf92e8b40539367e9f"
   end
 
-  head do
-    url "https://git.tartarus.org/simon/putty.git"
-
-    depends_on "halibut" => :build
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "gtk+3" => :optional
-  end
-
+  depends_on "cmake" => :build
+  depends_on "halibut" => :build
   depends_on "pkg-config" => :build
 
-  conflicts_with "pssh", :because => "both install `pscp` binaries"
+  uses_from_macos "perl" => :build
+  uses_from_macos "expect" => :test
+
+  conflicts_with "pssh", because: "both install `pscp` binaries"
 
   def install
-    if build.head?
-      system "./mkfiles.pl"
-      system "./mkauto.sh"
-      system "make", "-C", "doc"
-    end
+    build_version = build.head? ? "svn-#{version}" : version
 
-    args = %W[
-      --prefix=#{prefix}
-      --disable-silent-rules
-      --disable-dependency-tracking
-      --disable-gtktest
+    args = std_cmake_args + %W[
+      -DRELEASE=#{build_version}
+      -DPUTTY_GTK_VERSION=NONE
     ]
 
-    if build.head? && build.with?("gtk+3")
-      args << "--with-gtk=3" << "--with-quartz"
-    else
-      args << "--without-gtk"
-    end
-
-    system "./configure", *args
-
-    build_version = build.head? ? "svn-#{version}" : version
-    system "make", "VER=-DRELEASE=#{build_version}"
-
-    bin.install %w[plink pscp psftp puttygen]
-    bin.install %w[putty puttytel pterm] if build.head? && build.with?("gtk+3")
-
-    cd "doc" do
-      man1.install %w[plink.1 pscp.1 psftp.1 puttygen.1]
-      man1.install %w[putty.1 puttytel.1 pterm.1] if build.head? && build.with?("gtk+3")
-    end
+    system "cmake", "-S", ".", "-B", "build", *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
     (testpath/"command.sh").write <<~EOS
-      #!/usr/bin/expect -f
+      #!/usr/bin/env expect
       set timeout -1
       spawn #{bin}/puttygen -t rsa -b 4096 -q -o test.key
       expect -exact "Enter passphrase to save key: "

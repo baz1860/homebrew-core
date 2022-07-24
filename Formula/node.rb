@@ -1,82 +1,125 @@
 class Node < Formula
   desc "Platform built on V8 to build network applications"
   homepage "https://nodejs.org/"
-  url "https://nodejs.org/dist/v9.6.1/node-v9.6.1.tar.xz"
-  sha256 "b84c024d97b3f09ab55e352f91e038066afb44f8c49d13fdc298ffd8383d1112"
-  head "https://github.com/nodejs/node.git"
+  url "https://nodejs.org/dist/v18.6.0/node-v18.6.0.tar.xz"
+  sha256 "5f8b0c33a12fcaec9643b4367a5daa94314bf26f9b75b5f431c4f14b37bc054c"
+  license "MIT"
+  head "https://github.com/nodejs/node.git", branch: "main"
+
+  livecheck do
+    url "https://nodejs.org/dist/"
+    regex(%r{href=["']?v?(\d+(?:\.\d+)+)/?["' >]}i)
+  end
 
   bottle do
-    sha256 "dc3d5e039181085d2fddfeddefe1391ceebebdfa3d7b589c0fcfc4b18373f24b" => :high_sierra
-    sha256 "daf5230cebe703fc279cd4be57af67f1b69da949debfb80fc3ac81bac61362d9" => :sierra
-    sha256 "2c70728741abfb34de380f1be0be1b7eeb344a16d00e346c891843b9f473dcf1" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "8b420368d645afc4bd782ac72c3e4204b46a1fc1c2708e05920972b32e3f76e9"
+    sha256 cellar: :any,                 arm64_big_sur:  "47895583cb2fd1f3ed6479242e17f4e1058787895e5ae8a851ed18e21783999e"
+    sha256 cellar: :any,                 monterey:       "505665694e612fdf11b2c3ada51463d38ad1b9157f068d19fda7a5cf07aeea97"
+    sha256 cellar: :any,                 big_sur:        "0788b7bf9767fa05b8e2d9b0a3ef83e03a42df402b6284308f1c93e6c0de4c49"
+    sha256 cellar: :any,                 catalina:       "c6a5e2b83886eec06116f02ebc092e45f530b8b10149f883acc1752716380e7d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c9bded069b73b6f88b8ea4859ca307cf76c19a8fcf22ce9e04ba0ae539a452ed"
   end
 
-  option "with-debug", "Build with debugger hooks"
-  option "with-openssl", "Build against Homebrew's OpenSSL instead of the bundled OpenSSL"
-  option "without-npm", "npm will not be installed"
-  option "without-completion", "npm bash completion will not be installed"
-  option "without-icu4c", "Build with small-icu (English only) instead of system-icu (all locales)"
-
-  deprecated_option "enable-debug" => "with-debug"
-
-  depends_on "python" => :build if MacOS.version <= :snow_leopard
   depends_on "pkg-config" => :build
-  depends_on "icu4c" => :recommended
-  depends_on "openssl" => :optional
+  depends_on "python@3.10" => :build
+  depends_on "brotli"
+  depends_on "c-ares"
+  depends_on "icu4c"
+  depends_on "libnghttp2"
+  depends_on "libuv"
+  depends_on "openssl@1.1"
 
-  # Per upstream - "Need g++ 4.8 or clang++ 3.4".
-  fails_with :clang if MacOS.version <= :snow_leopard
-  fails_with :gcc_4_0
-  fails_with :gcc
-  ("4.3".."4.7").each do |n|
-    fails_with :gcc => n
+  uses_from_macos "python", since: :catalina
+  uses_from_macos "zlib"
+
+  on_macos do
+    depends_on "llvm" => [:build, :test] if DevelopmentTools.clang_build_version <= 1100
   end
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with :clang do
+    build 1100
+    cause <<~EOS
+      error: calling a private constructor of class 'v8::internal::(anonymous namespace)::RegExpParserImpl<uint8_t>'
+    EOS
+  end
+
+  fails_with gcc: "5"
 
   # We track major/minor from upstream Node releases.
   # We will accept *important* npm patch releases when necessary.
   resource "npm" do
-    url "https://registry.npmjs.org/npm/-/npm-5.6.0.tgz"
-    sha256 "b1f0de3767136c1d7b4b0f10e6eb2fb3397e2fe11e4c9cddcd0030ad1af9eddd"
+    url "https://registry.npmjs.org/npm/-/npm-8.13.2.tgz"
+    sha256 "5a3ceb5e6897cb59debb4871d1a0316c66dde1ba201ed28401987babec668140"
   end
 
   def install
+    ENV.remove "HOMEBREW_LIBRARY_PATHS", Formula["llvm"].opt_lib
+    ENV.llvm_clang if OS.mac? && (DevelopmentTools.clang_build_version <= 1100)
+
+    # make sure subprocesses spawned by make are using our Python 3
+    ENV["PYTHON"] = which("python3")
+
     # Never install the bundled "npm", always prefer our
     # installation from tarball for better packaging control.
-    args = %W[--prefix=#{prefix} --without-npm]
-    args << "--debug" if build.with? "debug"
-    args << "--with-intl=system-icu" if build.with? "icu4c"
-    args << "--shared-openssl" if build.with? "openssl"
+    args = %W[
+      --prefix=#{prefix}
+      --without-npm
+      --without-corepack
+      --with-intl=system-icu
+      --shared-libuv
+      --shared-nghttp2
+      --shared-openssl
+      --shared-zlib
+      --shared-brotli
+      --shared-cares
+      --shared-libuv-includes=#{Formula["libuv"].include}
+      --shared-libuv-libpath=#{Formula["libuv"].lib}
+      --shared-nghttp2-includes=#{Formula["libnghttp2"].include}
+      --shared-nghttp2-libpath=#{Formula["libnghttp2"].lib}
+      --shared-openssl-includes=#{Formula["openssl@1.1"].include}
+      --shared-openssl-libpath=#{Formula["openssl@1.1"].lib}
+      --shared-brotli-includes=#{Formula["brotli"].include}
+      --shared-brotli-libpath=#{Formula["brotli"].lib}
+      --shared-cares-includes=#{Formula["c-ares"].include}
+      --shared-cares-libpath=#{Formula["c-ares"].lib}
+      --openssl-use-def-ca-store
+    ]
     args << "--tag=head" if build.head?
+
+    # Enabling LTO errors on Linux with:
+    # terminate called after throwing an instance of 'std::out_of_range'
+    # Pre-Catalina macOS also can't build with LTO
+    # LTO is unpleasant if you have to build from source.
+    args << "--enable-lto" if MacOS.version >= :catalina && build.bottle?
 
     system "./configure", *args
     system "make", "install"
 
-    if build.with? "npm"
-      # Allow npm to find Node before installation has completed.
-      ENV.prepend_path "PATH", bin
+    # Allow npm to find Node before installation has completed.
+    ENV.prepend_path "PATH", bin
 
-      bootstrap = buildpath/"npm_bootstrap"
-      bootstrap.install resource("npm")
-      system "node", bootstrap/"bin/npm-cli.js", "install", "-ddd", "--global",
-             "--prefix=#{libexec}", resource("npm").cached_download
+    bootstrap = buildpath/"npm_bootstrap"
+    bootstrap.install resource("npm")
+    # These dirs must exists before npm install.
+    mkdir_p libexec/"lib"
+    system "node", bootstrap/"bin/npm-cli.js", "install", "-ddd", "--global",
+            "--prefix=#{libexec}", resource("npm").cached_download
 
-      # The `package.json` stores integrity information about the above passed
-      # in `cached_download` npm resource, which breaks `npm -g outdated npm`.
-      # This copies back over the vanilla `package.json` to fix this issue.
-      cp bootstrap/"package.json", libexec/"lib/node_modules/npm"
-      # These symlinks are never used & they've caused issues in the past.
-      rm_rf libexec/"share"
+    # The `package.json` stores integrity information about the above passed
+    # in `cached_download` npm resource, which breaks `npm -g outdated npm`.
+    # This copies back over the vanilla `package.json` to fix this issue.
+    cp bootstrap/"package.json", libexec/"lib/node_modules/npm"
+    # These symlinks are never used & they've caused issues in the past.
+    rm_rf libexec/"share"
 
-      if build.with? "completion"
-        bash_completion.install \
-          bootstrap/"lib/utils/completion.sh" => "npm"
-      end
-    end
+    bash_completion.install bootstrap/"lib/utils/completion.sh" => "npm"
   end
 
   def post_install
-    return if build.without? "npm"
-
     node_modules = HOMEBREW_PREFIX/"lib/node_modules"
     node_modules.mkpath
     # Kill npm but preserve all other modules across node updates/upgrades.
@@ -91,31 +134,22 @@ class Node < Formula
     ln_sf node_modules/"npm/bin/npm-cli.js", HOMEBREW_PREFIX/"bin/npm"
     ln_sf node_modules/"npm/bin/npx-cli.js", HOMEBREW_PREFIX/"bin/npx"
 
-    # Let's do the manpage dance. It's just a jump to the left.
-    # And then a step to the right, with your hand on rm_f.
+    # Create manpage symlinks (or overwrite the old ones)
     %w[man1 man5 man7].each do |man|
       # Dirs must exist first: https://github.com/Homebrew/legacy-homebrew/issues/35969
       mkdir_p HOMEBREW_PREFIX/"share/man/#{man}"
+      # still needed to migrate from copied file manpages to symlink manpages
       rm_f Dir[HOMEBREW_PREFIX/"share/man/#{man}/{npm.,npm-,npmrc.,package.json.,npx.}*"]
-      cp Dir[libexec/"lib/node_modules/npm/man/#{man}/{npm,package.json,npx}*"], HOMEBREW_PREFIX/"share/man/#{man}"
+      ln_sf Dir[node_modules/"npm/man/#{man}/{npm,package-,shrinkwrap-,npx}*"], HOMEBREW_PREFIX/"share/man/#{man}"
     end
 
-    npm_root = node_modules/"npm"
-    npmrc = npm_root/"npmrc"
-    npmrc.atomic_write("prefix = #{HOMEBREW_PREFIX}\n")
-  end
-
-  def caveats
-    if build.without? "npm"
-      <<~EOS
-        Homebrew has NOT installed npm. If you later install it, you should supplement
-        your NODE_PATH with the npm module folder:
-          #{HOMEBREW_PREFIX}/lib/node_modules
-      EOS
-    end
+    (node_modules/"npm/npmrc").atomic_write("prefix = #{HOMEBREW_PREFIX}\n")
   end
 
   test do
+    # Make sure Mojave does not have `CC=llvm_clang`.
+    ENV.clang if OS.mac?
+
     path = testpath/"test.js"
     path.write "console.log('hello');"
 
@@ -123,24 +157,21 @@ class Node < Formula
     assert_equal "hello", output
     output = shell_output("#{bin}/node -e 'console.log(new Intl.NumberFormat(\"en-EN\").format(1234.56))'").strip
     assert_equal "1,234.56", output
-    if build.with? "icu4c"
-      output = shell_output("#{bin}/node -e 'console.log(new Intl.NumberFormat(\"de-DE\").format(1234.56))'").strip
-      assert_equal "1.234,56", output
-    end
 
-    if build.with? "npm"
-      # make sure npm can find node
-      ENV.prepend_path "PATH", opt_bin
-      ENV.delete "NVM_NODEJS_ORG_MIRROR"
-      assert_equal which("node"), opt_bin/"node"
-      assert_predicate HOMEBREW_PREFIX/"bin/npm", :exist?, "npm must exist"
-      assert_predicate HOMEBREW_PREFIX/"bin/npm", :executable?, "npm must be executable"
-      npm_args = ["-ddd", "--cache=#{HOMEBREW_CACHE}/npm_cache", "--build-from-source"]
-      system "#{HOMEBREW_PREFIX}/bin/npm", *npm_args, "install", "npm@latest"
-      system "#{HOMEBREW_PREFIX}/bin/npm", *npm_args, "install", "bignum" unless head?
-      assert_predicate HOMEBREW_PREFIX/"bin/npx", :exist?, "npx must exist"
-      assert_predicate HOMEBREW_PREFIX/"bin/npx", :executable?, "npx must be executable"
-      assert_match "< hello >", shell_output("#{HOMEBREW_PREFIX}/bin/npx cowsay hello")
-    end
+    output = shell_output("#{bin}/node -e 'console.log(new Intl.NumberFormat(\"de-DE\").format(1234.56))'").strip
+    assert_equal "1.234,56", output
+
+    # make sure npm can find node
+    ENV.prepend_path "PATH", opt_bin
+    ENV.delete "NVM_NODEJS_ORG_MIRROR"
+    assert_equal which("node"), opt_bin/"node"
+    assert_predicate HOMEBREW_PREFIX/"bin/npm", :exist?, "npm must exist"
+    assert_predicate HOMEBREW_PREFIX/"bin/npm", :executable?, "npm must be executable"
+    npm_args = ["-ddd", "--cache=#{HOMEBREW_CACHE}/npm_cache", "--build-from-source"]
+    system HOMEBREW_PREFIX/"bin/npm", *npm_args, "install", "npm@latest"
+    system HOMEBREW_PREFIX/"bin/npm", *npm_args, "install", "ref-napi" unless head?
+    assert_predicate HOMEBREW_PREFIX/"bin/npx", :exist?, "npx must exist"
+    assert_predicate HOMEBREW_PREFIX/"bin/npx", :executable?, "npx must be executable"
+    assert_match "< hello >", shell_output("#{HOMEBREW_PREFIX}/bin/npx --yes cowsay hello")
   end
 end

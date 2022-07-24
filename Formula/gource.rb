@@ -1,13 +1,18 @@
 class Gource < Formula
   desc "Version Control Visualization Tool"
   homepage "https://github.com/acaudwell/Gource"
-  url "https://github.com/acaudwell/Gource/releases/download/gource-0.48/gource-0.48.tar.gz"
-  sha256 "b7055347dad152125ab83e121e3fcaf8cf79bc5bcaec295e4ed9475c40651d13"
+  url "https://github.com/acaudwell/Gource/releases/download/gource-0.53/gource-0.53.tar.gz"
+  sha256 "3d5f64c1c6812f644c320cbc9a9858df97bc6036fc1e5f603ca46b15b8dd7237"
+  license "GPL-3.0-or-later"
+  revision 1
 
   bottle do
-    sha256 "7b0c15ecae8a96764432271dc0b79ae68bdfd365a0e90481535d27978571175e" => :high_sierra
-    sha256 "63725d87fdd28ac168a8e79f0cba780c7c15f284cc904d8aaab8dac63179254b" => :sierra
-    sha256 "9fc979ecfa0723d8fb3462e8a9206b88109bcd2252e7696effb5035b4564a408" => :el_capitan
+    sha256 arm64_monterey: "efa5c9ef2d78af44422171df97d6cb513ce8f4dfd6d236aeb3089fa8029ae89c"
+    sha256 arm64_big_sur:  "6ab4d722ac6dc2984eada4861674da1e681efc254c68a3f2fd82128813d4143d"
+    sha256 monterey:       "df637390566e28ce1054679690e6ee027a830d560b08fcceae6195a8a7acfb94"
+    sha256 big_sur:        "26927a451639add4b2b7617af818d8c045ccb619e0c8e04905b8be08857a754d"
+    sha256 catalina:       "a7ef7bd6622ed0a142850b90406f94d08c5c39c58b4fb2d87c0d2f60423158fc"
+    sha256 x86_64_linux:   "2f151752f275c4431bb0719f92697a821427c5e666856fc18c5048567f8bab16"
   end
 
   head do
@@ -18,24 +23,21 @@ class Gource < Formula
     depends_on "libtool" => :build
   end
 
-  depends_on :x11 => :optional
-
-  depends_on "pkg-config" => :build
   depends_on "glm" => :build
+  depends_on "pkg-config" => :build
   depends_on "boost"
   depends_on "freetype"
   depends_on "glew"
   depends_on "libpng"
-  depends_on "pcre"
+  depends_on "pcre2"
   depends_on "sdl2"
   depends_on "sdl2_image"
-
-  needs :cxx11
 
   def install
     # clang on Mt. Lion will try to build against libstdc++,
     # despite -std=gnu++0x
     ENV.libcxx
+    ENV.append "LDFLAGS", "-pthread" if OS.linux?
 
     system "autoreconf", "-f", "-i" if build.head?
 

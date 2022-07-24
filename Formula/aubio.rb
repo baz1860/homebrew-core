@@ -1,46 +1,56 @@
 class Aubio < Formula
   desc "Extract annotations from audio signals"
   homepage "https://aubio.org/"
-  url "https://aubio.org/pub/aubio-0.4.6.tar.bz2"
-  sha256 "bdc73be1f007218d3ea6d2a503b38a217815a0e2ccc4ed441f6e850ed5d47cfb"
+  url "https://aubio.org/pub/aubio-0.4.9.tar.bz2"
+  sha256 "d48282ae4dab83b3dc94c16cf011bcb63835c1c02b515490e1883049c3d1f3da"
+  revision 3
 
-  bottle do
-    cellar :any
-    sha256 "652fd72fcb0937f082213939d18acadd35d39a7c8b790ba29746f628b55d81bc" => :high_sierra
-    sha256 "65cfbadfb34422fcdc74d2d417cec9096b5289e8c4f1f18c9d4b512ada2337f2" => :sierra
-    sha256 "ef260312d855772fb09146508d4b819e0a185f510ecb73fd52e033e3afebd246" => :el_capitan
+  livecheck do
+    url "https://aubio.org/pub/"
+    regex(/href=.*?aubio[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-python", "Build with python support"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "24480a57c922ecce159a8c51c7b6cbd888534ad071f8e6e44c2673d9af3cc123"
+    sha256 cellar: :any,                 arm64_big_sur:  "1109fc08328664e84eff65a547737b1ac602e23519e6a88855fbd9a25a341a2c"
+    sha256 cellar: :any,                 monterey:       "81bde2bc55939b498d263f6486f80f2c29b67ef6927db247ace8345ae34b2357"
+    sha256 cellar: :any,                 big_sur:        "ce2477e78e0ddf5c3d2801c571c65e73a73a33967650aa067a94d49695a144d4"
+    sha256 cellar: :any,                 catalina:       "3a0a2bcf355eef8bb66385c5bda82105569c2a7f999182626ca0b417d44e6255"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "741a3b0b3f1230f381b0ba5aef3815c8c6d1f437ccec04b95b70dad388cc0e33"
+  end
 
-  depends_on :macos => :lion
-  depends_on "pkg-config" => :build
   depends_on "libtool" => :build
-  depends_on "libav" => :optional
-  depends_on "libsndfile" => :optional
-  depends_on "libsamplerate" => :optional
-  depends_on "fftw" => :optional
-  depends_on "jack" => :optional
-  depends_on "numpy" if build.with? "python"
+  depends_on "pkg-config" => :build
+  depends_on "numpy"
+  depends_on "python@3.10"
+
+  on_linux do
+    depends_on "libsndfile"
+  end
+
+  resource "aiff" do
+    url "http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/AIFF/Samples/CCRMA/wood24.aiff"
+    sha256 "a87279e3a101162f6ab0d4f70df78594d613e16b80e6257cf19c5fc957a375f9"
+  end
 
   def install
-    # Needed due to issue with recent cland (-fno-fused-madd))
+    # Needed due to issue with recent clang (-fno-fused-madd))
     ENV.refurbish_args
 
-    system "./waf", "configure", "--prefix=#{prefix}"
-    system "./waf", "build"
-    system "./waf", "install"
+    # Ensure `python` references use our python3
+    ENV.prepend_path "PATH", Formula["python@3.10"].opt_libexec/"bin"
 
-    if build.with? "python"
-      system "python", *Language::Python.setup_install_args(prefix)
-      bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
-    end
+    system "python3", "./waf", "configure", "--prefix=#{prefix}"
+    system "python3", "./waf", "build"
+    system "python3", "./waf", "install"
+
+    system "python3", *Language::Python.setup_install_args(prefix),
+                      "--install-lib=#{prefix/Language::Python.site_packages("python3")}"
   end
 
   test do
-    if build.with? "python"
-      system "#{bin}/aubiocut", "--verbose", "/System/Library/Sounds/Glass.aiff"
-    end
-    system "#{bin}/aubioonset", "--verbose", "/System/Library/Sounds/Glass.aiff"
+    testpath.install resource("aiff")
+    system bin/"aubiocut", "--verbose", "wood24.aiff"
+    system bin/"aubioonset", "--verbose", "wood24.aiff"
   end
 end

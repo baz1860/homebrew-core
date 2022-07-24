@@ -1,68 +1,78 @@
 class Libvirt < Formula
   desc "C virtualization API"
-  homepage "https://www.libvirt.org"
-  url "https://libvirt.org/sources/libvirt-4.0.0.tar.xz"
-  sha256 "e9e8ca1a696b70bca572f367e35807a9800a59aec5158b95fe7f4802a5fadfc8"
-  head "https://github.com/libvirt/libvirt.git"
+  homepage "https://libvirt.org/"
+  url "https://libvirt.org/sources/libvirt-8.5.0.tar.xz"
+  sha256 "401e99b5e1b83de39a86347e091a85eb4dba82a87053dfcb5aa250328f97db62"
+  license all_of: ["LGPL-2.1-or-later", "GPL-2.0-or-later"]
+  head "https://gitlab.com/libvirt/libvirt.git", branch: "master"
 
-  bottle do
-    sha256 "d2adaa99f0970d11ae7ae2068311cea3e7ec66213622d051993bf05a75d04e73" => :high_sierra
-    sha256 "11564287f718a8bb28725874467fc52d15819a1be61d0fe30294ffb1479711b0" => :sierra
-    sha256 "693386a589ed564339e4286f441c93dc0b8e3b76ec4e83b0097e8497b726c893" => :el_capitan
+  livecheck do
+    url "https://libvirt.org/sources/"
+    regex(/href=.*?libvirt[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "without-libvirtd", "Build only the virsh client and development libraries"
+  bottle do
+    sha256 arm64_monterey: "ef7396659805b20259e30017d7ad1e13178c4e2686aef1ea07ef3892a901e4f4"
+    sha256 arm64_big_sur:  "9a1221acc17595b2539c8cdc63159cd2b3d803bb5711d8b97b219f0d8296f5ae"
+    sha256 monterey:       "094851fafe354147faf747ad0165ba2927eb1d59ebbbf8647ec93f2c7977f341"
+    sha256 big_sur:        "5cdbb88896daf520cb7ccfe08470698e9c241c57c0aedfffe138d7b84f316801"
+    sha256 catalina:       "fa7f5fb1e12ee4072a22d53759ab3622c97d8691b00bc02feaef004cfe0f8322"
+    sha256 x86_64_linux:   "522886d48f15534566d6e236825b3980ebcad4f45e7c688816b2af4c8ecea7af"
+  end
 
+  depends_on "docutils" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "perl" => :build
   depends_on "pkg-config" => :build
+  depends_on "python@3.10" => :build
+  depends_on "gettext"
+  depends_on "glib"
+  depends_on "gnu-sed"
   depends_on "gnutls"
+  depends_on "grep"
   depends_on "libgcrypt"
+  depends_on "libiscsi"
+  depends_on "libssh2"
   depends_on "yajl"
 
-  if build.head?
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "gettext" => :build
-    depends_on "libtool" => :build
+  uses_from_macos "curl"
+  uses_from_macos "libxslt"
+
+  on_macos do
     depends_on "rpcgen" => :build
   end
 
+  on_linux do
+    depends_on "gcc"
+    depends_on "libtirpc"
+    depends_on "linux-headers@5.16"
+  end
+
+  fails_with gcc: "5"
+
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --localstatedir=#{var}
-      --mandir=#{man}
-      --sysconfdir=#{etc}
-      --with-esx
-      --with-init-script=none
-      --with-remote
-      --with-test
-      --with-vbox
-      --with-vmware
-      --with-yajl
-      --without-qemu
-    ]
-
-    args << "ac_cv_path_RPCGEN=#{Formula["rpcgen"].opt_prefix}/bin/rpcgen" if build.head?
-    args << "--without-libvirtd" if build.without? "libvirtd"
-
-    system "./autogen.sh" if build.head?
-    system "./configure", *args
-
-    # Compilation of docs doesn't get done if we jump straight to "make install"
-    system "make"
-    system "make", "install"
-
-    # Update the SASL config file with the Homebrew prefix
-    inreplace "#{etc}/sasl2/libvirt.conf", "/etc/", "#{HOMEBREW_PREFIX}/etc/"
-
-    # If the libvirt daemon is built, update its config file to reflect
-    # the Homebrew prefix
-    if build.with? "libvirtd"
-      inreplace "#{etc}/libvirt/libvirtd.conf" do |s|
-        s.gsub! "/etc/", "#{HOMEBREW_PREFIX}/etc/"
-        s.gsub! "/var/", "#{HOMEBREW_PREFIX}/var/"
-      end
+    mkdir "build" do
+      args = %W[
+        --localstatedir=#{var}
+        --mandir=#{man}
+        --sysconfdir=#{etc}
+        -Ddriver_esx=enabled
+        -Ddriver_qemu=enabled
+        -Ddriver_network=enabled
+        -Dinit_script=none
+        -Dqemu_datadir=#{Formula["qemu"].opt_pkgshare}
+      ]
+      system "meson", *std_meson_args, *args, ".."
+      system "meson", "compile"
+      system "meson", "install"
     end
+  end
+
+  service do
+    run [opt_sbin/"libvirtd", "-f", etc/"libvirt/libvirtd.conf"]
+    keep_alive true
+    environment_variables PATH: HOMEBREW_PREFIX/"bin"
   end
 
   test do

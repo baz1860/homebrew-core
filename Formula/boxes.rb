@@ -1,22 +1,34 @@
 class Boxes < Formula
   desc "Draw boxes around text"
   homepage "https://boxes.thomasjensen.com/"
-  url "https://github.com/ascii-boxes/boxes/archive/v1.2.tar.gz"
-  sha256 "ba237f6d4936bdace133d5f370674fd4c63bf0d767999a104bada6460c5d1913"
-  head "https://github.com/ascii-boxes/boxes.git"
+  url "https://github.com/ascii-boxes/boxes/archive/v2.1.1.tar.gz"
+  sha256 "95ae6b46e057a79c6414b8c0b5b561c3e9d886ab8123a4085d256edccce625f9"
+  license "GPL-2.0-only"
+  head "https://github.com/ascii-boxes/boxes.git", branch: "master"
 
   bottle do
-    sha256 "6823ac1ae744b9c1c39dedd056674b39200990de61d3035962a7da5221a57ec2" => :high_sierra
-    sha256 "ebb5d353fb518ceb79ad3f52c0e53e867c5fc7bef1577cdca712ce91e522af56" => :sierra
-    sha256 "6f0a27e8bad4e4294bf4b4f82d1774eaf987cc7e8e6486f3204619ab84f01b13" => :el_capitan
-    sha256 "ae79b8cff43636d551a7f3e34dd74c5d6c15c526c79b6a9ad6b0fb2d3b60c0e0" => :yosemite
+    sha256 arm64_monterey: "e8b8eca263957a235a37c69e99c30753c5f784d3b2ca782a51da94a4c339cdf6"
+    sha256 arm64_big_sur:  "8a84a206ca3a46d2364dd51f3e025762545645ff161e593a60149fc55e7a1f97"
+    sha256 monterey:       "aeb6f5c6587634067ea8ba32f7a92cd1d3e8b7503ddd8c8afbaefd9f279e5e87"
+    sha256 big_sur:        "eba500de77351541b21e68725366e61c7f6452cf097d72d7098ebb752d9d6f8f"
+    sha256 catalina:       "26564383c477c7e9e77ae94ab8d4fdb26cbaf2d530b768d01f93b72c1567b0c8"
+    sha256 mojave:         "e42c888a34141a1cff3b52404f0e35d1de820f64b2d7d7bf973684a8e234b1bd"
+    sha256 x86_64_linux:   "4a7881b680878471dfb3ea8d9392439b5f857b7a61c6385f1c4bd405f2333891"
   end
+
+  depends_on "bison" => :build
+  depends_on "libunistring"
+  depends_on "pcre2"
+
+  uses_from_macos "flex" => :build
 
   def install
     # distro uses /usr/share/boxes change to prefix
-    system "make", "GLOBALCONF=#{share}/boxes-config", "CC=#{ENV.cc}"
+    system "make", "GLOBALCONF=#{share}/boxes-config",
+                   "CC=#{ENV.cc}",
+                   "YACC=#{Formula["bison"].opt_bin/"bison"}"
 
-    bin.install "src/boxes"
+    bin.install "out/boxes"
     man1.install "doc/boxes.1"
     share.install "boxes-config"
   end

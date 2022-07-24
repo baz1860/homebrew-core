@@ -1,18 +1,31 @@
 class Jailkit < Formula
   desc "Utilities to create limited user accounts in a chroot jail"
   homepage "https://olivier.sessink.nl/jailkit/"
-  url "https://olivier.sessink.nl/jailkit/jailkit-2.19.tar.bz2"
-  sha256 "bebbf6317a5a15057194dd2cf6201821c48c022dbc64c12756eb13b61eff9bf9"
+  url "https://olivier.sessink.nl/jailkit/jailkit-2.23.tar.bz2"
+  sha256 "aa27dc1b2dbbbfcec2b970731f44ced7079afc973dc066757cea1beb4e8ce59c"
+  license all_of: ["BSD-3-Clause", "LGPL-2.0-or-later"]
+  revision 1
 
-  bottle do
-    sha256 "166941217a0df0400cd068f2b3d9859c8b1a30981488c28bc0d44b2a7d4eafb6" => :high_sierra
-    sha256 "ac67228b1970793bc8f5e6b0f167bdda59890aa23717443baa58a5ee0e0efe98" => :sierra
-    sha256 "9c46c69db017a018e9b4c92f613d99d22656d331962bef1da85c0ae782a172e1" => :el_capitan
-    sha256 "b57b4205ede4e8dff0e09c386034e322f667ce4df739b02578579f844dfbe5e2" => :yosemite
-    sha256 "dfd01ec63fdd8786b7bd224e3990ffb16f12f194c21bee144a2cd3b482d4d6b7" => :mavericks
+  livecheck do
+    url :homepage
+    regex(/href=.*?jailkit[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
+  bottle do
+    sha256 arm64_monterey: "84057794afa5db7583d6787a3b6e246257efc8bbf6601566771265228084bdef"
+    sha256 arm64_big_sur:  "e9a582fee1859d32410b20dff031b55c1a0a72862b8422cb8299800832977f16"
+    sha256 monterey:       "d8059ea2e2f6dce16220b99d43dea5adebc200a80e98f4b8017b0efe8c29c6d7"
+    sha256 big_sur:        "7f9fe097188c70df7933bd30d6c78c60455355df8e33a3ad4927002cf70ec2e9"
+    sha256 catalina:       "35d7f20d16725ad3ec24dd82592a0fc7ae2e1cfc0b6bf3eaaf04e8118437ca09"
+    sha256 mojave:         "9ae118d16ab03810384fb708caf5fcf4429c209c147e40f03f08a45b8c24138d"
+    sha256 x86_64_linux:   "fe136070c9a808323d6919365991597aaf5f2ca6867d8cee66129c205943a8e2"
+  end
+
+  depends_on "python@3.10"
+
   def install
+    ENV["PYTHONINTERPRETER"] = Formula["python@3.10"].opt_bin/"python3"
+
     system "./configure", "--prefix=#{prefix}", "--disable-debug", "--disable-dependency-tracking"
     system "make", "install"
   end

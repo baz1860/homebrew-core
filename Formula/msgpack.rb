@@ -1,26 +1,36 @@
 class Msgpack < Formula
   desc "Library for a binary-based efficient data interchange format"
   homepage "https://msgpack.org/"
-  url "https://github.com/msgpack/msgpack-c/releases/download/cpp-2.1.5/msgpack-2.1.5.tar.gz"
-  sha256 "6126375af9b204611b9d9f154929f4f747e4599e6ae8443b337915dcf2899d2b"
-  head "https://github.com/msgpack/msgpack-c.git"
+  url "https://github.com/msgpack/msgpack-c/releases/download/c-4.0.0/msgpack-c-4.0.0.tar.gz"
+  sha256 "420fe35e7572f2a168d17e660ef981a589c9cbe77faa25eb34a520e1fcc032c8"
+  license "BSL-1.0"
+  head "https://github.com/msgpack/msgpack-c.git", branch: "c_master"
+
+  livecheck do
+    url :stable
+    regex(/^c[._-]v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    sha256 "85933b57f67eaa2f08bdd634bf4615603586775d7c4558d2309f3894bf53a51c" => :high_sierra
-    sha256 "4666095a79d52aafd4f430d107621ce7478bd6a1fc605aa565c5c0fab25f82e3" => :sierra
-    sha256 "bd0d61248dbbf8fc6859d22a3ccc3b4a62289f6f5745c4415f129431614ae173" => :el_capitan
-    sha256 "f29ea6e3fa33c5ad7b3a6172ad1e993e7ebfd30bc745769da4f093f3283031a3" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "e3df397ffc4f82b7e321fd9a31f16979af074db08f663f485b474c0119643c7e"
+    sha256 cellar: :any,                 arm64_big_sur:  "94519c5e879506abb6e665f65982df1b461e53e83904a4ff88bd9ef34a05db83"
+    sha256 cellar: :any,                 monterey:       "c457413b910943f87cffc03951d9dbe5cc60c23abf862c572dab0b18011bb682"
+    sha256 cellar: :any,                 big_sur:        "a6922853180da9206a75c706502c24971bfa73abf6aeed7b8341a6824e179580"
+    sha256 cellar: :any,                 catalina:       "702f8b5c56c9f4111a68111d4e03466894ac98c43a9e3127ddfb74559bad201d"
+    sha256 cellar: :any,                 mojave:         "ae673e0c74680acca0996eba8d4a2d7d6048c1986706f85f12f64a3d53750db8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "542fb3791b98792a25705dd2de670e9d0ac492f4d03246614052a81ed4bc02d4"
   end
 
   depends_on "cmake" => :build
 
   def install
+    # C++ Headers are now in msgpack-cxx
     system "cmake", ".", *std_cmake_args
     system "make", "install"
   end
 
   test do
-    # Reference: https://github.com/msgpack/msgpack-c/blob/master/QUICKSTART-C.md
+    # Reference: https://github.com/msgpack/msgpack-c/blob/c_master/QUICKSTART-C.md
     (testpath/"test.c").write <<~EOS
       #include <msgpack.h>
       #include <stdio.h>

@@ -1,42 +1,34 @@
 class Stk < Formula
   desc "Sound Synthesis Toolkit"
   homepage "https://ccrma.stanford.edu/software/stk/"
-  url "https://ccrma.stanford.edu/software/stk/release/stk-4.6.0.tar.gz"
-  sha256 "648fcb9a0a4243d2d93fc72b29955953f4e794edf04c31f2ed0ed720d05287d2"
+  url "https://ccrma.stanford.edu/software/stk/release/stk-4.6.2.tar.gz"
+  sha256 "573e26ccf72ce436a1dc4ee3bea05fd35e0a8e742c339c7f5b85225502238083"
+  license "MIT"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "67c1c6c12bbf98d866bac55955d4715f94c05c63551bd0687646c6acd549de91" => :high_sierra
-    sha256 "70c1c7e91fc3477055e6bc1a39dd5ef160c4e496887bb22b88d7fd149b03bfa6" => :sierra
-    sha256 "e333e99c0fe8611be1fc7fb54d3e4e77f4cde210bb1c281031ed54b74187ef4d" => :el_capitan
+  livecheck do
+    url "https://ccrma.stanford.edu/software/stk/download.html"
+    regex(/href=.*?stk[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  option "with-debug", "Compile with debug flags and modified CFLAGS for easier debugging"
-
-  deprecated_option "enable-debug" => "with-debug"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "cfb08e28312687b79737423cf59db64cd30aa2d7b5527a9e65ff6d2a3d4a437c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "d42d3b5288a6f8b595eb45c2f870f0494cc63e902d28a358656a4b6d3ae6b795"
+    sha256 cellar: :any_skip_relocation, monterey:       "cb80d6ce6f9266932079b1edeb9acc6224335193889a873ed413a0659f8c29ce"
+    sha256 cellar: :any_skip_relocation, big_sur:        "9dd7c364744901db0a21e8dfc95c02545ab6bf5ef47bb9dd8a6a2866f382f5c1"
+    sha256 cellar: :any_skip_relocation, catalina:       "c5857693fa1111471c746d769db8bac3486db28d7eafb3c3e61d8a680ddbce4b"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "767854c871ad23240582a554a26385f0980d6847d4e8012eb06ff071800cc0c1"
+  end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
 
-  fails_with :clang do
-    build 421
-    cause "due to configure file this application will not properly compile with clang"
+  on_linux do
+    depends_on "alsa-lib"
   end
 
   def install
-    args = %W[--prefix=#{prefix}]
-
-    if build.with? "debug"
-      inreplace "configure", 'CFLAGS="-g -O2"', 'CFLAGS="-g -O0"'
-      inreplace "configure", 'CXXFLAGS="-g -O2"', 'CXXFLAGS="-g -O0"'
-      inreplace "configure", 'CPPFLAGS="$CPPFLAGS $cppflag"', ' CPPFLAGS="$CPPFLAGS $cppflag -g -O0"'
-      args << "--enable-debug"
-    else
-      args << "--disable-debug"
-    end
-
     system "autoreconf", "-fiv"
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}", "--disable-debug"
     system "make"
 
     lib.install "src/libstk.a"
@@ -47,13 +39,14 @@ class Stk < Formula
     pkgshare.install "src", "projects", "rawwaves"
   end
 
-  def caveats; <<~EOS
-    The header files have been put in a standard search path, it is possible to use an include statement in programs as follows:
+  def caveats
+    <<~EOS
+      The header files have been put in a standard search path, it is possible to use an include statement in programs as follows:
 
-      #include \"stk/FileLoop.h\"
-      #include \"stk/FileWvOut.h\"
+        #include \"stk/FileLoop.h\"
+        #include \"stk/FileWvOut.h\"
 
-    src/ projects/ and rawwaves/ have all been copied to #{opt_pkgshare}
+      src/ projects/ and rawwaves/ have all been copied to #{opt_pkgshare}
     EOS
   end
 

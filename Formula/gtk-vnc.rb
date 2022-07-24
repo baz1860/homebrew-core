@@ -1,60 +1,65 @@
 class GtkVnc < Formula
   desc "VNC viewer widget for GTK"
   homepage "https://wiki.gnome.org/Projects/gtk-vnc"
-  url "https://download.gnome.org/sources/gtk-vnc/0.7/gtk-vnc-0.7.1.tar.xz"
-  sha256 "f34baa696615ef67666e8465b4d0ac563355e999a77d2cc42ad4625a24f7aab1"
+  url "https://download.gnome.org/sources/gtk-vnc/1.2/gtk-vnc-1.2.0.tar.xz"
+  sha256 "7aaf80040d47134a963742fb6c94e970fcb6bf52dc975d7ae542b2ef5f34b94a"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "fe20355933a766ba4bb5a7a30bc0609e288d90acc488086c8b60131747f997b7" => :high_sierra
-    sha256 "c95f372db04ab13aa14d32a08365c70b2509f44e2e00e35dbe8951c0fbf2ff35" => :sierra
-    sha256 "8a06aa2e8724eff7e84b5249eaa8d0b2f82dba260b35fab9785c4ff4ed2ef065" => :el_capitan
-    sha256 "9d4ceb7f6eddd4a8db287c1e4c4dcdca1bd302eaaf11879d2080c39e771c333e" => :yosemite
+    sha256 arm64_monterey: "145945a233cb938e7f0171ad9339b11ef1d61a9f19af72201c12d7305175b50c"
+    sha256 arm64_big_sur:  "b07922526eaea0881a6394907b9cc332fc37852c5206a92692468243d13a2ac8"
+    sha256 monterey:       "80799a6281038d4100a8709fc45a69c891d937a681385fe4fdd32dc2c478777b"
+    sha256 big_sur:        "f4961c57ac8d69639f2f0a95d307ec85b0cee23f204666989853382158bf8986"
+    sha256 catalina:       "16cc1407520b9b5a6454507e1db7f7226d78320c353cd9f45130c9ba7883567c"
+    sha256 mojave:         "218453c1fa7ae8b188ecbfe0ca408beefff3fbf168fa1fdd397ac73c4336c031"
+    sha256 x86_64_linux:   "9ac4316ffc6dca96ef488bac50dae54d5a733f9bdd4f11da945fc90fc2f47981"
   end
 
-  # Fails with Xcode 7.1 or older
-  # error: use of undeclared identifier 'MAP_ANONYMOUS'
-  # Upstream bug: https://bugzilla.gnome.org/show_bug.cgi?id=602371
-  depends_on :macos => :yosemite
-
   depends_on "gettext" => :build
-  depends_on "intltool" => :build
-  depends_on "libtool" => :build
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
   depends_on "gnutls"
   depends_on "gtk+3"
   depends_on "libgcrypt"
-  depends_on "gobject-introspection" => :optional
-  depends_on "pulseaudio" => :optional
-  depends_on "vala" => :optional
+
+  # Fix configuration failure with -Dwith-vala=disabled
+  # Remove in the next release.
+  patch do
+    url "https://gitlab.gnome.org/GNOME/gtk-vnc/-/commit/bdab05584bab5c2ecdd508df49b03e80aedd19fc.diff"
+    sha256 "1b260157be888d9d8e6053e6cfd7ae92a666c306f04f4f23a0a1ed68a06c777d"
+  end
+
+  # Fix compile failure in src/vncdisplaykeymap.c
+  # error: implicit declaration of function 'GDK_IS_QUARTZ_DISPLAY' is invalid in C99
+  # https://gitlab.gnome.org/GNOME/gtk-vnc/-/issues/16
+  patch :DATA
 
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --with-gtk=3.0
-      --with-examples
-      --with-python
-    ]
-
-    args << "--enable-introspection" if build.with? "gobject-introspection"
-    args << "--enable-pulseaudio" if build.with? "pulseaudio"
-    if build.with? "vala"
-      args << "--enable-vala"
-    else
-      args << "--disable-vala"
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dwith-vala=disabled", ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
-
-    # fix "The deprecated ucontext routines require _XOPEN_SOURCE to be defined"
-    ENV.append "CPPFLAGS", "-D_XOPEN_SOURCE=600"
-    # for MAP_ANON
-    ENV.append "CPPFLAGS", "-D_DARWIN_C_SOURCE"
-
-    system "./configure", *args
-
-    system "make"
-    system "make", "install"
   end
 
   test do
-    system "#{bin}/gvncviewer", "--help-all"
+    system "#{bin}/gvnccapture", "--help"
   end
 end
+
+__END__
+diff --git a/src/vncdisplaykeymap.c b/src/vncdisplaykeymap.c
+index 9c029af..8d3ec20 100644
+--- a/src/vncdisplaykeymap.c
++++ b/src/vncdisplaykeymap.c
+@@ -69,6 +69,8 @@
+ #endif
+ 
+ #ifdef GDK_WINDOWING_QUARTZ
++#include <gdk/gdkquartz.h>
++
+ /* OS-X native keycodes */
+ #include "vncdisplaykeymap_osx2qnum.h"
+ #endif

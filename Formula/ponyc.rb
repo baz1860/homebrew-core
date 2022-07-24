@@ -1,36 +1,35 @@
 class Ponyc < Formula
   desc "Object-oriented, actor-model, capabilities-secure programming language"
   homepage "https://www.ponylang.org/"
-  url "https://github.com/ponylang/ponyc/archive/0.21.3.tar.gz"
-  sha256 "ef618f80dd793f27293695a3b8dc3a94415838dacf2e736d3d17a655081ac872"
-  head "https://github.com/ponylang/ponyc.git"
+  url "https://github.com/ponylang/ponyc.git",
+      tag:      "0.51.1",
+      revision: "9a058ed04dcef213b2208285f64aa9cea832fab0"
+  license "BSD-2-Clause"
 
   bottle do
-    cellar :any
-    sha256 "8a99715f5b17a32146e24705f7f868830897aa77bcb940c856f32ad1f636defa" => :high_sierra
-    sha256 "e7c1e0c2d07f0f4e77d8edb85271408e1348dcea18ee5a4eb4d8dd990db92229" => :sierra
-    sha256 "e4921999ee11c6a59f774fecc763bb3574af53350b567e38688975acb599c062" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "f699c8596078416cf8f8511857c9d325195c2da8d8ea55339607b6860ef6128e"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "4ab996163bd550bb352277b6679b98620eea069ef63519236843bfe6bc120925"
+    sha256 cellar: :any_skip_relocation, monterey:       "254136133bab7da15bb052ed7be42423f96624b7a607b79ace85622640fe6c59"
+    sha256 cellar: :any_skip_relocation, big_sur:        "1e5288daf7f205cabef9db0f0a3e1a570a386134d3d2c9f329e479c1cf75fda2"
+    sha256 cellar: :any_skip_relocation, catalina:       "004a1c32bd63e774c20c07c3a7738ae731e891e7f72484b77291d2fe870729cb"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "285b16250d89b9fad370928e45a3002859fd5ff44b4e3c0a38106e66281e6d5c"
   end
 
-  depends_on :macos => :yosemite
-  depends_on "llvm@3.9"
-  depends_on "libressl"
-  depends_on "pcre2"
-  needs :cxx11
+  depends_on "cmake" => :build
+  depends_on "python@3.10" => :build
 
-  # https://github.com/ponylang/ponyc/issues/1274
-  # https://github.com/Homebrew/homebrew-core/issues/5346
-  pour_bottle? do
-    reason <<~EOS
-      The bottle requires Xcode/CLT 8.0 or later to work properly.
-    EOS
-    satisfy { DevelopmentTools.clang_build_version >= 800 }
-  end
+  uses_from_macos "zlib"
 
   def install
     ENV.cxx11
-    ENV["LLVM_CONFIG"] = "#{Formula["llvm@3.9"].opt_bin}/llvm-config"
-    system "make", "config=release", "destdir=#{prefix}", "install", "verbose=1"
+
+    inreplace "CMakeLists.txt", "PONY_COMPILER=\"${CMAKE_C_COMPILER}\"", "PONY_COMPILER=\"#{ENV.cc}\"" if OS.linux?
+
+    ENV["MAKEFLAGS"] = "build_flags=-j#{ENV.make_jobs}"
+    system "make", "libs"
+    system "make", "configure"
+    system "make", "build"
+    system "make", "install", "DESTDIR=#{prefix}"
   end
 
   test do

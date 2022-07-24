@@ -1,25 +1,25 @@
 class GitSecret < Formula
   desc "Bash-tool to store the private data inside a git repo"
-  homepage "https://sobolevn.github.io/git-secret/"
-  url "https://github.com/sobolevn/git-secret/archive/v0.2.3.tar.gz"
-  sha256 "c821c25865ce7e13a67453debb6d60a8c1730102ecfc4c4b4c4858a02201ab26"
-  head "https://github.com/sobolevn/git-secret.git"
+  homepage "https://git-secret.io"
+  license "MIT"
+  head "https://github.com/sobolevn/git-secret.git", branch: "master"
+
+  stable do
+    url "https://github.com/sobolevn/git-secret/archive/v0.5.0.tar.gz"
+    sha256 "1cba04a59c8109389079b479c1bf5719b595e799680e10d35ce9aa091cb752af"
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "a8734dbaefc324f280a58a404b44b1acf1d658dfe768f05f16f684a2671163d1" => :high_sierra
-    sha256 "a8734dbaefc324f280a58a404b44b1acf1d658dfe768f05f16f684a2671163d1" => :sierra
-    sha256 "a8734dbaefc324f280a58a404b44b1acf1d658dfe768f05f16f684a2671163d1" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "8486273b279e327dbc528a12e760f5cdd8753e8b8bc45a2a1ab54eaeb6873f8c"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "8486273b279e327dbc528a12e760f5cdd8753e8b8bc45a2a1ab54eaeb6873f8c"
+    sha256 cellar: :any_skip_relocation, monterey:       "973f4fddf023508c20a21b6d4cdc303c24d7bdd8d912c7ba90beee9d71aae329"
+    sha256 cellar: :any_skip_relocation, big_sur:        "973f4fddf023508c20a21b6d4cdc303c24d7bdd8d912c7ba90beee9d71aae329"
+    sha256 cellar: :any_skip_relocation, catalina:       "973f4fddf023508c20a21b6d4cdc303c24d7bdd8d912c7ba90beee9d71aae329"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8486273b279e327dbc528a12e760f5cdd8753e8b8bc45a2a1ab54eaeb6873f8c"
   end
 
   depends_on "gawk"
-  depends_on "gnupg" => :recommended
-
-  # Upstream PR from 13 Jan 2018 "Make checksum command operating system based"
-  patch do
-    url "https://github.com/sobolevn/git-secret/pull/127.patch?full_index=1"
-    sha256 "0f711bb7f2cd91e0770a92371ea50541aa8ae606c0542c164af7fc280dd956db"
-  end
+  depends_on "gnupg"
 
   def install
     system "make", "build"

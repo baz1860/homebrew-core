@@ -1,22 +1,32 @@
 class Mscgen < Formula
   desc "Parses Message Sequence Chart descriptions and produces images"
-  homepage "http://www.mcternan.me.uk/mscgen/"
-  url "http://www.mcternan.me.uk/mscgen/software/mscgen-src-0.20.tar.gz"
+  homepage "https://www.mcternan.me.uk/mscgen/"
+  url "https://www.mcternan.me.uk/mscgen/software/mscgen-src-0.20.tar.gz"
   sha256 "3c3481ae0599e1c2d30b7ed54ab45249127533ab2f20e768a0ae58d8551ddc23"
-  revision 2
+  license "GPL-2.0-or-later"
+  revision 3
 
-  bottle do
-    cellar :any
-    sha256 "d3f14e39bea3447400747ed8083c6cdf97e613f3fa23eaa91cc074939560cef9" => :high_sierra
-    sha256 "e58e70827fcb36172f35a829427e1d6f6bdd571a54fd68880ea3322314827c83" => :sierra
-    sha256 "114a6b0dd6ee338029b012910fc1074ae2bb56fc0a2ff229e24d1bc1e56d126c" => :el_capitan
-    sha256 "af3dff86415fae2f80ff8f6c49a32b440e65a785db7573c74ef77487192e0811" => :yosemite
+  livecheck do
+    url :homepage
+    regex(/href=.*?mscgen-src[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on :x11
+  bottle do
+    rebuild 1
+    sha256 cellar: :any,                 arm64_monterey: "32bd04807a17b5b73bce02204ca643ac9a0071570a115cad2f6b4d50ef1b9a43"
+    sha256 cellar: :any,                 arm64_big_sur:  "9482190b13b0f8f64ddc361d5ba2ed8401490700cb24c2947e47f8182ca10d17"
+    sha256 cellar: :any,                 monterey:       "5aeba0e2de0b189cc4027e6c15eb05dca9920883b90c783796157fb8bbc2f790"
+    sha256 cellar: :any,                 big_sur:        "662b9da17d8c911e9d24be48def9a222e7068386c0b482eca48248d127467e14"
+    sha256 cellar: :any,                 catalina:       "315656cf5f9d72907591b4c8a91e635e6aa9b2116cadefe9fdd76db4cff7ae87"
+    sha256 cellar: :any,                 mojave:         "1f194eb67147772b362ae5446b2e369b35ee9ffa935c8e22d37cdb4c1364349b"
+    sha256 cellar: :any,                 high_sierra:    "0f125ab1fbaf04c670f252f05358771f1663b3fc59857bcfd855bbb52e01f88b"
+    sha256 cellar: :any,                 sierra:         "08345683137541d79b6422afd2e269b1ab8c195722e5e71cffa6298a3986d563"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "899b8d5bbf4591b17a642cc9aa4fb43015184ddf126747429c1022fc7af18d90"
+  end
+
   depends_on "pkg-config" => :build
-  depends_on "gd"
   depends_on "freetype"
+  depends_on "gd"
 
   def install
     system "./configure", "--prefix=#{prefix}",

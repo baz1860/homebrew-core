@@ -1,21 +1,29 @@
 class Unixodbc < Formula
   desc "ODBC 3 connectivity for UNIX"
   homepage "http://www.unixodbc.org/"
-  url "http://www.unixodbc.org/unixODBC-2.3.5.tar.gz"
-  sha256 "760972e05cc6361aee49d676fb7da8244e0f3a225cd4d3449a951378551b495b"
-  revision 1
+  url "http://www.unixodbc.org/unixODBC-2.3.11.tar.gz"
+  mirror "https://fossies.org/linux/privat/unixODBC-2.3.11.tar.gz"
+  sha256 "d9e55c8e7118347e3c66c87338856dad1516b490fb7c756c1562a2c267c73b5c"
+  license "LGPL-2.1-or-later"
 
-  bottle do
-    sha256 "df1bc9fd3d8f42f9c28be234ef8b088428e593ebb3cdea770eff46bbbabed3b3" => :high_sierra
-    sha256 "d3ed41256b2d4cf0e6dc827aa9a99af06db96d870cb99bfd9f89eef519381d0d" => :sierra
-    sha256 "4000a04bcd306d0ce55cacff24bc6a6e3592c20be42c0ce5ce3a9171a00cf5f2" => :el_capitan
+  livecheck do
+    url "http://www.unixodbc.org/download.html"
+    regex(/href=.*?unixODBC[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "libtool" => :run
+  bottle do
+    sha256 arm64_monterey: "41252118b5c049b7fb24be4d68aa0efd821d1b263db205b6b8395d538acdebbc"
+    sha256 arm64_big_sur:  "d7c4effd78343a0e35e1ed173321299393132c84d383b34dacaa82abb09bfbcc"
+    sha256 monterey:       "a4d5de6d53870f610840a88bd31c0d0442bc3580068f9330207ab8e0488fa523"
+    sha256 big_sur:        "7c2e9b5e3e8b9e082afa7d669d0b073897fd30ebcc3ec566a2fa38fd63369087"
+    sha256 catalina:       "c398fc445679a3619a8e602444963a4e46e9302a1813c192ac42d9b6cc2d7e63"
+    sha256 x86_64_linux:   "e8d1c01d05e821f0e4aa4aa65f104266ed16331a3e39ae72071bbe0eaec03ea0"
+  end
 
-  keg_only "shadows system iODBC header files" if MacOS.version < :mavericks
+  depends_on "libtool"
 
-  conflicts_with "virtuoso", :because => "Both install `isql` binaries."
+  conflicts_with "libiodbc", because: "both install `odbcinst.h`"
+  conflicts_with "virtuoso", because: "both install `isql` binaries"
 
   def install
     system "./configure", "--disable-debug",

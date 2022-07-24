@@ -1,27 +1,36 @@
 class Mdcat < Formula
   desc "Show markdown documents on text terminals"
-  homepage "https://github.com/lunaryorn/mdcat"
-  url "https://github.com/lunaryorn/mdcat/archive/mdcat-0.8.0.tar.gz"
-  sha256 "fb4ce097fff72fb53734568a8a1b96797cbedfbee2aabc2d2a5e8c794b1d5887"
+  homepage "https://codeberg.org/flausch/mdcat"
+  url "https://codeberg.org/flausch/mdcat/archive/mdcat-0.27.1.tar.gz"
+  sha256 "79961e0a842ee0f68aee3d54b39458352664c67388e56175a9d18d80f357bf14"
+  license "MPL-2.0"
+  head "https://codeberg.org/flausch/mdcat.git", branch: "main"
 
   bottle do
-    sha256 "77ed15875a6379f7c95a95af9eee53b8f7cb6c295d2df43ef49f4932865bb5fe" => :high_sierra
-    sha256 "a363e294b323dfc469b7f7f22519457eb3df834f6407ffec8f40c1935c1e5e24" => :sierra
-    sha256 "9c84c8b1c3d6269b0c9fd4badfb79e7e9fa5cd332d8e7345acfdf69122b7bb95" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "6d4b495c466fb64bb3eca0f638ca3c31b4e866f852793d467a6be64d9e0c6e1b"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "27e7b3daaba5e744a6d65d7ca70c6f18b702f47145364cb87db5aa4d0086eb5b"
+    sha256 cellar: :any_skip_relocation, monterey:       "b380ee16e3cff91daf99c6a6970c05dd7dae9cf62376d21a752cb49816622e16"
+    sha256 cellar: :any_skip_relocation, big_sur:        "dca5bf3fad1ba9950dfccfdbd2ec2be946d35da445efa11cf8b13f28a3d5d2a4"
+    sha256 cellar: :any_skip_relocation, catalina:       "b2b05c9cb04ecc18461bbd859625553409cd311e4844a3cee228a9841e9b93cd"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9b04acea14ed19b214c30b4c5a62595f8740340321c9ad8cc996f65436c53017"
   end
 
   depends_on "cmake" => :build
   depends_on "rust" => :build
 
+  on_linux do
+    depends_on "pkg-config" => :build
+  end
+
   def install
-    system "cargo", "install", "--root", prefix
+    system "cargo", "install", *std_cargo_args
   end
 
   test do
     (testpath/"test.md").write <<~EOS
       _lorem_ **ipsum** dolor **sit** _amet_
     EOS
-    output = shell_output("#{bin}/mdcat #{testpath}/test.md")
+    output = shell_output("#{bin}/mdcat --no-colour test.md")
     assert_match "lorem ipsum dolor sit amet", output
   end
 end

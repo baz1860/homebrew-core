@@ -1,64 +1,69 @@
 class Swiftgen < Formula
   desc "Swift code generator for assets, storyboards, Localizable.strings, …"
   homepage "https://github.com/SwiftGen/SwiftGen"
-  url "https://github.com/SwiftGen/SwiftGen.git",
-      :tag => "5.2.1",
-      :revision => "21107b1de6180cf5644e512e67e4d60a0d115ac4"
-  head "https://github.com/SwiftGen/SwiftGen.git"
+  url "https://github.com/SwiftGen/SwiftGen/archive/6.5.1.tar.gz"
+  sha256 "bcd52ddc581eea94070eaaab7b94218971f7424b7800696f6be0a1accfc7a0a9"
+  license "MIT"
+  head "https://github.com/SwiftGen/SwiftGen.git", branch: "stable"
 
   bottle do
-    cellar :any
-    sha256 "bb8de04d9fa6e153a15268ad1b1c901e08288087fa76bad72829877488ab1cf8" => :high_sierra
-    sha256 "129d086e2cca6ce4d204ad3a699524e48c5e8eee0c67f0d698a94ac8fa3d7d77" => :sierra
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "bf3abab4eac9a3886d79d6eb625b1d010c4490cd04391d02a78d44ea67ffbc5f"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ea599c0ad955644eb3f946360603090f0b05b859c892ccb94d85795eb68612d6"
+    sha256 cellar: :any_skip_relocation, monterey:       "ea47c833c24c992ecba7fff825d94efd15ed4be586c6c39188fdad1c11605f2f"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d23540aaccbe68f26fc50260a29904afa1e84f97c678e76d4c842927215e91e9"
   end
 
-  depends_on :xcode => ["9.0", :build]
+  depends_on xcode: ["13.0", :build]
+  depends_on :macos
+
+  uses_from_macos "ruby" => :build, since: :high_sierra
+
+  resource("testdata") do
+    url "https://github.com/SwiftGen/SwiftGen/archive/6.5.1.tar.gz"
+    sha256 "bcd52ddc581eea94070eaaab7b94218971f7424b7800696f6be0a1accfc7a0a9"
+  end
 
   def install
-    # Disable swiftlint Build Phase to avoid build errors if versions mismatch
-    ENV["NO_CODE_LINT"]="1"
-
-    # Install bundler, then use it to `rake cli:install` SwiftGen
+    # Install bundler (needed for our rake tasks)
     ENV["GEM_HOME"] = buildpath/"gem_home"
     system "gem", "install", "bundler"
     ENV.prepend_path "PATH", buildpath/"gem_home/bin"
-    system "bundle", "install"
-    system "bundle", "exec", "rake", "cli:install[#{bin},#{lib},#{pkgshare}/templates]"
+    system "bundle", "install", "--without", "development", "release"
 
-    fixtures = {
-      "Resources/Fixtures/XCAssets/Images.xcassets" => "Images.xcassets",
-      "Resources/Fixtures/XCAssets/Colors.xcassets" => "Colors.xcassets",
-      "Resources/Fixtures/Colors/colors.xml" => "colors.xml",
-      "Resources/Fixtures/Strings/Localizable.strings" => "Localizable.strings",
-      "Resources/Fixtures/Storyboards-iOS" => "Storyboards-iOS",
-      "Resources/Fixtures/Fonts" => "Fonts",
-      "Resources/Tests/Expected/XCAssets/swift3-context-all.swift" => "xcassets.swift",
-      "Resources/Tests/Expected/Colors/swift3-context-defaults.swift" => "colors.swift",
-      "Resources/Tests/Expected/Strings/structured-swift3-context-localizable.swift" => "strings.swift",
-      "Resources/Tests/Expected/Storyboards-iOS/swift3-context-all.swift" => "storyboards.swift",
-      "Resources/Tests/Expected/Fonts/swift3-context-defaults.swift" => "fonts.swift",
-    }
-    (pkgshare/"fixtures").install fixtures
+    # Disable linting
+    ENV["NO_CODE_LINT"] = "1"
+
+    # Install SwiftGen in `libexec` (because of our resource bundle)
+    # Then create a script to invoke it
+    system "bundle", "exec", "rake", "cli:install[#{libexec}]"
+    bin.write_exec_script "#{libexec}/swiftgen"
   end
 
   test do
+    # prepare test data
+    resource("testdata").stage testpath
+    fixtures = testpath/"Sources/TestUtils/Fixtures"
+    test_command = lambda { |command, template, resource_group, generated, fixture, params = nil|
+      assert_equal(
+        (fixtures/"Generated/#{resource_group}/#{template}/#{generated}").read.strip,
+        shell_output("#{bin}/swiftgen run #{command} " \
+                     "--templateName #{template} #{params} #{fixtures}/Resources/#{resource_group}/#{fixture}").strip,
+        "swiftgen run #{command} failed",
+      )
+    }
+
     system bin/"swiftgen", "--version"
 
-    fixtures = pkgshare/"fixtures"
-
-    output = shell_output("#{bin}/swiftgen xcassets --templatePath #{pkgshare/"templates/xcassets/swift3.stencil"} #{fixtures}/Images.xcassets #{fixtures}/Colors.xcassets").strip
-    assert_equal output, (fixtures/"xcassets.swift").read.strip, "swiftgen xcassets failed"
-
-    output = shell_output("#{bin}/swiftgen colors --templatePath #{pkgshare/"templates/colors/swift3.stencil"} #{fixtures}/colors.xml").strip
-    assert_equal output, (fixtures/"colors.swift").read.strip, "swiftgen colors failed"
-
-    output = shell_output("#{bin}/swiftgen strings --templatePath #{pkgshare/"templates/strings/structured-swift3.stencil"} #{fixtures}/Localizable.strings").strip
-    assert_equal output, (fixtures/"strings.swift").read.strip, "swiftgen strings failed"
-
-    output = shell_output("#{bin}/swiftgen storyboards --templatePath #{pkgshare/"templates/storyboards/swift3.stencil"} #{fixtures}/Storyboards-iOS").strip
-    assert_equal output, (fixtures/"storyboards.swift").read.strip, "swiftgen storyboards failed"
-
-    output = shell_output("#{bin}/swiftgen fonts --templatePath #{pkgshare/"templates/fonts/swift3.stencil"} #{fixtures}/Fonts").strip
-    assert_equal output, (fixtures/"fonts.swift").read.strip, "swiftgen fonts failed"
+    #                 command     template             rsrc_group  generated            fixture & params
+    test_command.call "colors",   "swift5",            "Colors",   "defaults.swift",    "colors.xml"
+    test_command.call "coredata", "swift5",            "CoreData", "defaults.swift",    "Model.xcdatamodeld"
+    test_command.call "files",    "structured-swift5", "Files",    "defaults.swift",    ""
+    test_command.call "fonts",    "swift5",            "Fonts",    "defaults.swift",    ""
+    test_command.call "ib",       "scenes-swift5",     "IB-iOS",   "all.swift",         "", "--param module=SwiftGen"
+    test_command.call "json",     "runtime-swift5",    "JSON",     "all.swift",         ""
+    test_command.call "plist",    "runtime-swift5",    "Plist",    "all.swift",         "good"
+    test_command.call "strings",  "structured-swift5", "Strings",  "localizable.swift", "Localizable.strings"
+    test_command.call "xcassets", "swift5",            "XCAssets", "all.swift",         ""
+    test_command.call "yaml",     "inline-swift5",     "YAML",     "all.swift",         "good"
   end
 end

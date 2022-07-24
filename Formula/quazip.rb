@@ -1,27 +1,41 @@
 class Quazip < Formula
   desc "C++ wrapper over Gilles Vollant's ZIP/UNZIP package"
-  homepage "https://quazip.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/quazip/quazip/0.7.3/quazip-0.7.3.tar.gz"
-  sha256 "2ad4f354746e8260d46036cde1496c223ec79765041ea28eb920ced015e269b5"
-  revision 1
+  homepage "https://github.com/stachenov/quazip/"
+  url "https://github.com/stachenov/quazip/archive/v1.3.tar.gz"
+  sha256 "c1239559cd6860cab80a0fd81f4204e606f9324f702dab6166b0960676ee1754"
+  license "LGPL-2.1-only"
 
   bottle do
-    cellar :any
-    sha256 "907e72c7b9ee1af624c684c960925b3227409d3c95324bfc00aef2ad6384d22c" => :high_sierra
-    sha256 "9ec688664e0354803611744d1aaeec073cf0912762652be352404ac1c1fadfb4" => :sierra
-    sha256 "ce3454f5f7c5c8083df617ec63ccaf7291091da544287719573fc2c3dbb744c6" => :el_capitan
-    sha256 "dc296670c3c7bd52c825bb545132df0731c274af47f44d8ecefc53eda3c2065c" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "1a90afdde6493e15734bea6d7a28ae564587f34aeb92869a64e144caa6fe9ee8"
+    sha256 cellar: :any,                 arm64_big_sur:  "2f880c097eca45aada016573e392d2f7138813b4583dce0cf7d78a64a5e57709"
+    sha256 cellar: :any,                 monterey:       "d5d59babd543adc6c638229cd727bad679543a1aac2e944c72f7c8c3a3093b6e"
+    sha256 cellar: :any,                 big_sur:        "d3c54b37b3a5666873ef96f5e58fbdddd221c096cdb502b98938a94af43b9627"
+    sha256 cellar: :any,                 catalina:       "803e17b2e45326eb8a4e534f20fddfa138fe0d3f570798ce48a8135af9604ef1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "b4d08d29dabd478538204972235ecbc739f1a3bf84ee9878c6ec67a2f93b465b"
   end
 
+  depends_on "cmake" => :build
+  depends_on xcode: :build
   depends_on "qt"
 
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5" # C++17
+
   def install
-    system "qmake", "quazip.pro", "-config", "release",
-                    "PREFIX=#{prefix}", "LIBS+=-lz"
+    system "cmake", ".", "-DCMAKE_PREFIX_PATH=#{Formula["qt"].opt_lib}", *std_cmake_args
+    system "make"
     system "make", "install"
+
+    cd include do
+      include.install_symlink "QuaZip-Qt#{Formula["qt"].version.major}-#{version}/quazip" => "quazip"
+    end
   end
 
   test do
+    ENV.delete "CPATH"
     (testpath/"test.pro").write <<~EOS
       TEMPLATE     = app
       CONFIG      += console
@@ -30,7 +44,7 @@ class Quazip < Formula
       SOURCES     += test.cpp
       INCLUDEPATH += #{include}
       LIBPATH     += #{lib}
-      LIBS        += -lquazip
+      LIBS        += -lquazip#{version.major}-qt#{Formula["qt"].version.major}
     EOS
 
     (testpath/"test.cpp").write <<~EOS

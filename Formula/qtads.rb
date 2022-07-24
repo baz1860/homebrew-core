@@ -1,65 +1,63 @@
 class Qtads < Formula
   desc "TADS multimedia interpreter"
-  homepage "https://qtads.sourceforge.io/"
-  revision 1
-  head "https://github.com/realnc/qtads.git"
+  homepage "https://realnc.github.io/qtads/"
+  url "https://github.com/realnc/qtads/releases/download/v3.3.0/qtads-3.3.0-source.tar.xz"
+  sha256 "02d62f004adbcf1faaa24928b3575a771d289df0fea9a97705d3bc528d9164a1"
+  license "GPL-3.0-or-later"
+  head "https://github.com/realnc/qtads.git", branch: "master"
 
-  stable do
-    url "https://downloads.sourceforge.net/project/qtads/qtads-2.x/2.1.7/qtads-2.1.7.tar.bz2"
-    sha256 "7477bb3cb1f74dcf7995a25579be8322c13f64fb02b7a6e3b2b95a36276ef231"
-
-    # Remove for > 2.1.7
-    # fix infinite recursion
-    patch do
-      url "https://github.com/realnc/qtads/commit/d22054b.patch?full_index=1"
-      sha256 "e6af1eb7a8a4af72c9319ac6032a0bb8ffa098e7dd64d76da08ed0c7e50eaa7f"
-    end
-
-    # Remove for > 2.1.7
-    # fix pointer/integer comparison
-    patch do
-      url "https://github.com/realnc/qtads/commit/46701a2.patch?full_index=1"
-      sha256 "02c86bfa44769ec15844bbefa066360fb83ac923360ced140545fb782f4f3397"
-    end
-
-    # Fix "error: ordered comparison between pointer and zero"
-    # Reported 11 Dec 2017 https://github.com/realnc/qtads/issues/7
-    if DevelopmentTools.clang_build_version >= "900"
-      patch do
-        url "https://raw.githubusercontent.com/Homebrew/formula-patches/e189341/qtads/xcode9.diff"
-        sha256 "2016fef6e867b7b8dfe1bd5db64d588161aad1357faa1962ee48edbe35042ddc"
-      end
-    end
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
   bottle do
-    cellar :any
-    sha256 "ef218d294d01133003c6e52fc32f9482726d6f237b3b5b90add019960ffe9eb2" => :high_sierra
-    sha256 "51fff5c39b8c234bb72b9a3865f7a067fb2dab902316c7943261ba66ed98ab19" => :sierra
-    sha256 "fe8ab65019c324c13c9024291b3e6288aff3ec28049a0cf321da421b4c28f0f6" => :el_capitan
-    sha256 "e2383ed761b051e337ed2a4a4162655cb9eaa19ed8ab0666e8a7d1efa236b9b2" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "01775d9d59b935a88d278eafa80efc640b37b0bcca42b0209a51d5f480879ec4"
+    sha256 cellar: :any,                 arm64_big_sur:  "d6784afbd739446332a78e1f901f06bda0d27ccb55a4843f3d2aa6a2a98bd3c7"
+    sha256 cellar: :any,                 monterey:       "58e13943b5851bb624acd3b8476e332929372ca7278bed480a2472ac642be420"
+    sha256 cellar: :any,                 big_sur:        "ff20c33e9aac5f4987ccd3012857580c8aa73a4b7e12e343da8e10f60de11bf3"
+    sha256 cellar: :any,                 catalina:       "d3a01d88f22770acc001c6e3be86b0beba01086037a3d33c969d3d02abbba3bc"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "291e63bf93958811dff8036f06db1bdaf06967d193b632889852834959801489"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "qt"
+  depends_on "fluid-synth"
+  depends_on "libsndfile"
+  depends_on "libvorbis"
+  depends_on "mpg123"
+  depends_on "qt@5"
   depends_on "sdl2"
-  depends_on "sdl2_mixer"
-  depends_on "sdl_sound"
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
 
   def install
     sdl_sound_include = Formula["sdl_sound"].opt_include
     inreplace "qtads.pro",
-      "INCLUDEPATH += src $$T2DIR $$T3DIR $$HTDIR",
-      "INCLUDEPATH += src $$T2DIR $$T3DIR $$HTDIR #{sdl_sound_include}/SDL"
+      "$$T3DIR \\",
+      "$$T3DIR #{sdl_sound_include}/SDL \\"
 
-    system "qmake", "DEFINES+=NO_STATIC_TEXTCODEC_PLUGINS"
+    args = ["DEFINES+=NO_STATIC_TEXTCODEC_PLUGINS"]
+    args << "PREFIX=#{prefix}" unless OS.mac?
+
+    system "qmake", *args
     system "make"
-    prefix.install "QTads.app"
-    bin.write_exec_script "#{prefix}/QTads.app/Contents/MacOS/QTads"
-    man6.install "share/man/man6/qtads.6"
+
+    if OS.mac?
+      prefix.install "QTads.app"
+      bin.write_exec_script "#{prefix}/QTads.app/Contents/MacOS/QTads"
+    else
+      system "make", "install"
+    end
+
+    man6.install "desktop/man/man6/qtads.6"
   end
 
   test do
-    assert_predicate testpath/"#{bin}/QTads", :exist?, "I'm an untestable GUI app."
+    bin_name = OS.mac? ? "QTads" : "qtads"
+    assert_predicate testpath/"#{bin}/#{bin_name}", :exist?, "I'm an untestable GUI app."
   end
 end

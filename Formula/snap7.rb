@@ -6,22 +6,37 @@ class Snap7 < Formula
   revision 1
 
   bottle do
-    cellar :any
-    sha256 "5540f68aadc159b4a590079b1b4f06b042438f0f714456af3f5dfbfc34af47ac" => :high_sierra
-    sha256 "edd667d4018983951999c21da14d1929b95a9dba2a908c88e721ad7febc2fa5d" => :sierra
-    sha256 "45c77c8c6862e3c2b0840c3a32d23a95d53d73b7b35960f747a380bc5563d00e" => :el_capitan
+    rebuild 1
+    sha256 cellar: :any,                 monterey:     "0e80fc31c025dc39b1b551adb4328023a0b9f99643d8e246ab644529b9b7e3e1"
+    sha256 cellar: :any,                 big_sur:      "52d04e1646b47ba15e5877e8c24b8f2d0267a51d8b7b07ee47330ecd2c44d95a"
+    sha256 cellar: :any,                 catalina:     "015a23b1cb6728a86716811511e51fba427c69febabd1af5507af31d77523802"
+    sha256 cellar: :any,                 mojave:       "71aff7cbb3e78369d6b9a93887820dd7def1afe382ed82211be313942e1bb81d"
+    sha256 cellar: :any,                 high_sierra:  "b0d670ce6a2d780d13cfaa3346c6aa701f280a85be010dc42c802d6ebd028694"
+    sha256 cellar: :any,                 sierra:       "e04dea88411f3b444dcab340d3f11bd739fb853de65701e727546a9481981924"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "9fbbcef4c1de91267df9cfad2d3be40570c3be564c5793d874c11452780dc315"
   end
 
   def install
-    cd "snap7-full-#{version}"
     lib.mkpath
-    system "make", "-C", "build/osx",
-                   "-f", "#{MacOS.preferred_arch}_osx.mk",
+    os_dir = OS.mac? ? "osx" : "unix"
+    os = OS.mac? ? "osx" : OS.kernel_name.downcase
+    system "make", "-C", "build/#{os_dir}",
+                   "-f", "x86_64_#{os}.mk",
                    "install", "LibInstall=#{lib}"
     include.install "release/Wrappers/c-cpp/snap7.h"
   end
 
   test do
-    system "python", "-c", "import ctypes.util,sys;ctypes.util.find_library('snap7') or sys.exit(1)"
+    (testpath/"test.c").write <<~EOS
+      #include "snap7.h"
+      int main()
+      {
+        S7Object Client = Cli_Create();
+        Cli_Destroy(&Client);
+        return 0;
+      }
+    EOS
+    system ENV.cc, "-o", "test", "test.c", "-L#{lib}", "-lsnap7"
+    system "./test"
   end
 end

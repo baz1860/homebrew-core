@@ -1,49 +1,44 @@
 class LibbitcoinNode < Formula
   desc "Bitcoin Full Node"
   homepage "https://github.com/libbitcoin/libbitcoin-node"
-  url "https://github.com/libbitcoin/libbitcoin-node/archive/v3.5.0.tar.gz"
-  sha256 "e3a0a96155ca93aa6cba75789c18419f40686a69cbd40c77aa77ca84ccc43cab"
+  url "https://github.com/libbitcoin/libbitcoin-node/archive/v3.6.0.tar.gz"
+  sha256 "9556ee8aab91e893db1cf343883034571153b206ffbbce3e3133c97e6ee4693b"
+  license "AGPL-3.0"
+  revision 2
 
   bottle do
-    sha256 "1b922407cddc74d2bff6f39e61e6545cbab4e7e65b55ad84abe6224b2c39da49" => :high_sierra
-    sha256 "90770b6f8b25f4d097162fa37e1c0c36e28293e82b71ee89cb963abc687fadf9" => :sierra
-    sha256 "598b58a40ee268630a5cdc05c72b0b5790f066fc13d72d5c29006a8a5c3a0b5c" => :el_capitan
+    sha256 arm64_monterey: "0fbb1c20470a60232647651c29ad41b547b8a162d5f6f59d64bacec746aa8a1a"
+    sha256 arm64_big_sur:  "3ca1bcd8c32bfa5d8e3a5327d9f8358df52fecdf812fb3087de7892b6d0dec03"
+    sha256 monterey:       "a5571bba28d70456ccc9305288dbd732026ab47c10617fee089a96edbaf04ec3"
+    sha256 big_sur:        "9a5602620a3379a70257c8982f18c93b17de661201100e612e0c47276ad7b1ba"
+    sha256 catalina:       "858904050abfa1fb52dfc0f4e2c3cd87938824ad41582d439c0d411817b00213"
+    sha256 x86_64_linux:   "d1c90e07fdb6ffc78954bdba380dd7930a3acd243047a8f470a4f1a2fb792610"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
   depends_on "pkg-config" => :build
+  # https://github.com/libbitcoin/libbitcoin-system/issues/1234
+  depends_on "boost@1.76"
   depends_on "libbitcoin-blockchain"
-
-  resource "libbitcoin-network" do
-    url "https://github.com/libbitcoin/libbitcoin-network/archive/v3.5.0.tar.gz"
-    sha256 "e065bd95f64ad5d7b0f882e8759f6b0f81a5fb08f7e971d80f3592a1b5aa8db4"
-  end
+  depends_on "libbitcoin-network"
 
   def install
     ENV.prepend_path "PKG_CONFIG_PATH", Formula["libbitcoin"].opt_libexec/"lib/pkgconfig"
-    ENV.prepend_path "PKG_CONFIG_PATH", Formula["libbitcoin-blockchain"].opt_libexec/"lib/pkgconfig"
-    ENV.prepend_create_path "PKG_CONFIG_PATH", libexec/"lib/pkgconfig"
-
-    resource("libbitcoin-network").stage do
-      system "./autogen.sh"
-      system "./configure", "--disable-dependency-tracking",
-                            "--disable-silent-rules",
-                            "--prefix=#{libexec}"
-      system "make", "install"
-    end
 
     system "./autogen.sh"
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
-                          "--prefix=#{prefix}"
+                          "--prefix=#{prefix}",
+                          "--with-boost-libdir=#{Formula["boost@1.76"].opt_lib}"
     system "make", "install"
 
     bash_completion.install "data/bn"
   end
 
   test do
+    boost = Formula["boost@1.76"]
     (testpath/"test.cpp").write <<~EOS
       #include <bitcoin/node.hpp>
       int main() {
@@ -54,10 +49,11 @@ class LibbitcoinNode < Formula
         return 0;
       }
     EOS
-    system ENV.cxx, "-std=c++11", "test.cpp",
-                    "-I#{libexec}/include",
-                    "-lbitcoin", "-lbitcoin-node", "-lboost_system",
-                    "-o", "test"
+    system ENV.cxx, "-std=c++11", "test.cpp", "-o", "test",
+                    "-I#{boost.include}",
+                    "-L#{Formula["libbitcoin"].opt_lib}", "-lbitcoin",
+                    "-L#{lib}", "-lbitcoin-node",
+                    "-L#{boost.lib}", "-lboost_system"
     system "./test"
   end
 end

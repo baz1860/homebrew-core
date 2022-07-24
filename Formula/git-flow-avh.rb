@@ -1,11 +1,11 @@
 class GitFlowAvh < Formula
   desc "AVH edition of git-flow"
   homepage "https://github.com/petervanderdoes/gitflow-avh"
-  revision 1
+  license "BSD-2-Clause"
 
   stable do
-    url "https://github.com/petervanderdoes/gitflow-avh/archive/1.11.0.tar.gz"
-    sha256 "06ad2110088e46e3712f799a43bf6cc5c3720fc25c69dbb3bbf4cf486cf2f330"
+    url "https://github.com/petervanderdoes/gitflow-avh/archive/1.12.3.tar.gz"
+    sha256 "54e9fd81aa1aa8215c865503dc6377da205653c784d6c97baad3dafd20728e06"
 
     resource "completion" do
       url "https://github.com/petervanderdoes/git-flow-completion/archive/0.6.0.tar.gz"
@@ -14,24 +14,26 @@ class GitFlowAvh < Formula
   end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "e48230e7b1bfd53aba1608167e607c3fc9792b05bd3063ef5bb47bebbdb9ddc5" => :high_sierra
-    sha256 "f54736764e21c714e51cab2bb2bda7d8f775fabe6575f57cf31d02ba4f57a673" => :sierra
-    sha256 "f54736764e21c714e51cab2bb2bda7d8f775fabe6575f57cf31d02ba4f57a673" => :el_capitan
-    sha256 "f54736764e21c714e51cab2bb2bda7d8f775fabe6575f57cf31d02ba4f57a673" => :yosemite
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "f559b035f16d9f56bb1750bfd441785df1f094a3838b20c1c51503cc75c2f319"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "f559b035f16d9f56bb1750bfd441785df1f094a3838b20c1c51503cc75c2f319"
+    sha256 cellar: :any_skip_relocation, monterey:       "fe31ea33fecc7177f22fa64b15430512ea2ae728536d3c3d21b9121d97e311e6"
+    sha256 cellar: :any_skip_relocation, big_sur:        "fe31ea33fecc7177f22fa64b15430512ea2ae728536d3c3d21b9121d97e311e6"
+    sha256 cellar: :any_skip_relocation, catalina:       "fe31ea33fecc7177f22fa64b15430512ea2ae728536d3c3d21b9121d97e311e6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f559b035f16d9f56bb1750bfd441785df1f094a3838b20c1c51503cc75c2f319"
   end
 
   head do
-    url "https://github.com/petervanderdoes/gitflow-avh.git", :branch => "develop"
+    url "https://github.com/petervanderdoes/gitflow-avh.git", branch: "develop"
 
     resource "completion" do
-      url "https://github.com/petervanderdoes/git-flow-completion.git", :branch => "develop"
+      url "https://github.com/petervanderdoes/git-flow-completion.git", branch: "develop"
     end
   end
 
   depends_on "gnu-getopt"
 
-  conflicts_with "git-flow", :because => "Both install `git-flow` binaries and completions"
+  conflicts_with "git-flow", because: "both install `git-flow` binaries and completions"
 
   def install
     system "make", "prefix=#{libexec}", "install"
@@ -44,6 +46,7 @@ class GitFlowAvh < Formula
     resource("completion").stage do
       bash_completion.install "git-flow-completion.bash"
       zsh_completion.install "git-flow-completion.zsh"
+      fish_completion.install "git.fish" => "git-flow.fish"
     end
   end
 

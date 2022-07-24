@@ -1,25 +1,35 @@
 class Libsvm < Formula
   desc "Library for support vector machines"
   homepage "https://www.csie.ntu.edu.tw/~cjlin/libsvm/"
-  url "https://www.csie.ntu.edu.tw/~cjlin/libsvm/libsvm-3.22.tar.gz"
-  mirror "https://dl.bintray.com/homebrew/mirror/libsvm-3.22.tar.gz"
-  sha256 "6d81c67d3b13073eb5a25aa77188f141b242ec328518fad95367ede253d0a77d"
+
+  # TODO: Upstream deletes old downloads, so we need a mirror
+  url "https://www.csie.ntu.edu.tw/~cjlin/libsvm/libsvm-3.25.tar.gz"
+  sha256 "52350e8aa740b176e1d773e9dc08f1340218c37e01bec37ab90db0127e4bb5e5"
+  license "BSD-3-Clause"
+
+  livecheck do
+    url :homepage
+    regex(/The current release \(Version v?(\d+(?:\.\d+)+)[, )]/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "6fae589e624777638a8a5bc1c8b03e3bb48f88a61380b608273b44bd2d25aec4" => :high_sierra
-    sha256 "39f3552e425be4bcb6e42d917b508bf94904520526c49ec52712c017680583fd" => :sierra
-    sha256 "67867d2ddde33efd85da4c1a03757af0e3dcf591186552140876ddd11916d5df" => :el_capitan
-    sha256 "3ee2001f87f2a58e698aeb0bfc413baa820184dba1caa2b3ec0a5a593a80d651" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "b1ce2c0bee9fdf4f41b6e913b15dfc6b733fc8baac614c58c23e3084fad5b67b"
+    sha256 cellar: :any,                 arm64_big_sur:  "ae3fff4762882360a23280215cafdc93d3da1d598816d34cfb0e7b6a922180e3"
+    sha256 cellar: :any,                 monterey:       "f42ac81387074c4a304e6ff9fc6b0b6e4ade79fea3ef4d90592fd3b869c20c08"
+    sha256 cellar: :any,                 big_sur:        "27481a34d2af64572b48b268c8e47d7700aab4ec9dc2978216c471d512a4cb81"
+    sha256 cellar: :any,                 catalina:       "ad8d34d17fdca6b25374eff11b5f2b1067d19894358b23c04b3b8ac0f82180b1"
+    sha256 cellar: :any,                 mojave:         "485eec232bd3cc0619494de50cac4ef4a5b65761d5d6a062c62e07d9a0007e31"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a1383dac0311d28b61447e56c92affea59d3404c1a83abc5674276056ebe752c"
   end
 
   def install
+    ENV.append_to_cflags "-fPIC" if OS.linux?
     system "make", "CFLAGS=#{ENV.cflags}"
     system "make", "lib"
     bin.install "svm-scale", "svm-train", "svm-predict"
-    lib.install "libsvm.so.2" => "libsvm.2.dylib"
-    lib.install_symlink "libsvm.2.dylib" => "libsvm.dylib"
-    MachO::Tools.change_dylib_id("#{lib}/libsvm.2.dylib", "#{lib}/libsvm.2.dylib")
+    lib.install "libsvm.so.2" => shared_library("libsvm", 2)
+    lib.install_symlink shared_library("libsvm", 2) => shared_library("libsvm")
+    MachO::Tools.change_dylib_id("#{lib}/libsvm.2.dylib", "#{lib}/libsvm.2.dylib") if OS.mac?
     include.install "svm.h"
   end
 

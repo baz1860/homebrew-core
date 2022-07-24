@@ -1,35 +1,27 @@
 class Capstone < Formula
   desc "Multi-platform, multi-architecture disassembly framework"
   homepage "https://www.capstone-engine.org/"
-  url "https://www.capstone-engine.org/download/3.0.4/capstone-3.0.4.tgz"
-  sha256 "3e88abdf6899d11897f2e064619edcc731cc8e97e9d4db86495702551bb3ae7f"
-  head "https://github.com/aquynh/capstone.git"
+  url "https://github.com/capstone-engine/capstone/archive/4.0.2.tar.gz"
+  sha256 "7c81d798022f81e7507f1a60d6817f63aa76e489aa4e7055255f21a22f5e526a"
+  license "BSD-3-Clause"
+  head "https://github.com/capstone-engine/capstone.git", branch: "next"
 
   bottle do
-    cellar :any
-    sha256 "82e40e06f3a41633326d3ceb7f268945441dcb7a0ae1caa88e06fc0504c73cc0" => :high_sierra
-    sha256 "7d0f04a49d42bd9c953a5ea6cb85159f72f8e948d6aea4d7c64b3e82a12459f1" => :sierra
-    sha256 "3aa8d8b679cc5261a3fbf44b191c61480cdb34576f71b769e63d68c5e27c19b1" => :el_capitan
-    sha256 "5bbd8f7d9e0ae0d3b23c7d478fdb02476e8cee847577576d543bf98649985975" => :yosemite
-    sha256 "0cfd7478b21360ffea1aac61ec64eeae612bce247a681b0205ffd14790f8f7dc" => :mavericks
-    sha256 "585042b1452fbeda9efd07da4b8400d56d166afd5e5f1120da20975e41001e88" => :mountain_lion
+    sha256 cellar: :any,                 arm64_monterey: "53b534ac0a71300d7e005cb7552a2778ff6d0e3bcaaa6417303c0c86112a6884"
+    sha256 cellar: :any,                 arm64_big_sur:  "5c2d67aeb32a36c76d1918ec10de347971b385fc73b3025c97639467dc5302e2"
+    sha256 cellar: :any,                 monterey:       "dda60f389b39dc6b777940428feccee4a0b50db91629d152a5e62a95c3915d38"
+    sha256 cellar: :any,                 big_sur:        "21dd5b41e81b165e0419901103aa46ab8afee2be5453b2076c8f7a5b94fdf211"
+    sha256 cellar: :any,                 catalina:       "b434ee96e9d7c413e289340b280705a6c3b9929cf1859de865d88bc012c34396"
+    sha256 cellar: :any,                 mojave:         "c90885740ef54af155c2a0151dc85f728a3aa7ca304a45510e5524ac7fecb7fc"
+    sha256 cellar: :any,                 high_sierra:    "c6d974a3c237fc36bfea2042d95551f2be7197d37fc0df6c7b9ea2179cd01084"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "93d5e7b14aeacb27c38fa2164800458ea4e8deee2d0da2df8e042c616a63a199"
   end
 
   def install
-    # Capstone's Make script ignores the prefix env and was installing
-    # in /usr/local directly. So just inreplace the prefix for less pain.
-    # https://github.com/aquynh/capstone/issues/228
-    inreplace "make.sh", "export PREFIX=/usr/local", "export PREFIX=#{prefix}"
-
     ENV["HOMEBREW_CAPSTONE"] = "1"
+    ENV["PREFIX"] = prefix
     system "./make.sh"
-    system "./make.sh", "install"
-
-    # As per the above inreplace, the pkgconfig file needs fixing as well.
-    inreplace lib/"pkgconfig/capstone.pc" do |s|
-      s.gsub! "/usr/lib", lib
-      s.gsub! "/usr/include/capstone", "#{include}/capstone"
-    end
+    system "make", "install", "PREFIX=#{prefix}"
   end
 
   test do

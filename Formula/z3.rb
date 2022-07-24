@@ -1,40 +1,51 @@
 class Z3 < Formula
   desc "High-performance theorem prover"
   homepage "https://github.com/Z3Prover/z3"
-  url "https://github.com/Z3Prover/z3/archive/z3-4.6.0.tar.gz"
-  sha256 "511da31d1f985cf0c79b2de05bda4e057371ba519769d1546ff71e1304fe53c9"
-  head "https://github.com/Z3Prover/z3.git"
+  url "https://github.com/Z3Prover/z3/archive/z3-4.10.1.tar.gz"
+  sha256 "a86071a03983b3512c44c2bf130adbc3320770dc0198805f6f51c43b0946e11a"
+  license "MIT"
+  head "https://github.com/Z3Prover/z3.git", branch: "develop"
 
-  bottle do
-    cellar :any
-    sha256 "b8e7d05e007f45e7ac1d1962279db7f32043306441a984715842957e242683db" => :high_sierra
-    sha256 "a0fcd87fa76072a7f8a6fb663c5d2589e8e1395e8c11acfb26150a7867aa6076" => :sierra
-    sha256 "bc1f47e9c9c1bff59983a17e00b00ab6724de6c182147cbecd6115fea377fda8" => :el_capitan
+  livecheck do
+    url :stable
+    strategy :github_latest
+    regex(%r{href=.*?/tag/z3[._-]v?(\d+(?:\.\d+)+)["' >]}i)
   end
 
-  option "without-python", "Build without python 2 support"
-  depends_on "python" => :recommended if MacOS.version <= :snow_leopard
-  depends_on "python3" => :optional
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "5832415228ecb5210fbc59c2a7acb0be6d2c1d772948c06a7be494ad5f84c27f"
+    sha256 cellar: :any,                 arm64_big_sur:  "eba2eaab87ee27f45715bc72ed5a5ab4583844129746d4d543ce795483bd0da8"
+    sha256 cellar: :any,                 monterey:       "ce0b33685e14641d7b83fed58a8ffb0bcca31db1dd06b2c80d450aa3b567f87a"
+    sha256 cellar: :any,                 big_sur:        "9cafa3bfbbed84b2fcdfc0cb13dbe0887d2f0b6552b36d88834abf3f776ff990"
+    sha256 cellar: :any,                 catalina:       "90b4e797bc39d8d1d80c17977bf20d4db556e8f6ba72b2a0917bc3e50c858e17"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d02ea987e8af7ab510c201ef759994bc737ff84a6aed372c63cc03b0280fd905"
+  end
+
+  # Has Python bindings but are supplementary to the main library
+  # which does not need Python.
+  depends_on "python@3.10" => :build
+
+  on_linux do
+    depends_on "gcc" # For C++17
+  end
+
+  fails_with gcc: "5"
 
   def install
-    if build.without?("python3") && build.without?("python")
-      odie "z3: --with-python3 must be specified when using --without-python"
+    python3 = Formula["python@3.10"].opt_bin/"python3"
+    system python3, "scripts/mk_make.py",
+                     "--prefix=#{prefix}",
+                     "--python",
+                     "--pypkgdir=#{prefix/Language::Python.site_packages(python3)}",
+                     "--staticlib"
+
+    cd "build" do
+      system "make"
+      system "make", "install"
     end
 
-    Language::Python.each_python(build) do |python, version|
-      system python, "scripts/mk_make.py", "--prefix=#{prefix}", "--python", "--pypkgdir=#{lib}/python#{version}/site-packages", "--staticlib"
-      cd "build" do
-        system "make"
-        system "make", "install"
-      end
-    end
-
-    # qprofdiff is not yet part of the source release (it will be as soon as a
-    # version is released after 4.5.0), so we only include it in HEAD builds
-    if build.head?
-      system "make", "-C", "contrib/qprofdiff"
-      bin.install "contrib/qprofdiff/qprofdiff"
-    end
+    system "make", "-C", "contrib/qprofdiff"
+    bin.install "contrib/qprofdiff/qprofdiff"
 
     pkgshare.install "examples"
   end

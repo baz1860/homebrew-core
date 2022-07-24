@@ -1,26 +1,32 @@
 class Wavpack < Formula
   desc "Hybrid lossless audio compression"
-  homepage "http://www.wavpack.com/"
-  url "http://www.wavpack.com/wavpack-5.1.0.tar.bz2"
-  sha256 "1939627d5358d1da62bc6158d63f7ed12905552f3a799c799ee90296a7612944"
+  homepage "https://www.wavpack.com/"
+  url "https://www.wavpack.com/wavpack-5.5.0.tar.bz2"
+  sha256 "7a222f96c391138d340793a1b06d517d7a514de85b5915216051b7386f222977"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any
-    sha256 "3c474a8b2b524f596888089a374aa733c09615e4a861a11b7317204ef42c8c25" => :high_sierra
-    sha256 "caaf7a9f778270e2f445c4a4f864afbdbc5c410531866c06a5bfe9d0b10dbc36" => :sierra
-    sha256 "5ad0e936fa7f53926838964c434e34c303bb540f676fb42b03d37845ace86940" => :el_capitan
-    sha256 "14d36c9f2f704d8d1181f63ad965690a4594444394ce42d2cfaf63cbfc981051" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "f7b8b75495e5d9ee17b60243322a52349ce65a89de9c0dd6f9d9d35461d8b0c6"
+    sha256 cellar: :any,                 arm64_big_sur:  "e34bfb3ebb2f06c4f7fc22a587400acbbb4853bb106cbe3b679b4512cacc254b"
+    sha256 cellar: :any,                 monterey:       "effd5ef1000609272a70f2d84e6a2bf61a200a5b1bc239a7d89eb13d97be6a57"
+    sha256 cellar: :any,                 big_sur:        "ab5cb74fc57673c4bbae53a5325d486ab3a4151a00fbfc89f2c06905a00ad345"
+    sha256 cellar: :any,                 catalina:       "cce469c6e14c269c49e71f1bc71631bb286728a77af844ce68567b9645cdf01a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "58baedd42d91d72acd6fe3f4624e60fb7a24c6fdc0df36f20b6cd5739d557ce3"
   end
 
   head do
     url "https://github.com/dbry/WavPack.git"
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
   def install
     args = %W[--prefix=#{prefix} --disable-dependency-tracking]
+
+    # ARM assembly not currently supported
+    # https://github.com/dbry/WavPack/issues/93
+    args << "--disable-asm" if Hardware::CPU.arm?
 
     if build.head?
       system "./autogen.sh", *args

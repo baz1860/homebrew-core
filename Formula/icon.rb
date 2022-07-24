@@ -1,22 +1,34 @@
 class Icon < Formula
   desc "General-purpose programming language"
   homepage "https://www.cs.arizona.edu/icon/"
-  url "https://www.cs.arizona.edu/icon/ftp/packages/unix/icon-v951src.tgz"
-  version "9.5.1"
-  sha256 "062a680862b1c10c21789c0c7c7687c970a720186918d5ed1f7aad9fdc6fa9b9"
+  url "https://github.com/gtownsend/icon/archive/v9.5.22c.tar.gz"
+  version "9.5.22c"
+  sha256 "d3f9fd75994cfc7419c6ed1d872d0cc334dab3e20f6494776abd48b7cda43022"
+  license :public_domain
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+[a-z]?)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "7c2d0794956448b8bebf166c97a65aa23fde0847eeb7c6c9f8197eff2835ffb5" => :high_sierra
-    sha256 "13d3963ef90d3f94f13a97e922185ea640233aee356e3bf8c2a0336de278482c" => :sierra
-    sha256 "5218afb915b7892d4c242c659218735293136c3b100f54aa7199bcc716915939" => :el_capitan
-    sha256 "44450b176b56db833a91ca6ae681e3876b2864a094b254340bcb5cd136957f17" => :yosemite
-    sha256 "ca5ba233b4713e54680525ffd3ee7554988aa48f6a959f78b53c24e58d8c1c59" => :mavericks
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "39d1df54b9d3a87b0630483f3538f4558690ee1f30b6e0aa33dab177cdc51891"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "e088bb6a1e7cdb42829ae36a9ac57f35cc8fda51d07708a4995cc2f0d3686330"
+    sha256 cellar: :any_skip_relocation, monterey:       "4605a372db6da6286243fc923e301f771c2da810715318a9e49b6e363c5b4f79"
+    sha256 cellar: :any_skip_relocation, big_sur:        "653244770e5f013dcfa49781ad646d7b2f5bd07469542d79fd30f9ffa0ecbc2e"
+    sha256 cellar: :any_skip_relocation, catalina:       "c926ffd95dde7ec76760cc4dc07863042e03d5a45dff65983b13b1bce1e069c0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "a52b2122ba82e6432520c86e7c31074962fd4e4712b78478cb1677b417ac7605"
   end
 
   def install
     ENV.deparallelize
-    system "make", "Configure", "name=posix"
+    target = if OS.mac?
+      "macintosh"
+    else
+      "linux"
+    end
+    system "make", "Configure", "name=#{target}"
     system "make"
     bin.install "bin/icon", "bin/icont", "bin/iconx"
     doc.install Dir["doc/*"]
@@ -24,6 +36,8 @@ class Icon < Formula
   end
 
   test do
-    assert_equal "Hello, World!", shell_output("#{bin}/icon -P 'procedure main(); writes(\"Hello, World!\"); end'")
+    args = "'procedure main(); writes(\"Hello, World!\"); end'"
+    output = shell_output("#{bin}/icon -P #{args}")
+    assert_equal "Hello, World!", output
   end
 end

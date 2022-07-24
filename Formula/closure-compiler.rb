@@ -1,16 +1,24 @@
 class ClosureCompiler < Formula
   desc "JavaScript optimizing compiler"
-  homepage "https://github.com/google/closure-compiler"
-  url "https://search.maven.org/remotecontent?filepath=com/google/javascript/closure-compiler/v20180204/closure-compiler-v20180204.jar"
-  sha256 "7f23a53467e1b160d143358e51dddf265051ff21a6e0a8d524ebddedb52d7fe9"
+  homepage "https://developers.google.com/closure/compiler"
+  url "https://search.maven.org/remotecontent?filepath=com/google/javascript/closure-compiler/v20220719/closure-compiler-v20220719.jar"
+  sha256 "78458d84c523a7e88107dbb3541e37d2401f9288ed2b1d834d41b0a7131cf94b"
+  license "Apache-2.0"
 
-  bottle :unneeded
+  livecheck do
+    url "https://search.maven.org/remotecontent?filepath=com/google/javascript/closure-compiler/"
+    regex(/href=.*?v?(\d{8})/i)
+  end
 
-  depends_on :java => "1.7+"
+  bottle do
+    sha256 cellar: :any_skip_relocation, all: "4019d615dc1d523f862e80caa75b73d9d3877a6781ac617fb7588c74a73b4866"
+  end
+
+  depends_on "openjdk"
 
   def install
     libexec.install Dir["*"]
-    bin.write_jar_script libexec.children.first, "closure-compiler"
+    bin.write_jar_script libexec/"closure-compiler-v#{version}.jar", "closure-compiler"
   end
 
   test do

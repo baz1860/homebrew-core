@@ -1,17 +1,25 @@
 class Lbdb < Formula
   desc "Little brother's database for the mutt mail reader"
   homepage "https://www.spinnaker.de/lbdb/"
-  url "https://www.spinnaker.de/lbdb/download/lbdb_0.46.tar.gz"
-  sha256 "b13f23fd71c1f059a27db65a37c77daa9751e66354e017637663a234bb00dd99"
+  url "https://www.spinnaker.de/lbdb/download/lbdb-0.50.tar.gz"
+  sha256 "afac83d8a4e33732007af70debf71a702db256213998e2efb313bb9bb17b81b0"
+  license "GPL-2.0-or-later"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "c6afe8aedfafc7b8ac1bc1e766d3d8ecabc3c6cff576b6f217b2859bb1256e35" => :high_sierra
-    sha256 "ec24bdf809b1226a1c5ffe6b805b58f70551fbde5529cd68321be71c43c17a7e" => :sierra
-    sha256 "a78fabea88eaa0265505a6034f70988338e433bd0f6f70f8a6e4c4d3d317b185" => :el_capitan
+  livecheck do
+    url "https://www.spinnaker.de/lbdb/download/"
+    regex(/href=.*?lbdb[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "abook" => :recommended
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "fab889c0974bb758db4ec78b98ac2d37a5427a873f9dca877d3391489dc17973"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "abd2d143d05cab01a3097793c12f3f7933cf926c9364ec33bd27b6bda19e5b63"
+    sha256 cellar: :any_skip_relocation, monterey:       "42b0d2ae34f18b4eed75a48bda32c0ab7a887d4cf2532b5637f070d06d814d7b"
+    sha256 cellar: :any_skip_relocation, big_sur:        "d5bed5f3cb2fe1f3c12be02280cf1086a7a9e97189be908caa8ceea995c3c6fb"
+    sha256 cellar: :any_skip_relocation, catalina:       "a4d4fa5b4e3147fc59e0ec1f6abd4d5c0d5da177b89815d7c79b569c51d414b3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "12b4bcf8f11f1ea4bf172423d30cb048c64702f10be58455bfc7a773ab91717d"
+  end
+
+  depends_on "abook"
 
   def install
     system "./configure", "--prefix=#{prefix}", "--libdir=#{lib}/lbdb"
@@ -19,6 +27,6 @@ class Lbdb < Formula
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/lbdbq -v")
+    assert_match version.major_minor.to_s, shell_output("#{bin}/lbdbq -v")
   end
 end

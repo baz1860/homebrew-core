@@ -1,25 +1,62 @@
 class Fltk < Formula
   desc "Cross-platform C++ GUI toolkit"
-  homepage "http://www.fltk.org/"
-  url "http://fltk.org/pub/fltk/1.3.4/fltk-1.3.4-2-source.tar.gz"
-  mirror "https://dl.bintray.com/homebrew/mirror/fltk-1.3.4-2.tar.gz"
-  version "1.3.4-2"
-  sha256 "25d349c18c99508737d48f225a2eb26a43338f9247551cab72a317fa42cda910"
+  homepage "https://www.fltk.org/"
+  url "https://www.fltk.org/pub/fltk/1.3.8/fltk-1.3.8-source.tar.gz"
+  sha256 "f3c1102b07eb0e7a50538f9fc9037c18387165bc70d4b626e94ab725b9d4d1bf"
+  license "LGPL-2.0-only" => { with: "FLTK-exception" }
 
-  bottle do
-    sha256 "5dd4bbb5cf10af5e0a1ff2f29c6d12657f09626fab43811b441b27c677afd0af" => :high_sierra
-    sha256 "e22929035ced94a301c1294de6d305079e34d9709d3e9551b19555ab2f06656e" => :sierra
-    sha256 "5481ffce354c2c98ed7634b036d678c7476780085e1a518af186f2e4b22d2c31" => :el_capitan
+  livecheck do
+    url "https://www.fltk.org/software.php"
+    regex(/href=.*?fltk[._-]v?(\d+(?:\.\d+)+(?:-\d+)?)-source\.t/i)
   end
 
-  depends_on "libpng"
+  bottle do
+    sha256 arm64_monterey: "4c22c41979d57ab6dd11402ee65d16c13f5b8c8aefc380b3b6df86c8c352726a"
+    sha256 arm64_big_sur:  "cac2d0addf36697d05e1f727abab20bc7eebd7d0e7164e9a165e22114016ae26"
+    sha256 monterey:       "eabc4609af02c26d7e5f7470740063ed57bf8ab9c7b53cc5ff9aaca7d836863a"
+    sha256 big_sur:        "2228c7c23d137b575906abd07f10d54dd232cd3aa89565d69ac6b943134b8854"
+    sha256 catalina:       "b17355d7368662d2fb883651f82647f9e84db9f7e0766d833ffd4f10c7780fdb"
+    sha256 x86_64_linux:   "78cdc8e6ef47cc3406dc4cbd5ccf76dd564ecb4914e23876d01862d2421ce56f"
+  end
+
+  head do
+    url "https://github.com/fltk/fltk.git"
+    depends_on "cmake" => :build
+  end
+
   depends_on "jpeg"
+  depends_on "libpng"
+
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "libxft"
+    depends_on "libxt"
+    depends_on "mesa-glu"
+  end
 
   def install
-    system "./configure", "--prefix=#{prefix}",
-                          "--enable-threads",
-                          "--enable-shared"
-    system "make", "install"
+    if build.head?
+      args = std_cmake_args
+
+      # Don't build docs / require doxygen
+      args << "-DOPTION_BUILD_HTML_DOCUMENTATION=OFF"
+      args << "-DOPTION_BUILD_PDF_DOCUMENTATION=OFF"
+
+      # Don't build tests
+      args << "-DFLTK_BUILD_TEST=OFF"
+
+      # Build both shared & static libs
+      args << "-DOPTION_BUILD_SHARED_LIBS=ON"
+
+      system "cmake", ".", *args
+      system "cmake", "--build", "."
+      system "cmake", "--install", "."
+    else
+      system "./configure", "--prefix=#{prefix}",
+                            "--enable-threads",
+                            "--enable-shared"
+      system "make", "install"
+    end
   end
 
   test do

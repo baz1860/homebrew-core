@@ -1,22 +1,25 @@
 class Ktmpl < Formula
   desc "Parameterized templates for Kubernetes manifests"
-  homepage "https://github.com/InQuicker/ktmpl"
-  url "https://github.com/InQuicker/ktmpl/archive/0.7.0.tar.gz"
-  sha256 "c10d26f8e834543d8f0952a76b67292cd8f10f0814128cda9bb623ffe0952615"
-  head "https://github.com/InQuicker/ktmpl.git"
+  homepage "https://github.com/jimmycuadra/ktmpl"
+  url "https://github.com/jimmycuadra/ktmpl/archive/0.9.1.tar.gz"
+  sha256 "3377f10477775dd40e78f9b3d65c3db29ecd0553e9ce8a5bdcb8d09414c782e9"
+  license "MIT"
+  head "https://github.com/jimmycuadra/ktmpl.git", branch: "master"
 
   bottle do
-    sha256 "b9012d8fb7919b22b93d5b44cdd7304ed2398c81a2627cb2c78302950e6016c7" => :high_sierra
-    sha256 "53bd12218388a8a5d3db81c0638d85582bf04358266309bf9b62ada65901560e" => :sierra
-    sha256 "9c969b22228adccf275ff10decb4f5667f0b9489d143679208b3100be683356b" => :el_capitan
-    sha256 "1b56cf4694e17406aca60ebf1d6e67a8bc33f6bd3921c914aef7546fabb0f020" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "bdc914b0cfe58260b57759c3122bb838b2c865f4715fa07805354041e65d9acc"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ae419f6b93ac34ca8a983f23cc4740013e206554642b4b24db779411ab0becd4"
+    sha256 cellar: :any_skip_relocation, monterey:       "a6d055d30ddcea4abc0ab35b0a4c205df4690dae09fa282526d85df6b55e3809"
+    sha256 cellar: :any_skip_relocation, big_sur:        "0a0b3e7477b6ceb8c1b32ebb47572df7ab5b050ec1d625259cf1c92c03c02e23"
+    sha256 cellar: :any_skip_relocation, catalina:       "706ba7f987af4076525132bd8867c9905d96a842a46c5f6b3991439b5893f05c"
+    sha256 cellar: :any_skip_relocation, mojave:         "3a884032f3b3d81433b6cc275637459a7dddd58db8d5f5bd5d044e07df5782c7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "885513c3297b234f5c7c1011eb840e7ba47e5a0c6fd60b454fc3f837e00a3fb4"
   end
 
   depends_on "rust" => :build
 
   def install
-    system "cargo", "build", "--release"
-    bin.install "target/release/ktmpl"
+    system "cargo", "install", *std_cargo_args
   end
 
   test do
@@ -29,7 +32,7 @@ class Ktmpl < Formula
       objects:
         - kind: "Service"
           apiVersion: "v1"
-          metdata:
+          metadata:
             name: "test"
           spec:
             ports:

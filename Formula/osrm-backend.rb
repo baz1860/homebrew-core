@@ -1,21 +1,25 @@
 class OsrmBackend < Formula
   desc "High performance routing engine"
   homepage "http://project-osrm.org/"
-  url "https://github.com/Project-OSRM/osrm-backend/archive/v5.14.2.tar.gz"
-  sha256 "ccdb877f92a16ec97f8d73cceb8e925d8521d5d20a3ef7d54cfa4756e304dd54"
-  revision 1
-  head "https://github.com/Project-OSRM/osrm-backend.git"
+  url "https://github.com/Project-OSRM/osrm-backend/archive/v5.26.0.tar.gz"
+  sha256 "45e986db540324bd0fc881b746e96477b054186698e8d14610ff7c095e906dcd"
+  license "BSD-2-Clause"
+  revision 2
+  head "https://github.com/Project-OSRM/osrm-backend.git", branch: "master"
 
-  bottle do
-    cellar :any
-    sha256 "000e1c178df9aeab521b6ae223e3b8ad73e0bad3ca078c000fcea9d041aa7ea5" => :high_sierra
-    sha256 "3c45c4049f1581381bc0a726f8821ae8054845561fea36ab725cf2be2329f0cc" => :sierra
-    sha256 "7d42e66c3184173b85876c9d6e555ed9313bac500575680685ef47fa2ac25a87" => :el_capitan
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  # "invalid use of non-static data member 'offset'"
-  # https://github.com/Project-OSRM/osrm-backend/issues/3719
-  depends_on :macos => :el_capitan
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "30e473b97a8b623eec3d602e45e7e21c4e44b761ca4e2c4ef724c87614498b75"
+    sha256 cellar: :any,                 arm64_big_sur:  "4d13b51a5e03c17cb60de48d738ab1ec08946114baa298a24482f76f784ec226"
+    sha256 cellar: :any,                 monterey:       "b98e83beb4c841c9289b6efb8d1b058ea97c5b6411c6132903001d0fe84ba834"
+    sha256 cellar: :any,                 big_sur:        "f0943390ad90826d2def7a9c7fc27f214a20cc9dc6886d47ec309b852916c4d8"
+    sha256 cellar: :any,                 catalina:       "74825bed2c07fd6e5a5862c4dd66e9eff13818ae83ab3d8f62034db38bd9fb20"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1e78299d0601d9aefce6ba8d0597e256ae57dfc7890b88a9f03701e10155d08a"
+  end
 
   depends_on "cmake" => :build
   depends_on "boost"
@@ -23,11 +27,18 @@ class OsrmBackend < Formula
   depends_on "libxml2"
   depends_on "libzip"
   depends_on "lua"
-  depends_on "tbb"
+  depends_on "tbb@2020"
+
+  conflicts_with "flatbuffers", because: "both install flatbuffers headers"
 
   def install
+    lua = Formula["lua"]
+    luaversion = lua.version.major_minor
     mkdir "build" do
-      system "cmake", "..", "-DENABLE_CCACHE:BOOL=OFF", *std_cmake_args
+      system "cmake", "..", "-DENABLE_CCACHE:BOOL=OFF",
+                            "-DLUA_INCLUDE_DIR=#{lua.opt_include}/lua#{luaversion}",
+                            "-DLUA_LIBRARY=#{lua.opt_lib}/#{shared_library("liblua", luaversion)}",
+                            *std_cmake_args
       system "make"
       system "make", "install"
     end
@@ -35,13 +46,17 @@ class OsrmBackend < Formula
   end
 
   test do
+    node1 = 'visible="true" version="1" changeset="676636" timestamp="2008-09-21T21:37:45Z"'
+    node2 = 'visible="true" version="1" changeset="323878" timestamp="2008-05-03T13:39:23Z"'
+    node3 = 'visible="true" version="1" changeset="323878" timestamp="2008-05-03T13:39:23Z"'
+
     (testpath/"test.osm").write <<~EOS
       <?xml version="1.0" encoding="UTF-8"?>
       <osm version="0.6">
        <bounds minlat="54.0889580" minlon="12.2487570" maxlat="54.0913900" maxlon="12.2524800"/>
-       <node id="1" lat="54.0901746" lon="12.2482632" user="a" uid="46882" visible="true" version="1" changeset="676636" timestamp="2008-09-21T21:37:45Z"/>
-       <node id="2" lat="54.0906309" lon="12.2441924" user="a" uid="36744" visible="true" version="1" changeset="323878" timestamp="2008-05-03T13:39:23Z"/>
-       <node id="3" lat="52.0906309" lon="12.2441924" user="a" uid="36744" visible="true" version="1" changeset="323878" timestamp="2008-05-03T13:39:23Z"/>
+       <node id="1" lat="54.0901746" lon="12.2482632" user="a" uid="46882" #{node1}/>
+       <node id="2" lat="54.0906309" lon="12.2441924" user="a" uid="36744" #{node2}/>
+       <node id="3" lat="52.0906309" lon="12.2441924" user="a" uid="36744" #{node3}/>
        <way id="10" user="a" uid="55988" visible="true" version="5" changeset="4142606" timestamp="2010-03-16T11:47:08Z">
         <nd ref="1"/>
         <nd ref="2"/>

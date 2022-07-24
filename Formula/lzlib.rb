@@ -1,14 +1,23 @@
 class Lzlib < Formula
   desc "Data compression library"
   homepage "https://www.nongnu.org/lzip/lzlib.html"
-  url "https://download.savannah.gnu.org/releases/lzip/lzlib/lzlib-1.10.tar.gz"
-  sha256 "1d6ab7800a5b43e56fd20607fd2cfda9e550350dc95f5beb6a4ce14f85b41043"
+  url "https://download.savannah.gnu.org/releases/lzip/lzlib/lzlib-1.13.tar.gz"
+  mirror "https://download-mirror.savannah.gnu.org/releases/lzip/lzlib/lzlib-1.13.tar.gz"
+  sha256 "a1ab58f3148ba4b2674e938438166042137a9275bed747306641acfddc9ffb80"
+  license "BSD-2-Clause"
+
+  livecheck do
+    url "https://download.savannah.gnu.org/releases/lzip/lzlib/"
+    regex(/href=.*?lzlib[._-]v?(\d+(?:\.\d+)+)\.t/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "1b9d3e525a8823275e39404117fcd0f28fe2279db0856811d84e3ea49ed08a55" => :high_sierra
-    sha256 "8cac78b70d001bdda26c268c42022482af48ba6ffae0231a1f404827336b208a" => :sierra
-    sha256 "73730cde2726e217793b2724e2e15ec1b0e21d10eccd769706010a56c379a6d3" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "e209c35c3ebfda8ac9a4f010f4b67c2edb791023d8aad2798b759f7e62debeb4"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "90f5f6d7704043f05267c00c988a5e72f383bfa3d68628c7a683b6177ea6e542"
+    sha256 cellar: :any_skip_relocation, monterey:       "70694976deaa1ee867a7cda0aae5bef7055b001cdc654be21afa5d3327fd3b3a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "8e87447e82af22377a309c648689820893e0add73356567e83e119a1bed9a28b"
+    sha256 cellar: :any_skip_relocation, catalina:       "e60bfc9d982c3c40170a4f645a1466f9cc979f33b1a024ee9c2aa8e03d3597a6"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "443361cdf8e0ec75e738ed3b54298018a1b67e3635c660212d42187d5b3494e4"
   end
 
   def install

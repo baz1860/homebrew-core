@@ -1,30 +1,49 @@
 class Dynamips < Formula
   desc "Cisco 7200/3600/3725/3745/2600/1700 Router Emulator"
   homepage "https://github.com/GNS3/dynamips"
-  url "https://github.com/GNS3/dynamips/archive/v0.2.17.tar.gz"
-  sha256 "d524ef32b78dd7384775920604912d3b4b212ded338cc4df930b0086df1e81ed"
+  url "https://github.com/GNS3/dynamips/archive/v0.2.22.tar.gz"
+  sha256 "5b3142eb4d2780683ea8781d5f4da6fc39c514d36546392508c74da8ba98240b"
+  license "GPL-2.0"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "d5a6265bfadbccc1dbcf647e6313e97e262a0c784e3cc24d7349abc9f2627f02" => :high_sierra
-    sha256 "c94a3d1c7456287ad68113af62df3590674e4a41ab9f5ab383b9291af8d919ea" => :sierra
-    sha256 "3c2427ca53100fa0e44131d7ac4a33ec6a90a6bee45411c01de7258b4fd00836" => :el_capitan
-    sha256 "2fefd603afce1231c35103db5af5b64594cc17411238d5f783f31dfd99d513b2" => :yosemite
+  livecheck do
+    url :stable
+    strategy :github_latest
   end
 
-  depends_on "libelf"
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "7c22fc3fa8a288516a6b07e6f2d9e00a318fe8ea13841e57a46fa6cc3a30f2b4"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "028ac7c712f19f93d0265585c4b32c2be4a347ddc12e99110a232fc309c2fe61"
+    sha256 cellar: :any_skip_relocation, monterey:       "5385bc27852708af49d6b8d307de69b39c9c10f7ad3e45ef77dd13b68588319a"
+    sha256 cellar: :any_skip_relocation, big_sur:        "c4d95a8dac4e17b3189f215c2e2c7401a065391b6335fddd86b30c05389c11ae"
+    sha256 cellar: :any_skip_relocation, catalina:       "5b38c4fe753e0372420a0f020b6bae01d208663c6f9ed878c1b8b81fcca39cda"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ab60c90c43a95d54763147dc90134412b795fbb6f5cadf2841d7333adc5ea523"
+  end
+
   depends_on "cmake" => :build
 
-  def install
-    ENV.append "CFLAGS", "-I#{Formula["libelf"].include}/libelf"
+  uses_from_macos "libpcap"
 
-    arch = Hardware::CPU.is_64_bit? ? "amd64" : "x86"
+  on_macos do
+    depends_on "libelf" => :build
+  end
+
+  on_linux do
+    depends_on "elfutils"
+  end
+
+  def install
+    cmake_args = std_cmake_args + ["-DANY_COMPILER=1"]
+    cmake_args << if OS.mac?
+      "-DLIBELF_INCLUDE_DIRS=#{Formula["libelf"].opt_include}/libelf"
+    else
+      "-DLIBELF_INCLUDE_DIRS=#{Formula["elfutils"].opt_include}"
+    end
 
     ENV.deparallelize
-    system "cmake", ".", "-DANY_COMPILER=1", *std_cmake_args
-    system "make", "DYNAMIPS_CODE=stable",
-                   "DYNAMIPS_ARCH=#{arch}",
-                   "install"
+    mkdir "build" do
+      system "cmake", "..", *cmake_args
+      system "make", "install"
+    end
   end
 
   test do

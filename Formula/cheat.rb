@@ -1,39 +1,35 @@
 class Cheat < Formula
-  include Language::Python::Virtualenv
-
   desc "Create and view interactive cheat sheets for *nix commands"
-  homepage "https://github.com/chrisallenlane/cheat"
-  url "https://github.com/chrisallenlane/cheat/archive/2.2.3.tar.gz"
-  sha256 "adedab2d8047b129e07d67205f5470c120dbf05785f2786520226c412508d9ee"
-  head "https://github.com/chrisallenlane/cheat.git"
+  homepage "https://github.com/cheat/cheat"
+  url "https://github.com/cheat/cheat/archive/refs/tags/4.2.5.tar.gz"
+  sha256 "727c19efb873e6ea29b922a480074da8e5b73a0d129c3277539484a736527033"
+  license "MIT"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "17c9c8e02a78c0276549519e9594ebcf74d3fbed7d89781227e560e2506e5387" => :high_sierra
-    sha256 "374a7773ba02b820b7e24c2ae37c06a69d6e11c506e65fe9c1bdc76d6fce02c5" => :sierra
-    sha256 "03c6ddbad8d372487e30bccd793a19f80e1aaa45970943bf0300710fe119b2b0" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "fb5b688f664d1a90636f0793caff1e8fb1547050ca83d1490ed815580b7b1a41"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "e0c6f4461f88d303b7a49ac0d780a5889d6e9ef11504ffcc1ee91b24b1cda11a"
+    sha256 cellar: :any_skip_relocation, monterey:       "0508db513b9066cb899e4315497c2546146a1b5a27a3e09913a7e3560cba3277"
+    sha256 cellar: :any_skip_relocation, big_sur:        "0741741fe225b99ed5920ef1038d5de247d217f89a32b1be92c7f38e8d20a674"
+    sha256 cellar: :any_skip_relocation, catalina:       "f3b4476b73616177a4694ad45e54a4abb3b972a69d613ab65749e4f13d9de704"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "cad759f0cd1a173289659e881a712388ed4989b9b5f0dcec94a45f473d8c400c"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
+  depends_on "go" => :build
 
-  resource "docopt" do
-    url "https://files.pythonhosted.org/packages/a2/55/8f8cab2afd404cf578136ef2cc5dfb50baa1761b68c9da1fb1e4eed343c9/docopt-0.6.2.tar.gz"
-    sha256 "49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"
-  end
-
-  resource "Pygments" do
-    url "https://files.pythonhosted.org/packages/71/2a/2e4e77803a8bd6408a2903340ac498cb0a2181811af7c9ec92cb70b0308a/Pygments-2.2.0.tar.gz"
-    sha256 "dbae1046def0efb574852fab9e90209b23f556367b5a320c0bcb871c77c3e8cc"
-  end
+  conflicts_with "bash-snippets", because: "both install a `cheat` executable"
 
   def install
-    virtualenv_install_with_resources
+    system "go", "build", "-mod", "vendor", "-o", bin/"cheat", "./cmd/cheat"
 
-    bash_completion.install "cheat/autocompletion/cheat.bash"
-    zsh_completion.install "cheat/autocompletion/cheat.zsh" => "_cheat"
+    bash_completion.install "scripts/cheat.bash"
+    fish_completion.install "scripts/cheat.fish"
+    zsh_completion.install "scripts/cheat.zsh"
   end
 
   test do
-    system bin/"cheat", "tar"
+    assert_match version.to_s, shell_output("#{bin}/cheat --version")
+
+    output = shell_output("#{bin}/cheat --init 2>&1")
+    assert_match "editor: vim", output
   end
 end

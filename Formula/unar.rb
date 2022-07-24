@@ -1,41 +1,73 @@
 class Unar < Formula
   desc "Command-line unarchiving tools supporting multiple formats"
-  homepage "https://unarchiver.c3.cx/commandline"
-  url "https://wakaba.c3.cx/releases/TheUnarchiver/unar1.10.1_src.zip"
-  version "1.10.1"
-  sha256 "40967014a505b7a27864c49dc3b5d30b98ae4e6d4873783b2ef9ef9215fd092b"
-
-  head "https://bitbucket.org/WAHa_06x36/theunarchiver", :using => :hg
+  homepage "https://theunarchiver.com/command-line"
+  url "https://github.com/MacPaw/XADMaster/archive/refs/tags/v1.10.7.tar.gz"
+  sha256 "3d766dc1856d04a8fb6de9942a6220d754d0fa7eae635d5287e7b1cf794c4f45"
+  license "LGPL-2.1-or-later"
+  head "https://github.com/MacPaw/XADMaster.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "c4f9c710265918eaa77a7f046601bd947c9ed75a2281e4aaf43789e29fe345fb" => :high_sierra
-    sha256 "bd712f6dc4a543d4af936e85d0fcceadc32c2a0ca3c7db11bf484515f2ddd8da" => :sierra
-    sha256 "90f8103e17eedfa6825268488c425e050e24ad703919e8aa63bfbd4c03fcf44f" => :el_capitan
-    sha256 "b337f36dc2ec53be49d52ceee23924670319c819b259e39c76fe57720bfb1659" => :yosemite
-    sha256 "dab9604cafaab887741e0d6511f88e7ca66ad556ee86a41f4b1896ec558d9650" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "5cedc1ed00cb1f638f6e7d7f026196c19aaf8e2ce9eacb7d9220b98cae2f0649"
+    sha256 cellar: :any,                 arm64_big_sur:  "16091256fd3c0d13a774fc1900b7b21584fb9eee669a65de56906e188fbcc665"
+    sha256 cellar: :any,                 monterey:       "2da5bda2a8ad54072fffd22e81c3b3b85320f8d68b993fdc4282dc6c87cec0e6"
+    sha256 cellar: :any,                 big_sur:        "a92a0fd33d7598591efa5dc01692221053cdc612bb218f46df422af0bd5082c6"
+    sha256 cellar: :any,                 catalina:       "6207848baad1fda03e3bdda9a8cd621ef2d226a02fcf4219fec64c9f418b9a0e"
+    sha256 cellar: :any,                 mojave:         "f09e3c1eb465cec023037048305b493e3ed57696a775eb121076951b8ae63e76"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "7e82767f0456781aff87035e18d2062da86ed91863ac196f059f6e799ae3db3f"
   end
 
-  depends_on :xcode => :build
+  depends_on xcode: :build
+
+  uses_from_macos "llvm" => [:build, :test]
+  uses_from_macos "bzip2"
+
+  on_linux do
+    depends_on "gnustep-base"
+    depends_on "wavpack"
+  end
+
+  # Clang must be used on Linux because GCC Objective C support is insufficient.
+  fails_with :gcc
+
+  resource "universal-detector" do
+    url "https://github.com/MacPaw/universal-detector/archive/refs/tags/1.1.tar.gz"
+    sha256 "8e8532111d0163628eb828a60d67b53133afad3f710b1967e69d3b8eee28a811"
+  end
 
   def install
-    # ZIP for 1.10.1 additionally contains a `__MACOSX` directory, preventing
-    # stripping of the first path component during extraction of the archive.
-    mv Dir["The Unarchiver/*"], "."
+    resource("universal-detector").stage buildpath/"../UniversalDetector"
 
-    # Build XADMaster.framework, unar and lsar
-    xcodebuild "-project", "./XADMaster/XADMaster.xcodeproj", "-alltargets", "-configuration", "Release", "clean"
-    xcodebuild "-project", "./XADMaster/XADMaster.xcodeproj", "-target", "XADMaster", "SYMROOT=../", "-configuration", "Release"
-    xcodebuild "-project", "./XADMaster/XADMaster.xcodeproj", "-target", "unar", "SYMROOT=../", "-configuration", "Release"
-    xcodebuild "-project", "./XADMaster/XADMaster.xcodeproj", "-target", "lsar", "SYMROOT=../", "-configuration", "Release"
+    # Link to libc++.dylib instead of libstdc++.6.dylib
+    inreplace "XADMaster.xcodeproj/project.pbxproj", "libstdc++.6.dylib", "libc++.1.dylib"
 
-    bin.install "./Release/unar", "./Release/lsar"
+    # Replace usage of __DATE__ to keep builds reproducible
+    inreplace %w[lsar.m unar.m], "@__DATE__", "@\"#{time.strftime("%b %d %Y")}\""
 
-    lib.install "./Release/libXADMaster.a"
-    frameworks.install "./Release/XADMaster.framework"
-    (include/"libXADMaster").install_symlink Dir["#{frameworks}/XADMaster.framework/Headers/*"]
+    # Makefile.linux does not support an out-of-tree build.
+    if OS.mac?
+      mkdir "build" do
+        # Build XADMaster.framework, unar and lsar
+        arch = Hardware::CPU.arm? ? "arm64" : "x86_64"
+        %w[XADMaster unar lsar].each do |target|
+          xcodebuild "-target", target, "-project", "../XADMaster.xcodeproj",
+                     "SYMROOT=#{buildpath/"build"}", "-configuration", "Release",
+                     "MACOSX_DEPLOYMENT_TARGET=#{MacOS.version}", "ARCHS=#{arch}", "ONLY_ACTIVE_ARCH=YES"
+        end
 
-    cd "./Extra" do
+        bin.install "./Release/unar", "./Release/lsar"
+        %w[UniversalDetector XADMaster].each do |framework|
+          lib.install "./Release/lib#{framework}.a"
+          frameworks.install "./Release/#{framework}.framework"
+          (include/"lib#{framework}").install_symlink Dir["#{frameworks}/#{framework}.framework/Headers/*"]
+        end
+      end
+    else
+      system "make", "-f", "Makefile.linux"
+      bin.install "unar", "lsar"
+      lib.install buildpath/"../UniversalDetector/libUniversalDetector.a", "libXADMaster.a"
+    end
+
+    cd "Extra" do
       man1.install "lsar.1", "unar.1"
       bash_completion.install "unar.bash_completion", "lsar.bash_completion"
     end

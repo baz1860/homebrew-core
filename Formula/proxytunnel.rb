@@ -1,55 +1,31 @@
 class Proxytunnel < Formula
   desc "Create TCP tunnels through HTTPS proxies"
-  homepage "https://proxytunnel.sourceforge.io/"
-  url "https://downloads.sourceforge.net/proxytunnel/proxytunnel-1.9.0.tgz"
-  sha256 "2ef5bbf8d81ddf291d71f865c5dab89affcc07c4cb4b3c3f23e1e9462721a6b9"
-  revision 1
+  homepage "https://github.com/proxytunnel/proxytunnel"
+  url "https://github.com/proxytunnel/proxytunnel/archive/v1.10.20210604.tar.gz"
+  sha256 "47b7ef7acd36881744db233837e7e6be3ad38e45dc49d2488934882fa2c591c3"
+  license "GPL-2.0-or-later"
 
   bottle do
-    cellar :any
-    sha256 "3d21252f1f5467a072fbdfff215d30e104a97510061a06a3b84f2ecbf3ee527b" => :high_sierra
-    sha256 "713f4529f60bc07a7ffc751730907b7f8238395a93a33d2430e272b66aab057a" => :sierra
-    sha256 "6632b143edd3bbe2f8620bec9445e78689193d05279f1bb13766d16168bf871f" => :el_capitan
-    sha256 "6764d4c9ce6bd4fcf08e7b8042a93977cb5788d316b54552bc6f49348a032c09" => :yosemite
-    sha256 "7a0c91840116c8a6cdc492d671f0426dbd1adcf8b20e1d7259ea3c42a3eb1d6f" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "65570cf9f771e78f7c3a08c88630fc5af7100df0025ff1c35286306735e37a40"
+    sha256 cellar: :any,                 arm64_big_sur:  "97ccd9b616094e055755979daed8216f418d2aeb4639cf978b5df289d1c7e4ea"
+    sha256 cellar: :any,                 monterey:       "c3058d31c2f16a210b122115dfdfa5e29a36905185a505abeb4e9f02d04b9d09"
+    sha256 cellar: :any,                 big_sur:        "88027c4126895fb5c1f25b1045df6bd3e79dd9d4c3e0e7c9623c0538f72d0df7"
+    sha256 cellar: :any,                 catalina:       "b69ed34113341b0c25778b0b10af2079d17e32e2f7288fa2feed80677124ec15"
+    sha256 cellar: :any,                 mojave:         "9f941a568397ae9ec164cde36aaafe90237f36b516e1403985e10687601cf15a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "f65fb0bf533922b366e1c60989fd0db345afdf7769eb88ae6bdb9aaa5833d482"
   end
 
-  depends_on "openssl"
-
-  # Remove conflicting strlcpy/strlcat declarations
-  patch :DATA
+  depends_on "asciidoc" => :build
+  depends_on "xmlto" => :build
+  depends_on "openssl@1.1"
 
   def install
+    ENV["XML_CATALOG_FILES"] = etc/"xml/catalog"
     system "make"
-    bin.install "proxytunnel"
-    man1.install "proxytunnel.1"
+    system "make", "install", "prefix=#{prefix}"
+  end
+
+  test do
+    system "#{bin}/proxytunnel", "--version"
   end
 end
-
-__END__
-diff --git a/Makefile b/Makefile
-index 9e9ac73..8244b55 100644
---- a/Makefile
-+++ b/Makefile
-@@ -56,8 +56,6 @@ PROGNAME = proxytunnel
- # Remove strlcpy/strlcat on (open)bsd/darwin systems
- OBJ = proxytunnel.o	\
- 	base64.o	\
--	strlcpy.o	\
--	strlcat.o	\
- 	strzcat.o	\
- 	setproctitle.o	\
- 	io.o		\
-diff --git a/proxytunnel.h b/proxytunnel.h
-index b948be0..e63c72a 100644
---- a/proxytunnel.h
-+++ b/proxytunnel.h
-@@ -32,8 +32,6 @@ void closeall();
- void do_daemon();
- void initsetproctitle(int argc, char *argv[]);
- void setproctitle(const char *fmt, ...);
--size_t strlcat(char *dst, const char *src, size_t siz);
--size_t strlcpy(char *dst, const char *src, size_t siz);
- size_t strzcat(char *dst, char *format, ...);
- int main( int argc, char *argv[] );
- char * readpassphrase(const char *, char *, size_t, int);

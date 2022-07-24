@@ -1,28 +1,47 @@
 class Raylib < Formula
   desc "Simple and easy-to-use library to learn videogames programming"
-  homepage "http://www.raylib.com/"
-  url "https://github.com/raysan5/raylib/archive/1.9.1-dev.tar.gz"
-  version "1.9.1-dev"
-  sha256 "892357fb44d340eb7449c23c425d660d98b34b91434400e7610514ef02698600"
-  head "https://github.com/raysan5/raylib.git", :branch => "master"
+  homepage "https://www.raylib.com/"
+  url "https://github.com/raysan5/raylib/archive/4.0.0.tar.gz"
+  sha256 "11f6087dc7bedf9efb3f69c0c872f637e421d914e5ecea99bbe7781f173dc38c"
+  license "Zlib"
+  head "https://github.com/raysan5/raylib.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "f9d6fc5e2f92c15bb6da71df4e0344d9383e803c61a5322f0f202393814f48bb" => :high_sierra
-    sha256 "bd564c34749237dfbc28c490184fd0fc39aab313f19f53fe3d73160dbdaf63e0" => :sierra
-    sha256 "d650d0518043a7a38375d8816d1c13d2dfac3c6e5a3286f9dae379e8451d7ba2" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "a661eadd8041310193930de3d8c945a9e0907e695423d944f0a54d1d559d8923"
+    sha256 cellar: :any,                 arm64_big_sur:  "ac23867f939f0132beb5e0da421d8d6d668d4f5ca70cffc07e13fdecf75380a9"
+    sha256 cellar: :any,                 monterey:       "7df796fdcda7fe67f7a115bd571ffd0aa55f8850be85a21f8e105c5674f26024"
+    sha256 cellar: :any,                 big_sur:        "688d9af987c7c67aa3afac744c35d81a8e8c57d1d6b5afed1edb95791cdb7205"
+    sha256 cellar: :any,                 catalina:       "a2c90a09cdbd887cfee09ac7caac37953401b32ee60643e4f25521bd8d6318b0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "d7e03b969c31d5af57fff44d13ee2741198083cca3360ac126db73f555b4cd48"
   end
 
   depends_on "cmake" => :build
 
+  on_linux do
+    depends_on "libx11"
+    depends_on "libxcursor"
+    depends_on "libxi"
+    depends_on "libxinerama"
+    depends_on "libxrandr"
+    depends_on "mesa"
+    depends_on "mesa-glu"
+  end
+
   def install
-    system "cmake", ".", "-DSTATIC_RAYLIB=ON",
-                         "-DSHARED_RAYLIB=ON",
+    system "cmake", ".", "-DBUILD_SHARED_LIBS=ON",
                          "-DMACOS_FATLIB=OFF",
                          "-DBUILD_EXAMPLES=OFF",
                          "-DBUILD_GAMES=OFF",
                          *std_cmake_args
     system "make", "install"
+    system "make", "clean"
+    system "cmake", ".", "-DBUILD_SHARED_LIBS=OFF",
+                         "-DMACOS_FATLIB=OFF",
+                         "-DBUILD_EXAMPLES=OFF",
+                         "-DBUILD_GAMES=OFF",
+                         *std_cmake_args
+    system "make"
+    lib.install "raylib/libraylib.a"
   end
 
   test do
@@ -35,7 +54,21 @@ class Raylib < Formula
           return 42 <= num && num <= 1337 ? EXIT_SUCCESS : EXIT_FAILURE;
       }
     EOS
-    system ENV.cc, "test.c", "-L#{lib}", "-lraylib", "-o", "test"
+    flags = if OS.mac?
+      %w[
+        -framework Cocoa
+        -framework IOKit
+        -framework OpenGL
+      ]
+    else
+      %w[
+        -lm
+        -ldl
+        -lGL
+        -lpthread
+      ]
+    end
+    system ENV.cc, "test.c", "-o", "test", "-L#{lib}", "-lraylib", *flags
     system "./test"
   end
 end

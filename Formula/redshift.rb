@@ -1,42 +1,50 @@
 class Redshift < Formula
   desc "Adjust color temperature of your screen according to your surroundings"
   homepage "http://jonls.dk/redshift/"
-  url "https://github.com/jonls/redshift/releases/download/v1.11/redshift-1.11.tar.xz"
-  sha256 "10e350f93951c0521dd6f103d67a485972c307214f036e009acea2978fe4f359"
+  url "https://github.com/jonls/redshift/releases/download/v1.12/redshift-1.12.tar.xz"
+  sha256 "d2f8c5300e3ce2a84fe6584d2f1483aa9eadc668ab1951b2c2b8a03ece3a22ba"
+  license "GPL-3.0-or-later"
+  revision 1
 
   bottle do
-    sha256 "eafe2b08f2aeee05a13d92e6ec161b86d777b56bb28dedf6419757b360afecc3" => :high_sierra
-    sha256 "654082b1aefb05db5833fa3dfc8b4313525c5ff4bb002de79c1793d998713afe" => :sierra
-    sha256 "f8fc6b6b2279982aefc06a03571c8de76df9542808558e542e87d7e28187d58f" => :el_capitan
-    sha256 "b51cd606ac04a3709ca9a02196c26ee6b79b1b32d976ef01155db382f5145f81" => :yosemite
-    sha256 "9d151b44efdd166ae4239af7dff907a4868441c126f7fd11aa69a53e9d39de7a" => :mavericks
+    rebuild 1
+    sha256 arm64_monterey: "639cdf26164ff6a637c3adb96d4e5b92f6712199c8d49276638965836ac142c9"
+    sha256 arm64_big_sur:  "043dc8ec9eff54763ea0fdf2c3ca325a9906d8fd1098568255ced2a497841315"
+    sha256 monterey:       "442b3c30b0cd25d42a4c5e03ed166a264c59bb67b4eb51bbccef29c819e6aa39"
+    sha256 big_sur:        "8be47c6b6015ca4ccd2c706dd58541c49c4177a1d69144452a7aa483c977f805"
+    sha256 catalina:       "344ea69571839ab32210854f990474239fde828b10a019ec5e88695eb4c7ffcb"
+    sha256 mojave:         "71ec07212f543d7a4152f04627f2fe9cabcbc121caae584b24070f05101ae4dd"
+    sha256 x86_64_linux:   "12372cb33e04989848070b332096420b45539cd69e31026545543207d7d0cc9a"
   end
 
   head do
     url "https://github.com/jonls/redshift.git"
 
-    depends_on "automake" => :build
     depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  depends_on "pkg-config" => :build
   depends_on "intltool" => :build
+  depends_on "pkg-config" => :build
   depends_on "gettext"
   depends_on "glib"
 
   def install
     args = %W[
       --prefix=#{prefix}
-      --enable-corelocation
       --disable-silent-rules
       --disable-dependency-tracking
       --disable-geoclue
       --disable-geoclue2
-      --enable-quartz
       --with-systemduserunitdir=no
       --disable-gui
     ]
+
+    if OS.mac?
+      args << "--enable-corelocation"
+      args << "--enable-quartz"
+    end
 
     system "./bootstrap" if build.head?
     system "./configure", *args
@@ -44,38 +52,20 @@ class Redshift < Formula
     pkgshare.install "redshift.conf.sample"
   end
 
-  def caveats; <<~EOS
-    A sample .conf file has been installed to #{opt_pkgshare}.
+  def caveats
+    <<~EOS
+      A sample .conf file has been installed to #{opt_pkgshare}.
 
-    Please note redshift expects to read its configuration file from
-    #{ENV["HOME"]}/.config
+      Please note redshift expects to read its configuration file from
+      #{Dir.home}/.config/redshift/redshift.conf
     EOS
   end
 
-  plist_options :manual => "redshift"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>ProgramArguments</key>
-        <array>
-          <string>#{opt_bin}/redshift</string>
-        </array>
-        <key>KeepAlive</key>
-        <true/>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>StandardErrorPath</key>
-        <string>/dev/null</string>
-        <key>StandardOutPath</key>
-        <string>/dev/null</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run opt_bin/"redshift"
+    keep_alive true
+    log_path "/dev/null"
+    error_log_path "/dev/null"
   end
 
   test do

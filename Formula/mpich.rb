@@ -1,24 +1,27 @@
 class Mpich < Formula
   desc "Implementation of the MPI Message Passing Interface standard"
   homepage "https://www.mpich.org/"
-  url "https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1.tar.gz"
-  mirror "https://fossies.org/linux/misc/mpich-3.2.1.tar.gz"
-  sha256 "5db53bf2edfaa2238eb6a0a5bc3d2c2ccbfbb1badd79b664a1a919d2ce2330f1"
-  revision 1
+  url "https://www.mpich.org/static/downloads/4.0.2/mpich-4.0.2.tar.gz"
+  mirror "https://fossies.org/linux/misc/mpich-4.0.2.tar.gz"
+  sha256 "5a42f1a889d4a2d996c26e48cbf9c595cbf4316c6814f7c181e3320d21dedd42"
+  license "mpich2"
 
-  bottle do
-    sha256 "bab0862c4f607c8f411d16b754fb6474f536c5340c2d1c9be4a339ca4a6d9bf9" => :high_sierra
-    sha256 "bfb708826242dd9e27ce8c46bba866cbec2c95ee6db419c56e7942c32a88b3b3" => :sierra
-    sha256 "214e469d1b5bdbdc685cc31a53e8673880640a2551274c8f06c08b347db7ee54" => :el_capitan
+  livecheck do
+    url "https://www.mpich.org/static/downloads/"
+    regex(%r{href=.*?v?(\d+(?:\.\d+)+)/?["' >]}i)
   end
 
-  devel do
-    url "https://www.mpich.org/static/downloads/3.3b1/mpich-3.3b1.tar.gz"
-    sha256 "f0c822ac48ee01037ec63ec882a945b0730cea6e2f28f262624983e51a983c98"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "407945b2f63e8bb8aa71c435ec43a23927d4c46404808ccc13d857b2919ad3da"
+    sha256 cellar: :any,                 arm64_big_sur:  "86597150d3f922c6752b8ac985f091bdd99cf918fc1d15734a1afcacd343012b"
+    sha256 cellar: :any,                 monterey:       "17efc3ead6fa899bf9abc11f5f670bdcf672b1a2e9b370188037ae0b41abe928"
+    sha256 cellar: :any,                 big_sur:        "7e7b189db2a693edab05d39c1ddaf60702c52285316da30dd6c4879bedee99e7"
+    sha256 cellar: :any,                 catalina:       "daa5d28140ac17df92ee6468be59c3f25570120670c239e8867c7ed559370b42"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "dd1075a93bb075ccde26a130249d3786275d96d72088d93452b57f2524e94a82"
   end
 
   head do
-    url "http://git.mpich.org/mpich.git"
+    url "https://github.com/pmodels/mpich.git"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -26,8 +29,19 @@ class Mpich < Formula
   end
 
   depends_on "gcc" # for gfortran
+  depends_on "hwloc"
 
-  conflicts_with "open-mpi", :because => "both install MPI compiler wrappers"
+  on_macos do
+    conflicts_with "libfabric", because: "both install `fabric.h`"
+  end
+
+  on_linux do
+    # Can't be enabled on mac:
+    # https://lists.mpich.org/pipermail/discuss/2021-May/006192.html
+    depends_on "libfabric"
+  end
+
+  conflicts_with "open-mpi", because: "both install MPI compiler wrappers"
 
   def install
     if build.head?
@@ -37,13 +51,34 @@ class Mpich < Formula
       system "./autogen.sh"
     end
 
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--mandir=#{man}"
+    args = %W[
+      --disable-dependency-tracking
+      --enable-fast=all,O3
+      --enable-g=dbg
+      --enable-romio
+      --enable-shared
+      --with-pm=hydra
+      FC=gfortran-#{Formula["gcc"].any_installed_version.major}
+      FCFLAGS=-fallow-argument-mismatch
+      F77=gfortran-#{Formula["gcc"].any_installed_version.major}
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --mandir=#{man}
+    ]
+
+    # Flag for compatibility with GCC 10
+    # https://lists.mpich.org/pipermail/discuss/2020-January/005863.html
+    args << "FFLAGS=-fallow-argument-mismatch"
+
+    if OS.linux?
+      # Use libfabric https://lists.mpich.org/pipermail/discuss/2021-January/006092.html
+      args << "--with-device=ch4:ofi"
+      args << "--with-libfabric=#{Formula["libfabric"].opt_prefix}"
+    end
+
+    system "./configure", *args
 
     system "make"
-    system "make", "check"
     system "make", "install"
   end
 

@@ -1,43 +1,65 @@
 class Mariadb < Formula
   desc "Drop-in replacement for MySQL"
   homepage "https://mariadb.org/"
-  url "https://downloads.mariadb.org/f/mariadb-10.2.13/source/mariadb-10.2.13.tar.gz"
-  sha256 "272e7ed9300a05da9e02f8217a01ed3447c4f5a36a12e5233d62cc7c586fc753"
+  url "https://downloads.mariadb.com/MariaDB/mariadb-10.8.3/source/mariadb-10.8.3.tar.gz"
+  sha256 "887eadc55176ac1ead1fccfc89ade4b5990ef192745ad4dcd879acb41c050892"
+  license "GPL-2.0-only"
+  revision 1
+
+  # This uses a placeholder regex to satisfy the `PageMatch` strategy
+  # requirement. In the future, this will be updated to use a `Json` strategy
+  # and we can remove the unused regex at that time.
+  livecheck do
+    url "https://downloads.mariadb.org/rest-api/mariadb/all-releases/?olderReleases=false"
+    regex(/unused/i)
+    strategy :page_match do |page|
+      json = JSON.parse(page)
+      json["releases"]&.map do |release|
+        release["status"].include?("stable") ? release["release_number"] : nil
+      end
+    end
+  end
 
   bottle do
-    sha256 "74dc1bbef50322f29558f46267dd0ad1006fa7c5fde70d1095f356ee7d5c31db" => :high_sierra
-    sha256 "0a66bb259d1a12119f910164fb6bf3518422e90b696ac8bf7415b2d9f823621e" => :sierra
-    sha256 "3aebe8389be1af00ee1e1ccbb6dbacf72e4e16c753ae346901e43c762c8f5f23" => :el_capitan
+    sha256 arm64_monterey: "44ff9ff617ada03c556166db35991f5f0a8ae98ad1db14fd215cc66255964a48"
+    sha256 arm64_big_sur:  "f94078ba09153536cd665e50596d2b731bf8f766691c85f7cb01c13c2c6380ea"
+    sha256 monterey:       "9708487080ced59452ff0f4b89124ee97f4c30428496d30150cd2e6f43514b52"
+    sha256 big_sur:        "2bde55ad31b742ad68f5a23b4b645014d6b4232d0d198ae30a6389153aa61870"
+    sha256 catalina:       "3b202fe1609080b8778832475766a869b488bd5c423b8354902690f56261d047"
+    sha256 x86_64_linux:   "d7fef80655269d2066859aa87d779fa7460ffff4d18a1d5a30800305de2dc999"
   end
 
-  devel do
-    url "https://downloads.mariadb.org/f/mariadb-10.3.5/source/mariadb-10.3.5.tar.gz"
-    sha256 "cbb81f5f7e25c822db6683bbb43b3aad328622fa86da81c1ddeee8005523b203"
-  end
-
-  option "with-test", "Keep test when installing"
-  option "with-bench", "Keep benchmark app when installing"
-  option "with-embedded", "Build the embedded server"
-  option "with-libedit", "Compile with editline wrapper instead of readline"
-  option "with-archive-storage-engine", "Compile with the ARCHIVE storage engine enabled"
-  option "with-blackhole-storage-engine", "Compile with the BLACKHOLE storage engine enabled"
-  option "with-local-infile", "Build with local infile loading support"
-
-  deprecated_option "enable-local-infile" => "with-local-infile"
-  deprecated_option "with-tests" => "with-test"
-
+  depends_on "bison" => :build
   depends_on "cmake" => :build
-  depends_on "openssl"
+  depends_on "fmt" => :build
+  depends_on "pkg-config" => :build
+  depends_on "groonga"
+  depends_on "openssl@1.1"
+  depends_on "pcre2"
+  depends_on "zstd"
 
-  conflicts_with "mysql", "mysql-cluster", "percona-server",
-    :because => "mariadb, mysql, and percona install the same binaries."
-  conflicts_with "mysql-connector-c",
-    :because => "both install MySQL client libraries"
-  conflicts_with "mytop", :because => "both install `mytop` binaries"
-  conflicts_with "mariadb-connector-c",
-    :because => "both install plugins"
+  uses_from_macos "bzip2"
+  uses_from_macos "libxcrypt"
+  uses_from_macos "ncurses"
+  uses_from_macos "zlib"
+
+  on_linux do
+    depends_on "gcc"
+    depends_on "linux-pam"
+    depends_on "readline" # uses libedit on macOS
+  end
+
+  conflicts_with "mysql", "percona-server",
+    because: "mariadb, mysql, and percona install the same binaries"
+
+  conflicts_with "mytop", because: "both install `mytop` binaries"
+  conflicts_with "mariadb-connector-c", because: "both install `mariadb_config`"
+
+  fails_with gcc: "5"
 
   def install
+    ENV.cxx11
+
     # Set basedir and ldata so that mysql_install_db can find the server
     # without needing an explicit path to be set. This can still
     # be overridden by calling --basedir= when calling.
@@ -45,6 +67,9 @@ class Mariadb < Formula
       s.change_make_var! "basedir", "\"#{prefix}\""
       s.change_make_var! "ldata", "\"#{var}/mysql\""
     end
+
+    # Use brew groonga
+    rm_r "storage/mroonga/vendor/groonga"
 
     # -DINSTALL_* are relative to prefix
     args = %W[
@@ -54,35 +79,26 @@ class Mariadb < Formula
       -DINSTALL_DOCDIR=share/doc/#{name}
       -DINSTALL_INFODIR=share/info
       -DINSTALL_MYSQLSHAREDIR=share/mysql
-      -DWITH_PCRE=bundled
-      -DWITH_SSL=yes
-      -DDEFAULT_CHARSET=utf8
-      -DDEFAULT_COLLATION=utf8_general_ci
+      -DWITH_LIBFMT=system
+      -DWITH_SSL=system
+      -DWITH_UNIT_TESTS=OFF
+      -DDEFAULT_CHARSET=utf8mb4
+      -DDEFAULT_COLLATION=utf8mb4_general_ci
       -DINSTALL_SYSCONFDIR=#{etc}
-      -DCOMPILATION_COMMENT=Homebrew
+      -DCOMPILATION_COMMENT=#{tap.user}
     ]
 
-    # disable TokuDB, which is currently not supported on macOS
-    args << "-DPLUGIN_TOKUDB=NO"
+    if OS.linux?
+      args << "-DWITH_NUMA=OFF"
+      args << "-DENABLE_DTRACE=NO"
+      args << "-DCONNECT_WITH_JDBC=OFF"
+    end
 
-    args << "-DWITH_UNIT_TESTS=OFF" if build.without? "test"
-
-    # Build the embedded server
-    args << "-DWITH_EMBEDDED_SERVER=ON" if build.with? "embedded"
-
-    # Compile with readline unless libedit is explicitly chosen
-    args << "-DWITH_READLINE=yes" if build.without? "libedit"
-
-    # Compile with ARCHIVE engine enabled if chosen
-    args << "-DPLUGIN_ARCHIVE=YES" if build.with? "archive-storage-engine"
-
-    # Compile with BLACKHOLE engine enabled if chosen
-    args << "-DPLUGIN_BLACKHOLE=YES" if build.with? "blackhole-storage-engine"
-
-    # Build with local infile loading support
-    args << "-DENABLED_LOCAL_INFILE=1" if build.with? "local-infile"
+    # Disable RocksDB on Apple Silicon (currently not supported)
+    args << "-DPLUGIN_ROCKSDB=NO" if Hardware::CPU.arm?
 
     system "cmake", ".", *std_cmake_args, *args
+
     system "make"
     system "make", "install"
 
@@ -96,8 +112,9 @@ class Mariadb < Formula
     # See: https://github.com/Homebrew/homebrew/issues/4975
     rm_rf prefix/"data"
 
-    (prefix/"mysql-test").rmtree if build.without? "test" # save 121MB!
-    (prefix/"sql-bench").rmtree if build.without? "bench"
+    # Save space
+    (prefix/"mysql-test").rmtree
+    (prefix/"sql-bench").rmtree
 
     # Link the setup script into bin
     bin.install_symlink prefix/"scripts/mysql_install_db"
@@ -113,10 +130,9 @@ class Mariadb < Formula
     %w[
       wsrep_sst_mysqldump
       wsrep_sst_rsync
-      wsrep_sst_xtrabackup
-      wsrep_sst_xtrabackup-v2
+      wsrep_sst_mariabackup
     ].each do |f|
-      inreplace "#{bin}/#{f}", "$(dirname $0)/wsrep_sst_common",
+      inreplace "#{bin}/#{f}", "$(dirname \"$0\")/wsrep_sst_common",
                                "#{libexec}/wsrep_sst_common"
     end
 
@@ -133,6 +149,10 @@ class Mariadb < Formula
   def post_install
     # Make sure the var/mysql directory exists
     (var/"mysql").mkpath
+
+    # Don't initialize database, it clashes when testing other MySQL-like implementations.
+    return if ENV["HOMEBREW_GITHUB_ACTIONS"]
+
     unless File.exist? "#{var}/mysql/mysql/user.frm"
       ENV["TMPDIR"] = nil
       system "#{bin}/mysql_install_db", "--verbose", "--user=#{ENV["USER"]}",
@@ -140,49 +160,35 @@ class Mariadb < Formula
     end
   end
 
-  def caveats; <<~EOS
-    A "/etc/my.cnf" from another install may interfere with a Homebrew-built
-    server starting up correctly.
+  def caveats
+    <<~EOS
+      A "/etc/my.cnf" from another install may interfere with a Homebrew-built
+      server starting up correctly.
 
-    MySQL is configured to only allow connections from localhost by default
-
-    To connect:
-        mysql -uroot
+      MySQL is configured to only allow connections from localhost by default
     EOS
   end
 
-  plist_options :manual => "mysql.server start"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>KeepAlive</key>
-      <true/>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/mysqld_safe</string>
-        <string>--datadir=#{var}/mysql</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-      <key>WorkingDirectory</key>
-      <string>#{var}</string>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"mysqld_safe", "--datadir=#{var}/mysql"]
+    keep_alive true
+    working_dir var
   end
 
   test do
-    if build.with? "test"
-      (prefix/"mysql-test").cd do
-        system "./mysql-test-run.pl", "status"
-      end
-    else
-      system bin/"mysqld", "--version"
+    (testpath/"mysql").mkpath
+    (testpath/"tmp").mkpath
+    system bin/"mysql_install_db", "--no-defaults", "--user=#{ENV["USER"]}",
+      "--basedir=#{prefix}", "--datadir=#{testpath}/mysql", "--tmpdir=#{testpath}/tmp",
+      "--auth-root-authentication-method=normal"
+    port = free_port
+    fork do
+      system "#{bin}/mysqld", "--no-defaults", "--user=#{ENV["USER"]}",
+        "--datadir=#{testpath}/mysql", "--port=#{port}", "--tmpdir=#{testpath}/tmp"
     end
+    sleep 5
+    assert_match "information_schema",
+      shell_output("#{bin}/mysql --port=#{port} --user=root --password= --execute='show databases;'")
+    system "#{bin}/mysqladmin", "--port=#{port}", "--user=root", "--password=", "shutdown"
   end
 end

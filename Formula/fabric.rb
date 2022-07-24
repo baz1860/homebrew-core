@@ -2,80 +2,64 @@ class Fabric < Formula
   include Language::Python::Virtualenv
 
   desc "Library and command-line tool for SSH"
-  homepage "http://www.fabfile.org"
-  url "https://github.com/fabric/fabric/archive/1.14.0.tar.gz"
-  sha256 "5a6549daceb4c9a2ff60c6597384c30eab46fcb13081f7fd2e158af721a11b00"
+  homepage "https://www.fabfile.org/"
+  url "https://files.pythonhosted.org/packages/1f/36/9969093324a67cee916f484eda7b3547e8f8e6077f5f2a1814cde80d6fc2/fabric-2.7.1.tar.gz"
+  sha256 "76f8fef59cf2061dbd849bbce4fe49bdd820884385004b0ca59136ac3db129e4"
+  license "BSD-2-Clause"
   head "https://github.com/fabric/fabric.git"
 
   bottle do
-    cellar :any
-    sha256 "9e1e596f30150a3535edc5e6b01cbeea84126f9226e20d4a3b40ecc1292ed942" => :high_sierra
-    sha256 "d6a21bf4a5fb9e870d7314439a810cab366d754a7372431599a6cc43f72e79f3" => :sierra
-    sha256 "36f87be9b6f9bebbbdbd5006bb53453c7b78e5d7172f33b3a11798a66308a777" => :el_capitan
-    sha256 "99acff28ede8c20b6d9d927341740e8f37f4e976ca3895cc4a2356f378e20cfb" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "ceb5d0436663d80fd692da94e9fa2a9d2798a574f832fdeaf20ca718cf0be7c4"
+    sha256 cellar: :any,                 arm64_big_sur:  "3e7e5ea721d3d528e6ad783125048b9f57a0de8ed07ff133ea2f80af639dd472"
+    sha256 cellar: :any,                 monterey:       "6b595acc35ecb5440680b7a9767f423dd4c689a1b558fe8f415d42369fc68848"
+    sha256 cellar: :any,                 big_sur:        "f74d4fda9e5eb76b64c780c0fecb2eb086e06fbec6f5af2acd6eb49fecb78d0f"
+    sha256 cellar: :any,                 catalina:       "b6d872f16e221e56da5531a935b5f75c451a545150bf962c5fedfd728d9344a9"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "cd1b759a963838262490397e58bc2a73f7a1d81dc73b4c59989e934e02216d95"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
-  depends_on "openssl"
-
-  resource "asn1crypto" do
-    url "https://files.pythonhosted.org/packages/67/14/5d66588868c4304f804ebaff9397255f6ec5559e46724c2496e0f26e68d6/asn1crypto-0.22.0.tar.gz"
-    sha256 "cbbadd640d3165ab24b06ef25d1dca09a3441611ac15f6a6b452474fdf0aed1a"
-  end
+  depends_on "rust" => :build
+  depends_on "openssl@1.1"
+  depends_on "python@3.10"
+  depends_on "six"
 
   resource "bcrypt" do
-    url "https://files.pythonhosted.org/packages/58/e9/6d7f1d883d8c5876470b5d187d72c04f2a9954d61e71e7eb5d2ea2a50442/bcrypt-3.1.3.tar.gz"
-    sha256 "6645c8d0ad845308de3eb9be98b6fd22a46ec5412bfc664a423e411cdd8f5488"
+    url "https://files.pythonhosted.org/packages/e8/36/edc85ab295ceff724506252b774155eff8a238f13730c8b13badd33ef866/bcrypt-3.2.2.tar.gz"
+    sha256 "433c410c2177057705da2a9f2cd01dd157493b2a7ac14c8593a16b3dab6b6bfb"
   end
 
   resource "cffi" do
-    url "https://files.pythonhosted.org/packages/5b/b9/790f8eafcdab455bcd3bd908161f802c9ce5adbf702a83aa7712fcc345b7/cffi-1.10.0.tar.gz"
-    sha256 "b3b02911eb1f6ada203b0763ba924234629b51586f72a21faacc638269f4ced5"
+    url "https://files.pythonhosted.org/packages/2b/a8/050ab4f0c3d4c1b8aaa805f70e26e84d0e27004907c5b8ecc1d31815f92a/cffi-1.15.1.tar.gz"
+    sha256 "d400bfb9a37b1351253cb402671cea7e89bdecc294e8016a707f6d1d8ac934f9"
   end
 
   resource "cryptography" do
-    url "https://files.pythonhosted.org/packages/9c/1a/0fc8cffb04582f9ffca61b15b0681cf2e8588438e55f61403eb9880bd8e0/cryptography-2.0.3.tar.gz"
-    sha256 "d04bb2425086c3fe86f7bc48915290b13e798497839fbb18ab7f6dffcf98cc3a"
+    url "https://files.pythonhosted.org/packages/89/d9/5fcd312d5cce0b4d7ee8b551a0ea99e4ea9db0fdbf6dd455a19042e3370b/cryptography-37.0.4.tar.gz"
+    sha256 "63f9c17c0e2474ccbebc9302ce2f07b55b3b3fcb211ded18a42d5764f5c10a82"
   end
 
-  resource "enum34" do
-    url "https://files.pythonhosted.org/packages/bf/3e/31d502c25302814a7c2f1d3959d2a3b3f78e509002ba91aea64993936876/enum34-1.1.6.tar.gz"
-    sha256 "8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
-  end
-
-  resource "idna" do
-    url "https://files.pythonhosted.org/packages/f4/bd/0467d62790828c23c47fc1dfa1b1f052b24efdf5290f071c7a91d0d82fd3/idna-2.6.tar.gz"
-    sha256 "2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
-  end
-
-  resource "ipaddress" do
-    url "https://files.pythonhosted.org/packages/4e/13/774faf38b445d0b3a844b65747175b2e0500164b7c28d78e34987a5bfe06/ipaddress-1.0.18.tar.gz"
-    sha256 "5d8534c8e185f2d8a1fda1ef73f2c8f4b23264e8e30063feeb9511d492a413e1"
+  resource "invoke" do
+    url "https://files.pythonhosted.org/packages/df/59/41b614b9d415929b4d72e3ee658bd088640e9a800e55663529a8237deae3/invoke-1.7.1.tar.gz"
+    sha256 "7b6deaf585eee0a848205d0b8c0014b9bf6f287a8eb798818a642dff1df14b19"
   end
 
   resource "paramiko" do
-    url "https://files.pythonhosted.org/packages/d1/0b/c8bc96c79bbda0bcc9f2912389fa59789bb8e7e161f24b01082b4c3f948d/paramiko-2.2.1.tar.gz"
-    sha256 "ff94ae65379914ec3c960de731381f49092057b6dd1d24d18842ead5a2eb2277"
+    url "https://files.pythonhosted.org/packages/1d/08/3b8d8f1b4ec212c17429c2f3ff55b7f2237a1ad0c954972e39c8f0ac394c/paramiko-2.11.0.tar.gz"
+    sha256 "003e6bee7c034c21fbb051bf83dc0a9ee4106204dd3c53054c71452cc4ec3938"
   end
 
-  resource "pyasn1" do
-    url "https://files.pythonhosted.org/packages/33/4b/b3838af9a0bd1d17463031cf28cb1c196618900ccf80b62979f48c42768b/pyasn1-0.3.3.tar.gz"
-    sha256 "01c20ade412088b42dcd5f0fef6149f6b7377297c5c5f222bb5ef0331ee3517c"
+  resource "pathlib2" do
+    url "https://files.pythonhosted.org/packages/31/51/99caf463dc7c18eb18dad1fffe465a3cf3ee50ac3d1dccbd1781336fe9c7/pathlib2-2.3.7.post1.tar.gz"
+    sha256 "9fe0edad898b83c0c3e199c842b27ed216645d2e177757b2dd67384d4113c641"
   end
 
   resource "pycparser" do
-    url "https://files.pythonhosted.org/packages/8c/2d/aad7f16146f4197a11f8e91fb81df177adcc2073d36a17b1491fd09df6ed/pycparser-2.18.tar.gz"
-    sha256 "99a8ca03e29851d96616ad0404b4aad7d9ee16f25c9f9708a11faf2810f7b226"
+    url "https://files.pythonhosted.org/packages/5e/0b/95d387f5f4433cb0f53ff7ad859bd2c6051051cebbb564f139a999ab46de/pycparser-2.21.tar.gz"
+    sha256 "e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"
   end
 
-  resource "pynacl" do
-    url "https://files.pythonhosted.org/packages/8d/f3/02605b056e465bf162508c4d1635a2bccd9abd1ee3ed2a1bb4e9676eac33/PyNaCl-1.1.2.tar.gz"
-    sha256 "32f52b754abf07c319c04ce16905109cab44b0e7f7c79497431d3b2000f8af8c"
-  end
-
-  resource "six" do
-    url "https://files.pythonhosted.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"
-    sha256 "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a"
+  resource "PyNaCl" do
+    url "https://files.pythonhosted.org/packages/a7/22/27582568be639dfe22ddb3902225f91f2f17ceff88ce80e4db396c8986da/PyNaCl-1.5.0.tar.gz"
+    sha256 "8ac7448f09ab85811607bdd21ec2464495ac8b7c66d146bf545b0f08fb9220ba"
   end
 
   def install
@@ -84,16 +68,12 @@ class Fabric < Formula
 
   test do
     (testpath/"fabfile.py").write <<~EOS
-      from fabric.api import task, puts, env
+      from invoke import task
+      import fabric
       @task
-      def hello():
-        puts("fabric " + env.version)
+      def hello(c):
+        c.run("echo {}".format(fabric.__version__))
     EOS
-    expected = <<~EOS
-      fabric #{version}
-
-      Done.
-    EOS
-    assert_equal expected, shell_output("#{bin}/fab hello")
+    assert_equal version.to_s, shell_output("#{bin}/fab hello").chomp
   end
 end

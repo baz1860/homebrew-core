@@ -2,52 +2,42 @@ class Serf < Formula
   desc "Service orchestration and management tool"
   homepage "https://serfdom.io/"
   url "https://github.com/hashicorp/serf.git",
-      :tag => "v0.8.1",
-      :revision => "d6574a5bb1226678d7010325fb6c985db20ee458"
-  head "https://github.com/hashicorp/serf.git"
+      tag:      "v0.9.8",
+      revision: "a2bba5676d6e37953715ea10e583843793a0c507"
+  license "MPL-2.0"
+  head "https://github.com/hashicorp/serf.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    rebuild 1
-    sha256 "fbd6c27169ceec3d52843b137d39313c59bd3495c26c7b88ff1eb29847971d31" => :high_sierra
-    sha256 "62f1e4030ba05b8f3fe8d40b185941cf9f0dbc1b02f043e5629281f03dbdb147" => :sierra
-    sha256 "45e961e406465c73fd72bcf7bd573ab3de740ab297c90287a02c5d4f6c38ebb0" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "93692d6fe8acf165b7862cc0fada6f54e0c97906fc65b136b7ed6780ee644292"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "5c14105927e4364f89656ecbb08e84543286f8a2bab84e98826cd14c11bd9521"
+    sha256 cellar: :any_skip_relocation, monterey:       "0c5555b5229287270e331b5a3a1240a08980e2984546342ce0d9c6155daf9aac"
+    sha256 cellar: :any_skip_relocation, big_sur:        "9d402ab5cf86b77f3742c8efb6650c04e9f807328fb2e5e09e10e7b09e11ae4c"
+    sha256 cellar: :any_skip_relocation, catalina:       "08e9a3ac7f1bd4410a89603626566f9d05fc42e197146d43b7be2717642bd439"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e0bc60265805bce0fabaaa924ada86adf1aacc07ef101cbea52f8acf9294f29b"
   end
 
   depends_on "go" => :build
-  depends_on "govendor" => :build
-  depends_on "gox" => :build
+
+  uses_from_macos "zip" => :build
 
   def install
-    contents = Dir["*"]
-    gopath = buildpath/"gopath"
-    (gopath/"src/github.com/hashicorp/serf").install contents
+    ldflags = %W[
+      -X github.com/hashicorp/serf/version.Version=#{version}
+      -X github.com/hashicorp/serf/version.VersionPrerelease=
+    ].join(" ")
 
-    ENV["GOPATH"] = gopath
-    arch = MacOS.prefer_64_bit? ? "amd64" : "386"
-    ENV["XC_ARCH"] = arch
-    ENV["XC_OS"] = "darwin"
-
-    (gopath/"bin").mkpath
-
-    cd gopath/"src/github.com/hashicorp/serf" do
-      system "make", "bin"
-      bin.install "bin/serf"
-      prefix.install_metafiles
-    end
+    system "go", "build", *std_go_args, "-ldflags", ldflags, "./cmd/serf"
   end
 
   test do
-    begin
-      pid = fork do
-        exec "#{bin}/serf", "agent"
-      end
-      sleep 1
-      assert_match /:7946.*alive$/, shell_output("#{bin}/serf members")
-    ensure
-      system "#{bin}/serf", "leave"
-      Process.kill "SIGINT", pid
-      Process.wait pid
+    pid = fork do
+      exec "#{bin}/serf", "agent"
     end
+    sleep 1
+    assert_match(/:7946.*alive$/, shell_output("#{bin}/serf members"))
+  ensure
+    system "#{bin}/serf", "leave"
+    Process.kill "SIGINT", pid
+    Process.wait pid
   end
 end

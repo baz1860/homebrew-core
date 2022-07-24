@@ -1,66 +1,68 @@
 class Bullet < Formula
   desc "Physics SDK"
-  homepage "http://bulletphysics.org/wordpress/"
-  url "https://github.com/bulletphysics/bullet3/archive/2.87.tar.gz"
-  sha256 "438c151c48840fe3f902ec260d9496f8beb26dba4b17769a4a53212903935f95"
-  head "https://github.com/bulletphysics/bullet3.git"
+  homepage "https://bulletphysics.org/"
+  url "https://github.com/bulletphysics/bullet3/archive/3.24.tar.gz"
+  sha256 "6b1e987d6f8156fa8a6468652f4eaad17b3e11252c9870359e5bca693e35780b"
+  license "Zlib"
+  head "https://github.com/bulletphysics/bullet3.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "26f10d89d53f5c384d473bf21d06e8db1104ca8d300285a89b68b657a0ff4753" => :high_sierra
-    sha256 "3a3fd3a1ead5ef2aefc65f752533bb96596fdd552d72fab5de86bba492f63104" => :sierra
-    sha256 "460cea95c022dc7116e09277715f9da51d3e7afa7901c4561af68b4ba5372795" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "e62ed2decd835f7a0170558ff9823e1cd409af8718f171e909ba1d026b5b1857"
+    sha256 cellar: :any,                 arm64_big_sur:  "791078c5f49a76ab5ecfb1c0dec290ea4ba048c578d7fe49deee1ae2c108d9ee"
+    sha256 cellar: :any,                 monterey:       "4f025cbf5fb191f35fdfa59c663146265c4ad5789238e480b71f3422013aed72"
+    sha256 cellar: :any,                 big_sur:        "e53efaacaf22922dbd1280786f5d75b670a765ea105f9c6cc706aa0f0fdd3861"
+    sha256 cellar: :any,                 catalina:       "0d0863190a55bef157fb7955a4f2c9618ebae828f3661bf6c4d9ac7c5676d14a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ec9a230902ea3638a673b810a67a00f0aa5be9b577a4a8947d8bed8519fb33b5"
   end
 
-  option "with-framework", "Build frameworks"
-  option "with-demo", "Build demo applications"
-  option "with-double-precision", "Use double precision"
-
-  deprecated_option "framework" => "with-framework"
-  deprecated_option "build-demo" => "with-demo"
-  deprecated_option "double-precision" => "with-double-precision"
-
   depends_on "cmake" => :build
+  depends_on "pkg-config" => :build
+  depends_on "python@3.10" => :build
 
   def install
-    args = std_cmake_args + %w[
-      -DINSTALL_EXTRA_LIBS=ON -DBUILD_UNIT_TESTS=OFF -DBUILD_PYBULLET=OFF
-    ]
-    args << "-DUSE_DOUBLE_PRECISION=ON" if build.with? "double-precision"
+    # C++11 for nullptr usage in examples. Can remove when fixed upstream.
+    # Issue ref: https://github.com/bulletphysics/bullet3/pull/4243
+    ENV.cxx11 if OS.linux?
 
-    args_shared = args.dup + %w[
-      -DBUILD_BULLET2_DEMOS=OFF -DBUILD_SHARED_LIBS=ON
-    ]
-
-    args_framework = %W[
-      -DFRAMEWORK=ON
-      -DCMAKE_INSTALL_PREFIX=#{frameworks}
-      -DCMAKE_INSTALL_NAME_DIR=#{frameworks}
+    common_args = %w[
+      -DBT_USE_EGL=ON
+      -DBUILD_UNIT_TESTS=OFF
+      -DINSTALL_EXTRA_LIBS=ON
     ]
 
-    args_shared += args_framework if build.with? "framework"
+    double_args = std_cmake_args + %W[
+      -DCMAKE_INSTALL_RPATH=#{opt_lib}/bullet/double
+      -DUSE_DOUBLE_PRECISION=ON
+      -DBUILD_SHARED_LIBS=ON
+    ]
 
-    args_static = args.dup << "-DBUILD_SHARED_LIBS=OFF"
-    if build.without? "demo"
-      args_static << "-DBUILD_BULLET2_DEMOS=OFF"
-    else
-      args_static << "-DBUILD_BULLET2_DEMOS=ON"
+    mkdir "builddbl" do
+      system "cmake", "..", *double_args, *common_args
+      system "make", "install"
     end
+    dbllibs = lib.children
+    (lib/"bullet/double").install dbllibs
+
+    args = std_cmake_args + %W[
+      -DBUILD_PYBULLET_NUMPY=ON
+      -DCMAKE_INSTALL_RPATH=#{opt_lib}
+    ]
 
     mkdir "build" do
-      system "cmake", "..", *args_shared
+      system "cmake", "..", *args, *common_args, "-DBUILD_SHARED_LIBS=OFF", "-DBUILD_PYBULLET=OFF"
       system "make", "install"
 
       system "make", "clean"
 
-      system "cmake", "..", *args_static
+      system "cmake", "..", *args, *common_args, "-DBUILD_SHARED_LIBS=ON", "-DBUILD_PYBULLET=ON"
       system "make", "install"
+    end
 
-      if build.with? "demo"
-        rm_rf Dir["examples/**/Makefile", "examples/**/*.cmake", "examples/**/CMakeFiles"]
-        pkgshare.install "examples"
-        (pkgshare/"examples").install "../data"
-      end
+    # Install single-precision library symlinks into `lib/"bullet/single"` for consistency
+    lib.each_child do |f|
+      next if f == lib/"bullet"
+
+      (lib/"bullet/single").install_symlink f
     end
   end
 
@@ -75,15 +77,20 @@ class Bullet < Formula
       }
     EOS
 
-    if build.with? "framework"
-      system ENV.cc, "test.cpp", "-F#{frameworks}", "-framework", "LinearMath",
-                     "-I#{frameworks}/LinearMath.framework/Headers", "-lc++",
-                     "-o", "f_test"
-      system "./f_test"
+    cxx_lib = if OS.mac?
+      "-lc++"
+    else
+      "-lstdc++"
     end
 
+    # Test single-precision library
     system ENV.cc, "test.cpp", "-I#{include}/bullet", "-L#{lib}",
-                   "-lLinearMath", "-lc++", "-o", "test"
+                   "-lLinearMath", cxx_lib, "-o", "test"
+    system "./test"
+
+    # Test double-precision library
+    system ENV.cc, "test.cpp", "-I#{include}/bullet", "-L#{lib}/bullet/double",
+                   "-lLinearMath", cxx_lib, "-o", "test"
     system "./test"
   end
 end

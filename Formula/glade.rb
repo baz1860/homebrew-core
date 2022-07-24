@@ -1,46 +1,71 @@
 class Glade < Formula
   desc "RAD tool for the GTK+ and GNOME environment"
   homepage "https://glade.gnome.org/"
-  url "https://download.gnome.org/sources/glade/3.20/glade-3.20.3.tar.xz"
-  sha256 "1739d5478fc54ec8174ff3faa8026053c21c6a10fe38a49c66138f9deada08d4"
+  url "https://download.gnome.org/sources/glade/3.38/glade-3.38.2.tar.xz"
+  sha256 "98fc87647d88505c97dd2f30f2db2d3e9527515b3af11694787d62a8d28fbab7"
+  license "LGPL-2.1-or-later"
 
   bottle do
-    sha256 "939c5b58652e519b0915adfd0a20e978ca4365b393ba92664d04294372af995a" => :high_sierra
-    sha256 "d395b6430d4975dc3267e15844ab5b92b11bc7bffcbd4faf3b67ff404a069af1" => :sierra
-    sha256 "917f2c82103a0a9a1b675c350c7069dcf5b3d727e91f3c0da17052c0659ea9c4" => :el_capitan
+    sha256 arm64_monterey: "2fa733feec86b8379ad38126164c4f4e14500cd72c8564afe505110f503c66f3"
+    sha256 arm64_big_sur:  "2a55e22c571d0d158c1b66bf18c35c44aeaed0694d139f13c48f5a6642b4785b"
+    sha256 monterey:       "a232d76fa175b219228c15125b8e1b7ba47a5e6788787dd55fdd4773186bae1e"
+    sha256 big_sur:        "0fb77b21e6176c6690410a76d843f4582c1ef833e54ce5efa620bfce514e7af7"
+    sha256 catalina:       "e5c239c3d05350ff8a8710ce6beecf7fd22461336e77d55febb338b6a1456a61"
+    sha256 mojave:         "0b641d56f385a798fafe8fe424191de83207dea5b0edcf9d06c8b8b03ad0c68f"
+    sha256 x86_64_linux:   "1ab1f368edebbb88fd763659089ffa8f987f2416583f3f59fb732300088b4f8e"
   end
 
-  depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
-  depends_on "itstool" => :build
   depends_on "docbook-xsl" => :build
-  depends_on "gettext"
-  depends_on "libxml2"
+  depends_on "gobject-introspection" => :build
+  depends_on "itstool" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
+  depends_on "pkg-config" => :build
   depends_on "adwaita-icon-theme"
-  depends_on "hicolor-icon-theme"
+  depends_on "gettext"
   depends_on "gtk+3"
-  depends_on "gtk-mac-integration"
+  depends_on "hicolor-icon-theme"
+  depends_on "libxml2"
+
+  uses_from_macos "libxslt" => :build
+
+  on_macos do
+    depends_on "gtk-mac-integration"
+  end
+
+  # Apply 2 upstream commits to fix build with newer meson.  Remove with next release.
+  patch do
+    url "https://gitlab.gnome.org/GNOME/glade/-/commit/6da47128e8da04edccccdfcbc9101940fc15fe3a.diff"
+    sha256 "81eaacf4c9dd1c1a907f99582a81db248447935b4048e5084098041c78f9b3fb"
+  end
+
+  patch do
+    url "https://gitlab.gnome.org/GNOME/glade/-/commit/efdd5338b034a11c5d617684d92d11edc600965e.diff"
+    sha256 "37badb7b5af87d51c3eea7677547b93deb5bda51c2fc710c64de1b7cf843bf4b"
+  end
 
   def install
     # Find our docbook catalog
     ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
 
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
-                          "--enable-gladeui",
-                          "--enable-introspection"
-    # objective-c is needed for glade-registration.c. unfortunately build fails if -x objective-c is added to global CFLAGS.
-    # Bugreport Upstream: https://bugzilla.gnome.org/show_bug.cgi?id=768032
-    inreplace "src/Makefile", "-c -o glade-glade-registration.o", "-x objective-c -c -o glade-glade-registration.o"
+    # Disable icon-cache update
+    ENV["DESTDIR"] = "/"
 
-    system "make" # separate steps required
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, "-Dintrospection=true", "-Dgladeui=true", ".."
+      system "ninja"
+      system "ninja", "install"
+    end
+  end
+
+  def post_install
+    system "#{Formula["gtk+3"].opt_bin}/gtk3-update-icon-cache", "-f", "-t", "#{HOMEBREW_PREFIX}/share/icons/hicolor"
   end
 
   test do
     # executable test (GUI)
-    system "#{bin}/glade", "--version"
+    # fails in Linux CI with (glade:20337): Gtk-WARNING **: 21:45:31.876: cannot open display:
+    system "#{bin}/glade", "--version" if OS.mac?
     # API test
     (testpath/"test.c").write <<~EOS
       #include <gladeui/glade.h>
@@ -103,11 +128,11 @@ class Glade < Formula
       -lglib-2.0
       -lgobject-2.0
       -lgtk-3
-      -lintl
       -lpango-1.0
       -lpangocairo-1.0
       -lxml2
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

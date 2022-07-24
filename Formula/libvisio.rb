@@ -1,22 +1,33 @@
 class Libvisio < Formula
   desc "Interpret and import Visio diagrams"
   homepage "https://wiki.documentfoundation.org/DLP/Libraries/libvisio"
-  url "https://dev-www.libreoffice.org/src/libvisio/libvisio-0.1.6.tar.xz"
-  sha256 "fe1002d3671d53c09bc65e47ec948ec7b67e6fb112ed1cd10966e211a8bb50f9"
-  revision 2
+  url "https://dev-www.libreoffice.org/src/libvisio/libvisio-0.1.7.tar.xz"
+  sha256 "8faf8df870cb27b09a787a1959d6c646faa44d0d8ab151883df408b7166bea4c"
+  license "MPL-2.0"
+  revision 5
 
-  bottle do
-    cellar :any
-    sha256 "2c8ecf672a3009498481d40e06177078f2d6d9fe5b74c0492a9667db949c3ece" => :high_sierra
-    sha256 "cb6705f65c6e60d0ec5a3efa8094eb0a4443640fd6035ef82689e4742b5b383b" => :sierra
-    sha256 "dd1b44f55ecde024b01bde516f46fbb82e301c957c6f11c71d168ec6a42267ae" => :el_capitan
+  livecheck do
+    url "https://dev-www.libreoffice.org/src/"
+    regex(/href=["']?libvisio[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "pkg-config" => :build
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "7e680fc261f5931963c064165e477f2f9db5be3671e35b702ad6bc2d4a476c95"
+    sha256 cellar: :any,                 arm64_big_sur:  "ecbbbde8509b32ae1d382dc37676993561c7dfc1eac82502cd6a1aafac054059"
+    sha256 cellar: :any,                 monterey:       "928901f88d373e8e0f45f59da46cdec7e44b0d22414203a1333986431a20dc4b"
+    sha256 cellar: :any,                 big_sur:        "3c66b712f07830c60a548d529a67eebc443a8dc3ca655b59ce78ffd7020bc5cc"
+    sha256 cellar: :any,                 catalina:       "4fd2ae7f2b825a64f2a246e1bff48440dff2b133745f0f4833cc72cdb30dce1a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "ce944eadfcdd306e2d490035577631ba05cbb2dc8a63976e967033b4ceae06cb"
+  end
+
   depends_on "cppunit" => :build
+  depends_on "pkg-config" => :build
   depends_on "boost"
-  depends_on "librevenge"
   depends_on "icu4c"
+  depends_on "librevenge"
+
+  uses_from_macos "gperf" => :build
+  uses_from_macos "libxml2"
 
   def install
     # Needed for Boost 1.59.0 compatibility.

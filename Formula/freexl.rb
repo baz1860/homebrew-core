@@ -1,32 +1,50 @@
 class Freexl < Formula
   desc "Library to extract data from Excel .xls files"
   homepage "https://www.gaia-gis.it/fossil/freexl/index"
-  url "https://www.gaia-gis.it/gaia-sins/freexl-sources/freexl-1.0.5.tar.gz"
-  sha256 "3dc9b150d218b0e280a3d6a41d93c1e45f4d7155829d75f1e5bf3e0b0de6750d"
+  url "https://www.gaia-gis.it/gaia-sins/freexl-sources/freexl-1.0.6.tar.gz"
+  sha256 "3de8b57a3d130cb2881ea52d3aa9ce1feedb1b57b7daa4eb37f751404f90fc22"
 
-  bottle do
-    cellar :any
-    sha256 "b8f89ff36ac865e56d050bad7a4eb81c47d38e5b108d6f2f47260fff047df4ed" => :high_sierra
-    sha256 "55a1495b30ea8018b334ef30a9511653c212f29af11c34335dc82ddd46a64ab6" => :sierra
-    sha256 "a93a9e687fd78a6eb8129896a068f0e982664bf75a06eae236a79fcfbfe0f6ce" => :el_capitan
+  livecheck do
+    url :homepage
+    regex(%r{current version is <b>v?(\d+(?:\.\d+)+)</b>}i)
   end
 
-  option "without-test", "Skip compile-time make checks"
+  bottle do
+    rebuild 1
+    sha256 cellar: :any,                 arm64_monterey: "f2f26c1449a3f79a89ec85deb5cd22507ee4715827afdf31469fd605c8a31b7f"
+    sha256 cellar: :any,                 arm64_big_sur:  "57d5fc25946a587bfebb8724bff578688f605edcabba8cd80b9ebbf5840616d0"
+    sha256 cellar: :any,                 monterey:       "0dc034f726d2ad3850742e7f9a1676d67c14c48fd9735470fd3691a3c080182c"
+    sha256 cellar: :any,                 big_sur:        "a20523355d18f1ed2259ae198b45c5aa93080fbd4926e0eb6969d2919b7a97ac"
+    sha256 cellar: :any,                 catalina:       "1bab8437de88ce5564702dcc3e30a9c2f9491aa9358e767aa3d8ec62ba76922d"
+    sha256 cellar: :any,                 mojave:         "003e9d848f354e7f12232f85240f4892f21e6136cd657022fbbc51b3bd286225"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "2059ac999e20b72d31a6e586174327431066c01e10c25fca93c80ef5d10f5b4b"
+  end
 
-  deprecated_option "without-check" => "without-test"
-
-  depends_on "doxygen" => [:optional, :build]
+  depends_on "doxygen" => :build
 
   def install
     system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}",
                           "--disable-silent-rules"
 
-    system "make", "check" if build.with? "test"
+    system "make", "check"
     system "make", "install"
 
-    if build.with? "doxygen"
-      system "doxygen"
-      doc.install "html"
-    end
+    system "doxygen"
+    doc.install "html"
+  end
+
+  test do
+    (testpath/"test.c").write <<~EOS
+      #include <stdio.h>
+      #include "freexl.h"
+
+      int main()
+      {
+          printf("%s", freexl_version());
+          return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-L#{lib}", "-lfreexl", "-o", "test"
+    assert_equal version.to_s, shell_output("./test")
   end
 end

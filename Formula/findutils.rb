@@ -1,52 +1,37 @@
 class Findutils < Formula
   desc "Collection of GNU find, xargs, and locate"
   homepage "https://www.gnu.org/software/findutils/"
-  url "https://ftp.gnu.org/gnu/findutils/findutils-4.6.0.tar.gz"
-  mirror "https://ftpmirror.gnu.org/findutils/findutils-4.6.0.tar.gz"
-  sha256 "ded4c9f73731cd48fec3b6bdaccce896473b6d8e337e9612e16cf1431bb1169d"
+  url "https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz"
+  mirror "https://ftpmirror.gnu.org/findutils/findutils-4.9.0.tar.xz"
+  sha256 "a2bfb8c09d436770edc59f50fa483e785b161a3b7b9d547573cb08065fd462fe"
+  license "GPL-3.0-or-later"
 
   bottle do
-    rebuild 2
-    sha256 "8411fd3a9a42a2be0c52b4ae8cad2dd60add473a4cf882620200ab43442fb5c2" => :high_sierra
-    sha256 "c1ecad1c780cb569d268ca5648570dcc753cca720ead2783943aea0363af728e" => :sierra
-    sha256 "bc20b7e2a97c3277ea13fd91b44fbc0015628e8684a2bba203c38a4c7357f6c7" => :el_capitan
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "e21f10bcc0baed90d33aad5ce7428f9ad24a9cd4e35f4b0003e14160045f8fb5"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "72ddcf7cfdccb52f6c4c4f20c2c0cdbb4111d37641d73a1622a4af170ed5b53b"
+    sha256 cellar: :any_skip_relocation, monterey:       "595025aa645a0bc036179b30613986bd436081cc4416db21de0f8fba4d95934b"
+    sha256 cellar: :any_skip_relocation, big_sur:        "e2171d40184a93549ca6877410abf8717c7d8b13ae1a0bf3568dd49a24b7747e"
+    sha256 cellar: :any_skip_relocation, catalina:       "a957b1c3b354edee634d1d96f66315fa8ea327efc9f282c8c026b5298d8802e3"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "3be871b90f426c6a6b9f292e65ba359c402017e783523746e965d849436137db"
   end
 
-  deprecated_option "default-names" => "with-default-names"
-
-  option "with-default-names", "Do not prepend 'g' to the binary"
-
   def install
-    # Work around unremovable, nested dirs bug that affects lots of
-    # GNU projects. See:
-    # https://github.com/Homebrew/homebrew/issues/45273
-    # https://github.com/Homebrew/homebrew/issues/44993
-    # This is thought to be an el_capitan bug:
-    # https://lists.gnu.org/archive/html/bug-tar/2015-10/msg00017.html
-    ENV["gl_cv_func_getcwd_abort_bug"] = "no" if MacOS.version == :el_capitan
-
     args = %W[
       --prefix=#{prefix}
       --localstatedir=#{var}/locate
       --disable-dependency-tracking
       --disable-debug
+      --disable-nls
+      --with-packager=Homebrew
+      --with-packager-bug-reports=#{tap.issues_url}
     ]
-    args << "--program-prefix=g" if build.without? "default-names"
 
+    args << "--program-prefix=g" if OS.mac?
     system "./configure", *args
     system "make", "install"
 
-    # https://savannah.gnu.org/bugs/index.php?46846
-    # https://github.com/Homebrew/homebrew/issues/47791
-    updatedb = (build.with?("default-names") ? "updatedb" : "gupdatedb")
-    (libexec/"bin").install bin/updatedb
-    (bin/updatedb).write <<~EOS
-      #!/bin/sh
-      export LC_ALL='C'
-      exec "#{libexec}/bin/#{updatedb}" "$@"
-    EOS
-
-    if build.without? "default-names"
+    if OS.mac?
       [[prefix, bin], [share, man/"*"]].each do |base, path|
         Dir[path/"g*"].each do |p|
           f = Pathname.new(p)
@@ -55,34 +40,32 @@ class Findutils < Formula
         end
       end
     end
-  end
 
-  def caveats
-    if build.without? "default-names"
-      <<~EOS
-        All commands have been installed with the prefix 'g'.
-        If you do not want the prefix, install using the "with-default-names" option.
-
-        If you need to use these commands with their normal names, you
-        can add a "gnubin" directory to your PATH from your bashrc like:
-
-            PATH="#{opt_libexec}/gnubin:$PATH"
-
-        Additionally, you can access their man pages with normal names if you add
-        the "gnuman" directory to your MANPATH from your bashrc as well:
-
-            MANPATH="#{opt_libexec}/gnuman:$MANPATH"
-      EOS
-    end
+    libexec.install_symlink "gnuman" => "man"
   end
 
   def post_install
     (var/"locate").mkpath
   end
 
+  def caveats
+    on_macos do
+      <<~EOS
+        All commands have been installed with the prefix "g".
+        If you need to use these commands with their normal names, you
+        can add a "gnubin" directory to your PATH from your bashrc like:
+          PATH="#{opt_libexec}/gnubin:$PATH"
+      EOS
+    end
+  end
+
   test do
-    find = (build.with?("default-names") ? "find" : "gfind")
     touch "HOMEBREW"
-    assert_match "HOMEBREW", shell_output("#{bin}/#{find} .")
+    if OS.mac?
+      assert_match "HOMEBREW", shell_output("#{bin}/gfind .")
+      assert_match "HOMEBREW", shell_output("#{opt_libexec}/gnubin/find .")
+    else
+      assert_match "HOMEBREW", shell_output("#{bin}/find .")
+    end
   end
 end

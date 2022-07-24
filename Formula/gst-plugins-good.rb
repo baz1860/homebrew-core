@@ -1,89 +1,54 @@
 class GstPluginsGood < Formula
   desc "GStreamer plugins (well-supported, under the LGPL)"
   homepage "https://gstreamer.freedesktop.org/"
+  url "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-1.20.3.tar.xz"
+  sha256 "f8f3c206bf5cdabc00953920b47b3575af0ef15e9f871c0b6966f6d0aa5868b7"
+  license "LGPL-2.0-or-later"
+  head "https://gitlab.freedesktop.org/gstreamer/gst-plugins-good.git", branch: "master"
 
-  stable do
-    url "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-1.12.4.tar.xz"
-    sha256 "649f49bec60892d47ee6731b92266974c723554da1c6649f21296097715eb957"
-
-    depends_on "check" => :optional
+  livecheck do
+    url "https://gstreamer.freedesktop.org/src/gst-plugins-good/"
+    regex(/href=.*?gst-plugins-good[._-]v?(\d+\.\d*[02468](?:\.\d+)*)\.t/i)
   end
 
   bottle do
-    sha256 "57a5ba70df834a004a14fda8f60c3d2ac60941c2c4be0568971f389f7540e3be" => :high_sierra
-    sha256 "ffbb8cda0ae0b6b40f2e8fc72c5e35f2edcd57312482cb03520d75a17934c78b" => :sierra
-    sha256 "1ca27cf1d8d5e9ade20a8f1eaecd84cb6b1af06dbb5906bea7e7127ce8618229" => :el_capitan
+    sha256 arm64_monterey: "8dffe0671dac26808499922c3b0755836c8e28d14ff3d1c52b9c7a2c87c67ef9"
+    sha256 arm64_big_sur:  "5fd561f27b7eb60ccad37e7f873f3eddd00189bdfcb6a1c7d89bd950cef8a340"
+    sha256 monterey:       "3b9f245f27bdf0cbfe5e316f35ad432fda7149c948249384b88d4aa5a073ac71"
+    sha256 big_sur:        "629e751fc6324db7106be93113f14bf4aed0a4ff50f583ff7680e30aaf3e398e"
+    sha256 catalina:       "ae77c2e72bbe730a5b3dba3cf5c17e0668b9b6423add4e91ac379d7f44544c7d"
+    sha256 x86_64_linux:   "efe269615e2779bfc42de7564cb2cf166095527f21d0d1db469cee490a19e1fd"
   end
 
-  head do
-    url "https://anongit.freedesktop.org/git/gstreamer/gst-plugins-good.git"
-
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-    depends_on "check"
-  end
-
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "cairo"
+  depends_on "flac"
   depends_on "gettext"
   depends_on "gst-plugins-base"
+  depends_on "gtk+3"
+  depends_on "jpeg"
+  depends_on "lame"
+  depends_on "libpng"
+  depends_on "libshout"
   depends_on "libsoup"
-
-  depends_on :x11 => :optional
-
-  # Dependencies based on the intersection of
-  # https://cgit.freedesktop.org/gstreamer/gst-plugins-good/tree/REQUIREMENTS
-  # and Homebrew formulae.
-  depends_on "jpeg" => :recommended
-  depends_on "orc" => :recommended
-  depends_on "gdk-pixbuf" => :optional
-  depends_on "aalib" => :optional
-  depends_on "cairo" => :optional
-  depends_on "flac" => [:optional, "with-libogg"]
-  depends_on "libcaca" => :optional
-  depends_on "libdv" => :optional
-  depends_on "libpng" => :optional
-  depends_on "libshout" => :optional
-  depends_on "speex" => :optional
-  depends_on "taglib" => :optional
-
-  depends_on "libvpx" => :optional
-  depends_on "pulseaudio" => :optional
-  depends_on "jack" => :optional
-
-  depends_on "libogg" if build.with? "flac"
+  depends_on "libvpx"
+  depends_on "orc"
+  depends_on "speex"
+  depends_on "taglib"
 
   def install
-    args = %W[
-      --prefix=#{prefix}
-      --disable-gtk-doc
-      --disable-goom
-      --with-default-videosink=ximagesink
-      --disable-debug
-      --disable-dependency-tracking
-      --disable-silent-rules
+    args = std_meson_args + %w[
+      -Dgoom=disabled
+      -Dximagesrc=disabled
     ]
 
-    if build.with? "x11"
-      args << "--with-x"
-    else
-      args << "--disable-x"
+    mkdir "build" do
+      system "meson", *args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
     end
-
-    # This plugin causes hangs on Snow Leopard (and possibly other versions?)
-    # Upstream says it hasn't "been actively tested in a long time";
-    # successor is glimagesink (in gst-plugins-bad).
-    # https://bugzilla.gnome.org/show_bug.cgi?id=756918
-    args << "--disable-osx_video" if MacOS.version == :snow_leopard
-
-    if build.head?
-      ENV["NOCONFIGURE"] = "yes"
-      system "./autogen.sh"
-    end
-
-    system "./configure", *args
-    system "make"
-    system "make", "install"
   end
 
   test do

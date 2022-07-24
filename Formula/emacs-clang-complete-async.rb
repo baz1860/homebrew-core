@@ -1,8 +1,9 @@
 class EmacsClangCompleteAsync < Formula
   desc "Emacs plugin using libclang to complete C/C++ code"
   homepage "https://github.com/Golevka/emacs-clang-complete-async"
-  revision 3
-  head "https://github.com/Golevka/emacs-clang-complete-async.git"
+  license "GPL-3.0"
+  revision 6
+  head "https://github.com/Golevka/emacs-clang-complete-async.git", branch: "master"
 
   stable do
     url "https://github.com/Golevka/emacs-clang-complete-async/archive/v0.5.tar.gz"
@@ -13,26 +14,26 @@ class EmacsClangCompleteAsync < Formula
   end
 
   bottle do
-    sha256 "08dca3de2da57f0e30d45e2b79d3e00c27b8b156d32c156a10538ab066cab9f8" => :high_sierra
-    sha256 "5aff677b9a5b7b4204ce2d215c88addb88f33c25cfd58d17c2f90e481f24fe60" => :sierra
-    sha256 "cc2e004b547fc63cca8b497c8be80d21862c5ee42d5d4cca62e4f512703982c3" => :el_capitan
-    sha256 "4afcd62c7f11cfd189893a4caddda27ed5ceece303e5e7b4526afd89cafcdeb7" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "527869861adf5cd506ddfdddcd3c6ea99c501f1e6834f6c91f8172064bc03da7"
+    sha256 cellar: :any,                 arm64_big_sur:  "9d8ebc3478af3719304ea88c3b782cdc7344df0d76970d705d3c1468d15d5ea3"
+    sha256 cellar: :any,                 monterey:       "b10b046684973fa4ef52c3e501a8b932f98503e32cd60a90aa813cb8a54b1060"
+    sha256 cellar: :any,                 big_sur:        "faedcebad555182998cba925ad4bc965d329134320b307f34f17a031e96a3997"
+    sha256 cellar: :any,                 catalina:       "69789c4791f2ea78e6e35b20029994ed58b52ecb93d94d45f71b64db67970494"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "af452df504f3a00eed290079c2e616914a90abc21850de94d769fefb5fa2f572"
   end
-
-  option "with-elisp", "Include Emacs lisp package"
 
   depends_on "llvm"
 
   # https://github.com/Golevka/emacs-clang-complete-async/pull/59
   patch do
-    url "https://github.com/yocchi/emacs-clang-complete-async/commit/5ce197b15d7b8c9abfc862596bf8d902116c9efe.diff?full_index=1"
-    sha256 "ba3bbb1ebbfdbf430d18cc79b9918ca500eb4d6949e0479a24016e46fe5a920c"
+    url "https://github.com/yocchi/emacs-clang-complete-async/commit/5ce197b15d7b8c9abfc862596bf8d902116c9efe.patch?full_index=1"
+    sha256 "f5057f683a9732c36fea206111507e0e373e76ee58483e6e09a0302c335090d0"
   end
 
   def install
     system "make"
     bin.install "clang-complete"
-    share.install "auto-complete-clang-async.el" if build.with? "elisp"
+    share.install "auto-complete-clang-async.el"
   end
 end
 

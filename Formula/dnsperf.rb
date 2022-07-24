@@ -1,23 +1,33 @@
 class Dnsperf < Formula
   desc "Measure DNS performance by simulating network conditions"
-  homepage "https://nominum.com/measurement-tools/"
-  url "ftp://ftp.nominum.com/pub/nominum/dnsperf/2.1.0.0/dnsperf-src-2.1.0.0-1.tar.gz"
-  version "2.1.0.0"
-  sha256 "64b5f0a680e1ad60bca5fd709f1a9a8404ac2fd85af6138bd22ca9a28b616e0e"
+  homepage "https://www.dns-oarc.net/tools/dnsperf"
+  url "https://www.dns-oarc.net/files/dnsperf/dnsperf-2.9.0.tar.gz"
+  sha256 "952d8b7c9d8a6decbf6f77164728fac6d60bfa1857acc0df8c5404500d0f11dd"
+  license "Apache-2.0"
 
-  bottle do
-    cellar :any
-    sha256 "654185e3cd66f2ba80a14e2018d55bdcbd0a8c2f2b2cca1959f9358f2b67c2f6" => :high_sierra
-    sha256 "022ff860326489a63461893dc00c22854fea6fd63949b48ae44abf37e539c20b" => :sierra
-    sha256 "5e605b056442f7c84a1f7b826ae3fc0e113d12b8ab2174371e004c79acc4336a" => :el_capitan
-    sha256 "8d18fb864b8cb9fd3624e10d178fc11d9bd569863ca9e94ff9fd7afc0ee91afc" => :yosemite
+  livecheck do
+    url :homepage
+    regex(/href=.*?dnsperf[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "bind"
-  depends_on "libxml2"
+  bottle do
+    sha256 cellar: :any,                 arm64_monterey: "f5fe8421406e1c6d506c5d9e83d5b9256935ce34e443286f1c2162dd3f4fc8fe"
+    sha256 cellar: :any,                 arm64_big_sur:  "a3987ac2cbf7f703623d31962866146794453c00afde10892eeba979c8cdeb3d"
+    sha256 cellar: :any,                 monterey:       "afe4e17621d4201df2a5bc5da377f330d89e1b80d7ecbbfb37c9020175aa46f1"
+    sha256 cellar: :any,                 big_sur:        "fd360d4eb9f870d1e69b4dbfcce4f8c6ca6449937ce7006d392eed24a7c23926"
+    sha256 cellar: :any,                 catalina:       "aa03ee74c9117ead14fc42dfed419e404cc48e232ddf8b898ebb3925ec8ab89d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "26ff62ca6ede5ad01175e0035145c6f4680fa0e9a742f6bfd2d16f415aed6b4a"
+  end
+
+  depends_on "pkg-config" => :build
+  depends_on "concurrencykit"
+  depends_on "ldns"
+  depends_on "libnghttp2"
+  depends_on "openssl@1.1"
 
   def install
     system "./configure", "--prefix=#{prefix}"
+    system "make"
     system "make", "install"
   end
 

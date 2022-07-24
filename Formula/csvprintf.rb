@@ -1,24 +1,27 @@
 class Csvprintf < Formula
   desc "Command-line utility for parsing CSV files"
   homepage "https://github.com/archiecobbs/csvprintf"
-  url "https://github.com/archiecobbs/csvprintf/archive/1.0.3.tar.gz"
-  sha256 "484db6a5f0cdb1a09b375274b30fbbde3c886d5da974d3f247c83b0bf853ef83"
+  url "https://github.com/archiecobbs/csvprintf/archive/1.3.1.tar.gz"
+  sha256 "8cd5c7953a94f30eefe5edcee4a76e10e57b60ae9318a1b704c6823b40d09d2f"
+  license "Apache-2.0"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "71ef91eb05b9478dc8b86974ca260bd3f17e842f61a0ef5121b7d831fdcbad94" => :high_sierra
-    sha256 "93a0c9b38609eda338ac1bd7126a7b3974b9c8485b2cde88ae1070ac5a46872f" => :sierra
-    sha256 "6ad1c8501cb1f51bd6910edb2a9da1c55507186020d7340e83a178a4a036df4d" => :el_capitan
-    sha256 "58691d8d4819618731ebdd034ae390ae8668b7e26017ef74d5edfe2c6daa4eb1" => :yosemite
-    sha256 "269a3ceaa3acb2a0f8c3df760af3647cb64215d5dee4c8907af7b20200aab418" => :mavericks
-    sha256 "762b98a66e435d7a9d4661565c73df656d8f7adc8ae7defe84e0d1ed0a31d280" => :mountain_lion
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "5dbdb4f0989a442794da7daa31b35296214b56e0af22a4a302910a8624fa1218"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "e2fc3d5e60a5b7e3888b894e8445883835b36842c89112591073ab0f9db4053c"
+    sha256 cellar: :any_skip_relocation, monterey:       "e071134e0636c58ec866d175764f2a5cfbe20b3c223e4033e87740b63daf8e48"
+    sha256 cellar: :any_skip_relocation, big_sur:        "1167ba7348db5b58a2036bc1a297ffdd65a221a608198606bbcdc9992d881f42"
+    sha256 cellar: :any_skip_relocation, catalina:       "b7d73be8c170ecfaeffc26ce8db449d1bc4dd1a207e91b91f9b5ce8aa3c30eb7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9c616e82a3c89dd387965123616ff1d745b7447ae161001932ebf9e3fd766e96"
   end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
 
+  uses_from_macos "libxslt"
+
   def install
-    ENV.append "LDFLAGS", "-liconv"
+    ENV.append "LDFLAGS", "-liconv" if OS.mac?
+
     system "./autogen.sh"
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
                           "--prefix=#{prefix}"

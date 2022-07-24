@@ -1,30 +1,34 @@
 class Openslide < Formula
   desc "C library to read whole-slide images (a.k.a. virtual slides)"
-  homepage "http://openslide.org/"
+  homepage "https://openslide.org/"
   url "https://github.com/openslide/openslide/releases/download/v3.4.1/openslide-3.4.1.tar.xz"
   sha256 "9938034dba7f48fadc90a2cdf8cfe94c5613b04098d1348a5ff19da95b990564"
-  revision 3
+  license "LGPL-2.1-only"
+  revision 6
 
   bottle do
-    cellar :any
-    sha256 "aff5345874f332ef263d00ba81c091b616577947e61cb6c5f59c1f53109985e8" => :high_sierra
-    sha256 "83a0b4ad315ee19c19f5893ebd25de3d1b01e415e33321f8d207dd08467b8d64" => :sierra
-    sha256 "8def2e631f2b39c2e565c43d19e747470e5edbed3eb8299815ccb0ec44149631" => :el_capitan
-    sha256 "8579cea106e541c6fa69dc446e0e657dad3ddd149a5e655aefee713eb6dd0975" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "2998607f92e8f01e4345d91de86c543c1e497f8299081375df950424757440fe"
+    sha256 cellar: :any,                 arm64_big_sur:  "3b88ac6e608998bd2827df643d3d31e7ccfd378897c00bf49cd288bccc323135"
+    sha256 cellar: :any,                 monterey:       "5859fd88a2ff452ef1aa5301b92470f0635c186b9432582b1ba2851319ef4395"
+    sha256 cellar: :any,                 big_sur:        "deff242ac11d416afaf96f7605421bf1d6e8d98d5217410a72882865fe730355"
+    sha256 cellar: :any,                 catalina:       "14888109869095cf759e9d6b0fb8cd71d848914d9b04303bc3fdc3bd210d09d7"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "5c5af6047de15305377bf4248f12e76f6d0adf5cec532bbb0a183c3ee1fe56dd"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "libpng"
-  depends_on "jpeg"
-  depends_on "libxml2"
-  depends_on "libtiff"
-  depends_on "glib"
-  depends_on "openjpeg"
   depends_on "cairo"
   depends_on "gdk-pixbuf"
+  depends_on "glib"
+  depends_on "jpeg"
+  depends_on "libpng"
+  depends_on "libtiff"
+  depends_on "libxml2"
+  depends_on "openjpeg"
+
+  uses_from_macos "sqlite"
 
   resource "svs" do
-    url "http://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1-Small-Region.svs"
+    url "https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1-Small-Region.svs"
     sha256 "ed92d5a9f2e86df67640d6f92ce3e231419ce127131697fbbce42ad5e002c8a7"
   end
 

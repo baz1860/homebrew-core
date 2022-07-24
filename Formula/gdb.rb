@@ -1,26 +1,33 @@
 class Gdb < Formula
   desc "GNU debugger"
   homepage "https://www.gnu.org/software/gdb/"
-  url "https://ftp.gnu.org/gnu/gdb/gdb-8.1.tar.xz"
-  mirror "https://ftpmirror.gnu.org/gdb/gdb-8.1.tar.xz"
-  sha256 "af61a0263858e69c5dce51eab26662ff3d2ad9aa68da9583e8143b5426be4b34"
+  url "https://ftp.gnu.org/gnu/gdb/gdb-12.1.tar.xz"
+  mirror "https://ftpmirror.gnu.org/gdb/gdb-12.1.tar.xz"
+  sha256 "0e1793bf8f2b54d53f46dea84ccfd446f48f81b297b28c4f7fc017b818d69fed"
+  license "GPL-3.0-or-later"
+  head "https://sourceware.org/git/binutils-gdb.git", branch: "master"
 
   bottle do
-    sha256 "43a6d6cca157ef70d13848f35c04e11d832dc0c96f5bcf53a43330f524b3ac40" => :high_sierra
-    sha256 "fe7c6261f9164e7a744c9c512ba7e5afff0e74e373ece9b5aa19d5da6443bfc2" => :sierra
-    sha256 "cd89001bcf8c93b5d6425ab91a400aeffe0cd5bbb0eccd8ab38c719ab5ca34ba" => :el_capitan
+    sha256 monterey:     "2a067be29153e334e732082adfaf3f7579d6bc355c75250d2a04e19b6ef6c0e8"
+    sha256 big_sur:      "333e8565b1af77ab81aa531a4f088bbe29fff27b259c909eadc90cc62d75cb36"
+    sha256 catalina:     "4e90533da0983000eca1e41e1d77675df3f4af6d68cd573d1e8f7f53e38763c7"
+    sha256 x86_64_linux: "1219b819cc5d73edb71169c8e5052a69bc79e7a2b54c65d1fccae9d44feb4099"
   end
 
-  deprecated_option "with-brewed-python" => "with-python"
-  deprecated_option "with-guile" => "with-guile@2.0"
+  depends_on arch: :x86_64 # gdb is not supported on macOS ARM
+  depends_on "gmp"
+  depends_on "python@3.10"
+  depends_on "xz" # required for lzma support
 
-  option "with-python", "Use the Homebrew version of Python; by default system Python is used"
-  option "with-version-suffix", "Add a version suffix to program"
-  option "with-all-targets", "Build with support for all targets"
+  uses_from_macos "texinfo" => :build
+  uses_from_macos "expat"
+  uses_from_macos "ncurses"
 
-  depends_on "pkg-config" => :build
-  depends_on "python" => :optional
-  depends_on "guile@2.0" => :optional
+  on_linux do
+    depends_on "pkg-config" => :build
+    depends_on "gcc"
+    depends_on "guile"
+  end
 
   fails_with :clang do
     build 800
@@ -30,52 +37,34 @@ class Gdb < Formula
     EOS
   end
 
-  fails_with :clang do
-    build 600
-    cause <<~EOS
-      clang: error: unable to execute command: Segmentation fault: 11
-      Test done on: Apple LLVM version 6.0 (clang-600.0.56) (based on LLVM 3.5svn)
-    EOS
-  end
+  fails_with gcc: "5"
 
   def install
-    args = [
-      "--prefix=#{prefix}",
-      "--disable-debug",
-      "--disable-dependency-tracking",
+    args = %W[
+      --enable-targets=all
+      --prefix=#{prefix}
+      --disable-debug
+      --disable-dependency-tracking
+      --with-lzma
+      --with-python=#{Formula["python@3.10"].opt_bin}/python3
+      --disable-binutils
     ]
 
-    args << "--with-guile" if build.with? "guile@2.0"
-    args << "--enable-targets=all" if build.with? "all-targets"
+    mkdir "build" do
+      system "../configure", *args
+      system "make"
 
-    if build.with? "python"
-      args << "--with-python=#{Formula["python"].opt_libexec}/bin"
-    else
-      args << "--with-python=/usr"
+      # Don't install bfd or opcodes, as they are provided by binutils
+      system "make", "install-gdb", "maybe-install-gdbserver"
     end
-
-    if build.with? "version-suffix"
-      args << "--program-suffix=-#{version.to_s.slice(/^\d/)}"
-    end
-
-    system "./configure", *args
-    system "make"
-
-    # Don't install bfd or opcodes, as they are provided by binutils
-    inreplace ["bfd/Makefile", "opcodes/Makefile"], /^install:/, "dontinstall:"
-
-    system "make", "install"
   end
 
-  def caveats; <<~EOS
-    gdb requires special privileges to access Mach ports.
-    You will need to codesign the binary. For instructions, see:
+  def caveats
+    <<~EOS
+      gdb requires special privileges to access Mach ports.
+      You will need to codesign the binary. For instructions, see:
 
-      https://sourceware.org/gdb/wiki/BuildingOnDarwin
-
-    On 10.12 (Sierra) or later with SIP, you need to run this:
-
-      echo "set startup-with-shell off" >> ~/.gdbinit
+        https://sourceware.org/gdb/wiki/PermissionsDarwin
     EOS
   end
 

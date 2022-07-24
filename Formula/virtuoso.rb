@@ -1,21 +1,21 @@
 class Virtuoso < Formula
   desc "High-performance object-relational SQL database"
   homepage "https://virtuoso.openlinksw.com/wiki/main/"
-  url "https://github.com/openlink/virtuoso-opensource/releases/download/v7.2.4.2/virtuoso-opensource-7.2.4.2.tar.gz"
-  mirror "https://downloads.sourceforge.net/project/virtuoso/virtuoso/7.2.4.2/virtuoso-opensource-7.2.4.2.tar.gz"
-  sha256 "028075d3cf1970dbb9b79f660c833771de8be5be7403b9001d6907f64255b889"
+  url "https://github.com/openlink/virtuoso-opensource/releases/download/v7.2.7/virtuoso-opensource-7.2.7.tar.gz"
+  sha256 "02480b930d5fb414cb328f10cfd200faa658adc10f9c68ef7034c6aa81a5a3a0"
+  license "GPL-2.0-only"
 
   bottle do
-    cellar :any
-    sha256 "29dc5f3eb68e0f8a9d433766293fbce6828f8ec5ec541428f9b0f00c6d1be26c" => :high_sierra
-    sha256 "643818e6d36ad7a22b9d91b68f3eb16826f140415e23da30b96abb0858e73058" => :sierra
-    sha256 "76d5201d062e528bff78d3c42b9f4d3e8f8b041bfdc9a0881546572cdad87717" => :el_capitan
-    sha256 "4a2d5b2a0c81caa351a8388c781c189f36a45245479cd04584284668ca6a9ba6" => :yosemite
-    sha256 "feba222422d9882640afbd5d62f2e3a5cd3d8f9ecf00bb31c399bee5f685a53a" => :mavericks
+    sha256 cellar: :any,                 arm64_monterey: "c30c0e74ff6eabda834e2df9c46df1b201f759b94969c811a893a78549500383"
+    sha256 cellar: :any,                 arm64_big_sur:  "4dca442e00b50e886d6fb23d6d58824a4d215611b9396c5816e30e335ef046ad"
+    sha256 cellar: :any,                 monterey:       "b64f134ad74f950684c3ecc47ad1aaf7a29f2a9e8b93c32f662c809ffc16e86c"
+    sha256 cellar: :any,                 big_sur:        "1dfdebfe41f249a57d48db33ba0a5f96a1c11671f720f0f33dbb20eb641f0a31"
+    sha256 cellar: :any,                 catalina:       "7259a7caa010744dc03e8945fd05e6f96066206a5ff54f3471a67d31b5c4357f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "383edea95dbe7e7343f9ecea389d73f864ef13d978dd05dc1f9f9db06d485f7b"
   end
 
   head do
-    url "https://github.com/openlink/virtuoso-opensource.git", :branch => "develop/7"
+    url "https://github.com/openlink/virtuoso-opensource.git", branch: "develop/7"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -24,9 +24,17 @@ class Virtuoso < Formula
 
   # If gawk isn't found, make fails deep into the process.
   depends_on "gawk" => :build
-  depends_on "openssl"
+  depends_on "openssl@1.1"
 
-  conflicts_with "unixodbc", :because => "Both install `isql` binaries."
+  uses_from_macos "bison" => :build
+  uses_from_macos "flex" => :build
+  uses_from_macos "gperf" => :build
+
+  on_linux do
+    depends_on "net-tools" => :build
+  end
+
+  conflicts_with "unixodbc", because: "both install `isql` binaries"
 
   skip_clean :la
 
@@ -37,9 +45,10 @@ class Virtuoso < Formula
     system "make", "install"
   end
 
-  def caveats; <<~EOS
-    NOTE: the Virtuoso server will start up several times on port 1111
-    during the install process.
+  def caveats
+    <<~EOS
+      NOTE: the Virtuoso server will start up several times on port 1111
+      during the install process.
     EOS
   end
 

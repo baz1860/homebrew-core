@@ -1,34 +1,39 @@
 class Libgweather < Formula
   desc "GNOME library for weather, locations and timezones"
   homepage "https://wiki.gnome.org/Projects/LibGWeather"
-  url "https://download.gnome.org/sources/libgweather/3.26/libgweather-3.26.1.tar.xz"
-  sha256 "fca78470b345bce948e0333cab0a7c52c32562fc4a75de37061248a64e8fc4b8"
+  url "https://download.gnome.org/sources/libgweather/40/libgweather-40.0.tar.xz"
+  sha256 "ca4e8f2a4baaa9fc6d75d8856adb57056ef1cd6e55c775ba878ae141b6276ee6"
+  license all_of: ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+  revision 1
 
   bottle do
-    sha256 "07ccd0c7376e8b3df7f535d8a2a38bfa4912442957c787099d87cb7fbbc3140e" => :high_sierra
-    sha256 "f70cfbb5fe2c7c26d74af33487f6a259069449e3d65f1e52c37fbcb4f3af1763" => :sierra
-    sha256 "136de1236c9cec9d180e90bfcdc07778e07609737c48417eb50e0d8a6a36a130" => :el_capitan
+    rebuild 1
+    sha256 arm64_big_sur: "b13c7715d841a75ea106450bf14df81648725829b8142a4723ee155901ab8998"
+    sha256 monterey:      "281f8f7f0e9e5ef0c44239f0f404888a61934c8051000293b9ad5a61d92dc4e7"
+    sha256 big_sur:       "c8b80b40fde5432a83885430d0791147ec594e1849420416b47eaa521e679044"
+    sha256 catalina:      "7eb0152cd6f73075a4516f4bf4125417d61a0197cb46d764789d365d9fb4f284"
+    sha256 x86_64_linux:  "22842026d482f9e95bcd2131104c2dce4937eab9d3f48b3319a0f208b6e4e329"
   end
 
+  depends_on "gobject-introspection" => :build
+  depends_on "meson" => :build
+  depends_on "ninja" => :build
   depends_on "pkg-config" => :build
-  depends_on "intltool" => :build
-  depends_on "gtk+3"
+  depends_on "pygobject3" => :build
   depends_on "geocode-glib"
-  depends_on "libsoup"
-  depends_on "gobject-introspection"
-  depends_on "vala" => :optional
+  depends_on "gtk+3"
+  depends_on "libsoup@2"
+
+  uses_from_macos "libxml2"
 
   def install
-    # ensures that the vala files remain within the keg
-    inreplace "libgweather/Makefile.in",
-              "VAPIGEN_VAPIDIR = @VAPIGEN_VAPIDIR@",
-              "VAPIGEN_VAPIDIR = @datadir@/vala/vapi"
+    ENV["DESTDIR"] = "/"
 
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--disable-schemas-compile"
-    system "make", "install"
+    mkdir "build" do
+      system "meson", *std_meson_args, ".."
+      system "ninja", "-v"
+      system "ninja", "install", "-v"
+    end
   end
 
   def post_install
@@ -53,9 +58,10 @@ class Libgweather < Formula
     gettext = Formula["gettext"]
     glib = Formula["glib"]
     gtkx3 = Formula["gtk+3"]
+    harfbuzz = Formula["harfbuzz"]
     libepoxy = Formula["libepoxy"]
     libpng = Formula["libpng"]
-    libsoup = Formula["libsoup"]
+    libsoup = Formula["libsoup@2"]
     pango = Formula["pango"]
     pixman = Formula["pixman"]
     flags = %W[
@@ -69,6 +75,7 @@ class Libgweather < Formula
       -I#{glib.opt_include}/glib-2.0
       -I#{glib.opt_lib}/glib-2.0/include
       -I#{gtkx3.opt_include}/gtk-3.0
+      -I#{harfbuzz.opt_include}/harfbuzz
       -I#{include}/libgweather-3.0
       -I#{libepoxy.opt_include}
       -I#{libpng.opt_include}/libpng16
@@ -94,10 +101,10 @@ class Libgweather < Formula
       -lgobject-2.0
       -lgtk-3
       -lgweather-3
-      -lintl
       -lpango-1.0
       -lpangocairo-1.0
     ]
+    flags << "-lintl" if OS.mac?
     system ENV.cc, "-DGWEATHER_I_KNOW_THIS_IS_UNSTABLE=1", "test.c", "-o", "test", *flags
     system "./test"
   end

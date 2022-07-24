@@ -1,17 +1,25 @@
 class Ngspice < Formula
   desc "Spice circuit simulator"
   homepage "https://ngspice.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/27/ngspice-27.tar.gz"
-  sha256 "0c08c7d57a2e21cf164496f3237f66f139e0c78e38345fbe295217afaf150695"
+  url "https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/37/ngspice-37.tar.gz"
+  sha256 "9beea6741a36a36a70f3152a36c82b728ee124c59a495312796376b30c8becbe"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/ngspice[._-]v?(\d+(?:\.\d+)*)\.t}i)
+  end
 
   bottle do
-    sha256 "82a3aadf40794f4bf0dd89dbb85af272080768009b5a43e9c2e10e214060a000" => :high_sierra
-    sha256 "245e35d1ad12c0b06da9089eb9fe05a51da73aefa8e4840c2dc4f6514c6af902" => :sierra
-    sha256 "d220c96f72941f8a05dab330ffdb813f294f37daaffede4292821d1b1ed7d7a0" => :el_capitan
+    sha256 arm64_monterey: "6421f66dabcafb24914972884fc7e4ff4dfd2919b0898864ad2580e9528d5c4b"
+    sha256 arm64_big_sur:  "9222829c0bfa71e306e073be15f9c4976dfa105480b618c842823978d3cf4e23"
+    sha256 monterey:       "80a8fc2742bca92a86cb22062ad7dfb1180769ec185be23807e48ae009f92143"
+    sha256 big_sur:        "9e0a218271ee9b1491d4e896c77905589d44464c13a99db0b946a38068583e6e"
+    sha256 catalina:       "f67eb8cb4eddb299a848a22e2507cf3fdb775b17f15dd1c5451186fc1387ab4c"
+    sha256 x86_64_linux:   "27e1a76a94f39071ef949f848ed17d7a59b3a0db7c2d444f846b5f1e85e0ce2c"
   end
 
   head do
-    url "https://git.code.sf.net/p/ngspice/ngspice.git"
+    url "https://git.code.sf.net/p/ngspice/ngspice.git", branch: "master"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -19,11 +27,8 @@ class Ngspice < Formula
     depends_on "libtool" => :build
   end
 
-  option "without-xspice", "Build without x-spice extensions"
-
-  deprecated_option "with-x" => "with-x11"
-
-  depends_on :x11 => :optional
+  depends_on "fftw"
+  depends_on "readline"
 
   def install
     system "./autogen.sh" if build.head?
@@ -31,17 +36,16 @@ class Ngspice < Formula
     args = %W[
       --disable-dependency-tracking
       --prefix=#{prefix}
-      --with-editline=yes
+      --with-readline=yes
+      --enable-xspice
+      --without-x
     ]
-    if build.with? "x11"
-      args << "--with-x"
-    else
-      args << "--without-x"
-    end
-    args << "--enable-xspice" if build.with? "xspice"
 
     system "./configure", *args
     system "make", "install"
+
+    # remove conflict lib files with libngspice
+    rm_rf Dir[lib/"ngspice"]
   end
 
   test do

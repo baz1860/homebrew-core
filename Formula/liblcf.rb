@@ -1,46 +1,45 @@
 class Liblcf < Formula
   desc "Library for RPG Maker 2000/2003 games data"
   homepage "https://easyrpg.org/"
-  url "https://github.com/EasyRPG/liblcf/archive/0.5.3.tar.gz"
-  sha256 "4d2784ab927e2f61595b8efeb61664bcc64b3f746d12c893e302645dda3acddc"
-  revision 2
-  head "https://github.com/EasyRPG/liblcf.git"
+  url "https://easyrpg.org/downloads/player/0.7.0/liblcf-0.7.0.tar.xz"
+  sha256 "ed76501bf973bf2f5bd7240ab32a8ae3824dce387ef7bb3db8f6c073f0bc7a6a"
+  license "MIT"
+  revision 1
+  head "https://github.com/EasyRPG/liblcf.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "8b00ff7a74d58d6f315ed22fdb5b9a799cbec3f1c75ea35ee2134f3d7d5ad2bf" => :high_sierra
-    sha256 "1c1514ecf27ea169f6838e88a1ad79a2128cc6bbd48411b66cca0a8fa7d8dbb4" => :sierra
-    sha256 "06f9de2baf0ca8eb1cd18b213a7a51b908c1e4c477510aa2bcc8a1d6357177bf" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "35a263d892d4bbde6669efaa33eef17676a038add327c38f230dea635e294a8e"
+    sha256 cellar: :any,                 arm64_big_sur:  "2bc63c7a01e2dca4b6e701be0f696c2aff0da5e451e0ffed456a37ffd9507129"
+    sha256 cellar: :any,                 monterey:       "b1824bb8df43c238e9ea5717b3cf34a4083ac4104565ede72b61313c32c05821"
+    sha256 cellar: :any,                 big_sur:        "86d3d392e551484d23cbba9ada5069984f4213ca486ca4980f65375f8e03faa9"
+    sha256 cellar: :any,                 catalina:       "9fb8b516f6420faf872102d14c6e6085a14f382b1aef5de71952b88650bf66ef"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "9a10abcb630c5b44108dff330404ed34b57a5af31ebda4d6a2582e391b8dce4e"
   end
 
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
-  depends_on "pkg-config" => :build
+  depends_on "cmake" => :build
   depends_on "icu4c"
-  depends_on "expat"
+
+  uses_from_macos "expat"
 
   def install
-    system "autoreconf", "-i"
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}"
-    system "make", "check"
-    system "make", "install"
+    args = std_cmake_args + ["-DLIBLCF_UPDATE_MIMEDB=OFF"]
+    system "cmake", "-S", ".", "-B", "build", *args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
     (testpath/"test.cpp").write <<~EOS
-      #include "lsd_reader.h"
+      #include "lcf/lsd/reader.h"
       #include <cassert>
 
       int main() {
         std::time_t const current = std::time(NULL);
-        assert(current == LSD_Reader::ToUnixTimestamp(LSD_Reader::ToTDateTime(current)));
+        assert(current == lcf::LSD_Reader::ToUnixTimestamp(lcf::LSD_Reader::ToTDateTime(current)));
         return 0;
       }
     EOS
-    system ENV.cc, "test.cpp", "-I#{include}/liblcf", "-L#{lib}", "-llcf", "-std=c++11", \
+    system ENV.cxx, "test.cpp", "-std=c++14", "-I#{include}", "-L#{lib}", "-llcf", \
       "-o", "test"
     system "./test"
   end

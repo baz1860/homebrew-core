@@ -1,37 +1,63 @@
 class Mmseqs2 < Formula
-  desc "Software suite for very fast protein sequence search and clustering"
-  homepage "https://mmseqs.org/"
-  url "https://github.com/soedinglab/MMseqs2/archive/1-c7a89.tar.gz"
-  version "1-c7a89"
-  sha256 "e756a0e5cb3aa8e1e5a5b834a58ae955d9594be1806f0f32800427c55f3a45d5"
+  desc "Software suite for very fast sequence search and clustering"
+  homepage "https://mmseqs.com/"
+  url "https://github.com/soedinglab/MMseqs2/archive/13-45111.tar.gz"
+  version "13-45111"
+  sha256 "6444bb682ebf5ced54b2eda7a301fa3e933c2a28b7661f96ef5bdab1d53695a2"
+  license "GPL-3.0-or-later"
+  head "https://github.com/soedinglab/MMseqs2.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "f1e551d41c5508ddb96b2b603d2b7df320e8d304a927d5591bc7ecd02211fd58" => :high_sierra
-    sha256 "d324056b3fd47e0aa73ba4d8293b2a7248b4dcbe8daf0ff906201019d4c2efb7" => :sierra
-    sha256 "c338bc8cc6c622a5c3cbf95a6df6e472b45a92f2bca267b841f747b4ba45abcf" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "4cc52d9e04445aad8bb4ff8ad6e5ee2555b5d507143bbb88d20f920fb40240f9"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "510d513310f2372e90eb1cd63a3e03e8f86e92d286fc9bc28e11c64c6e953ebb"
+    sha256 cellar: :any_skip_relocation, monterey:       "ac8946e457d058c5ee45f2663b0671e16ea000f51465e963291114af9e0637e0"
+    sha256 cellar: :any_skip_relocation, big_sur:        "9c77c3321deb69aa84df7326821c803ecd377dc3f91931c26ca030832c25ee80"
+    sha256 cellar: :any_skip_relocation, catalina:       "f52feb3e6c03379981c6d7af2f2a3d404b0f0eb20ef2de490c1e8d67bd03ef54"
+    sha256 cellar: :any_skip_relocation, mojave:         "72a26a3d303d4150154c8200893ae6f4554b5eb1fe93a24d86c3b88d90aa1a3a"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "c007b75f505bb8b2672da63d4c2d373f1e6162e924172ac52e2f57290548a572"
   end
 
-  depends_on "cmake" => :build
-  depends_on "gcc"
+  depends_on "cmake" => [:build, :test]
+  depends_on "wget"
 
-  cxxstdlib_check :skip
+  uses_from_macos "bzip2"
+  uses_from_macos "zlib"
 
-  fails_with :clang # needs OpenMP support
+  on_macos do
+    depends_on "libomp"
+  end
+
+  on_linux do
+    depends_on "gawk"
+  end
 
   resource "documentation" do
     url "https://github.com/soedinglab/MMseqs2.wiki.git",
-        :revision => "6dbd3666edb64fc71173ee714014e88c1ebe2dfc"
+        revision: "790eb1b49f460d6054d5b8a6a643b8543f166388"
+  end
+
+  resource "testdata" do
+    url "https://github.com/soedinglab/MMseqs2/releases/download/12-113e3/MMseqs2-Regression-Minimal.zip"
+    sha256 "ab0c2953d1c27736c22a57a1ccbb976c1320435fad82b5c579dbd716b7bae4ce"
   end
 
   def install
-    # version information is read from git by default
-    # next MMseqs2 version will include a cmake flag so we do not need this hack
-    inreplace "src/version/Version.cpp", /.+/m, "const char *version = \"#{version}\";"
-
     args = *std_cmake_args << "-DHAVE_TESTS=0" << "-DHAVE_MPI=0"
+    args << "-DVERSION_OVERRIDE=#{version}"
+    args << if Hardware::CPU.arm?
+      "-DHAVE_ARM8=1"
+    else
+      "-DHAVE_SSE4_1=1"
+    end
 
-    args << "-DHAVE_SSE4_1=1" if build.bottle?
+    if OS.mac?
+      libomp = Formula["libomp"]
+      args << "-DOpenMP_C_FLAGS=-Xpreprocessor\ -fopenmp\ -I#{libomp.opt_include}"
+      args << "-DOpenMP_C_LIB_NAMES=omp"
+      args << "-DOpenMP_CXX_FLAGS=-Xpreprocessor\ -fopenmp\ -I#{libomp.opt_include}"
+      args << "-DOpenMP_CXX_LIB_NAMES=omp"
+      args << "-DOpenMP_omp_LIBRARY=#{libomp.opt_lib}/libomp.a"
+    end
 
     system "cmake", ".", *args
     system "make", "install"
@@ -42,13 +68,12 @@ class Mmseqs2 < Formula
   end
 
   def caveats
-    unless Hardware::CPU.sse4?
-      "MMseqs2 requires at least SSE4.1 CPU instruction support. The binary will not work correctly."
-    end
+    "MMseqs2 requires at least SSE4.1 CPU instruction support." if !Hardware::CPU.sse4? && !Hardware::CPU.arm?
   end
 
   test do
-    system "#{bin}/mmseqs", "createdb", "#{pkgshare}/examples/QUERY.fasta", "q"
-    system "#{bin}/mmseqs", "cluster", "q", "res", "tmp", "-s", "1", "--cascaded"
+    resource("testdata").stage do
+      system "./run_regression.sh", "#{bin}/mmseqs", "scratch"
+    end
   end
 end

@@ -1,23 +1,34 @@
 class Xmrig < Formula
   desc "Monero (XMR) CPU miner"
   homepage "https://github.com/xmrig/xmrig"
-  url "https://github.com/xmrig/xmrig/archive/v2.4.5.tar.gz"
-  sha256 "cd292a0395702fd1e7ee84f5f4018f037bc91a1d4723f54bfbaa771f46e67422"
+  url "https://github.com/xmrig/xmrig/archive/v6.18.0.tar.gz"
+  sha256 "4531a31c0c095fcae18fdef0157f1e2a6694408abbcff6789c8f3cd6ab2c3ca0"
+  license "GPL-3.0-or-later"
+  head "https://github.com/xmrig/xmrig.git", branch: "dev"
+
+  livecheck do
+    url :stable
+    strategy :github_latest
+  end
 
   bottle do
-    cellar :any
-    sha256 "99120b8a5c1385c54f949432eb708e9a3e99e229a21d156cd6d24f7ad4551144" => :high_sierra
-    sha256 "be401d6c3852b994f8cef9f45a9f8b33e100115520a04f028a1b2b5fc17d6d7b" => :sierra
-    sha256 "b2b98f8aa789d65c7fa2ccde8d83dbff665c89279379a54dda862f401d6b07ed" => :el_capitan
+    sha256                               arm64_monterey: "1da1fc4a51baca0ef97dde96ce4574a743892f7abb001ee9a8009783aa0b8a2e"
+    sha256                               arm64_big_sur:  "5d21b0a51189c496add0957d7ff2029995c20f6b3ac9199d0ecb35e1177e76c3"
+    sha256                               monterey:       "4c2d83937291e552c369743ee8d2cebaa5834756de152e87022d8247431ac01e"
+    sha256                               big_sur:        "1756da83146306c303350f6d6764ded50a3c0eca947dca5dce35ec83de791920"
+    sha256                               catalina:       "e39c4c45bcdfd052399d7449e2fa38187bcb51a69eff0ea34ed44c07bdbac1a2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "70d997270b0fa25a71f43f7e278f063c7e95a6cd35751d9f46f0dc4de6342e93"
   end
 
   depends_on "cmake" => :build
+  depends_on "hwloc"
   depends_on "libmicrohttpd"
   depends_on "libuv"
+  depends_on "openssl@1.1"
 
   def install
     mkdir "build" do
-      system "cmake", "..", "-DUV_LIBRARY=#{Formula["libuv"].opt_lib}/libuv.a", *std_cmake_args
+      system "cmake", "..", "-DWITH_CN_GPU=OFF", *std_cmake_args
       system "make"
       bin.install "xmrig"
     end
@@ -25,18 +36,33 @@ class Xmrig < Formula
   end
 
   test do
-    require "open3"
-    test_server="donotexist.localhost:65535"
-    timeout=10
-    Open3.popen2e("#{bin}/xmrig", "--no-color", "--max-cpu-usage=1", "--print-time=1",
-                  "--threads=1", "--retries=1", "--url=#{test_server}") do |stdin, stdouts, _wait_thr|
-      start_time=Time.now
-      stdin.close_write
-
-      stdouts.each do |line|
-        assert (Time.now - start_time <= timeout), "No server connect after timeout"
-        break if line.include? "\] \[#{test_server}\] DNS error: \"unknown node or service\""
+    require "pty"
+    assert_match version.to_s, shell_output("#{bin}/xmrig -V")
+    test_server = "donotexist.localhost:65535"
+    output = ""
+    args = %W[
+      --no-color
+      --max-cpu-usage=1
+      --print-time=1
+      --threads=1
+      --retries=1
+      --url=#{test_server}
+    ]
+    PTY.spawn(bin/"xmrig", *args) do |r, _w, pid|
+      sleep 5
+      Process.kill("SIGINT", pid)
+      begin
+        r.each_line { |line| output += line }
+      rescue Errno::EIO
+        # GNU/Linux raises EIO when read is done on closed pty
       end
+    end
+    assert_match(/POOL #1\s+#{Regexp.escape(test_server)} algo auto/, output)
+    pattern = "#{test_server} DNS error: \"unknown node or service\""
+    if OS.mac?
+      assert_match pattern, output
+    else
+      assert_match Regexp.union(pattern, "#{test_server} connect error: \"connection refused\""), output
     end
   end
 end

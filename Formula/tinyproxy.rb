@@ -1,24 +1,21 @@
 class Tinyproxy < Formula
   desc "HTTP/HTTPS proxy for POSIX systems"
-  homepage "https://www.banu.com/tinyproxy/"
-  url "https://github.com/tinyproxy/tinyproxy/releases/download/1.8.4/tinyproxy-1.8.4.tar.xz"
-  sha256 "a41f4ddf0243fc517469cf444c8400e1d2edc909794acda7839f1d644e8a5000"
+  homepage "https://tinyproxy.github.io/"
+  url "https://github.com/tinyproxy/tinyproxy/releases/download/1.11.1/tinyproxy-1.11.1.tar.xz"
+  sha256 "d66388448215d0aeb90d0afdd58ed00386fb81abc23ebac9d80e194fceb40f7c"
+  license "GPL-2.0-or-later"
 
   bottle do
-    rebuild 1
-    sha256 "7e7250cfbda60dcf40e291ce777842953bdfa573023ca28d2b09eefe41c0e523" => :high_sierra
-    sha256 "f04c44c7119f0eac9c0ec0a9a48044808d9e2fc2f1a8c0ddf197206fa0683e4a" => :sierra
-    sha256 "2ccb9fb5ba5dd782407fa1c6d261d57eaa4189c902e674cbed839c903e39c177" => :el_capitan
+    sha256 arm64_monterey: "63eece964c5e41576d66c6e142ac0ab30dca56c488e4b3ac327de1f8f9374900"
+    sha256 arm64_big_sur:  "ed35931fbe7004feb89145a3ccf75b1d39be9b79b7fb3c36be11b4c46d5dce54"
+    sha256 monterey:       "53d3f8a42faef7373b2448c4f151a09b88e5b6d5434640e884c09f8e53449ec0"
+    sha256 big_sur:        "7be798a814e31a8148ec6a9a01b7c238a623cc9742faa0d7dfe733663c356a23"
+    sha256 catalina:       "7dcdad0316a57335efd2d7c1fff9de4ba458c38c7c5efa7d0a82f0212e16def0"
+    sha256 x86_64_linux:   "07920f384cef0e204d966dd84dea766c57e181a1861ae453d1787e2b8e7e7b9e"
   end
-
-  option "with-reverse", "Enable reverse proxying"
-  option "with-transparent", "Enable transparent proxying"
-  option "with-filter", "Enable url filtering"
 
   depends_on "asciidoc" => :build
   depends_on "docbook-xsl" => :build
-
-  deprecated_option "reverse" => "with-reverse"
 
   def install
     ENV["XML_CATALOG_FILES"] = "#{etc}/xml/catalog"
@@ -31,19 +28,12 @@ class Tinyproxy < Formula
       --localstatedir=#{var}
       --sysconfdir=#{etc}
       --disable-regexcheck
+      --enable-filter
+      --enable-reverse
+      --enable-transparent
     ]
 
-    args << "--enable-reverse" if build.with? "reverse"
-    args << "--enable-transparent" if build.with? "transparent"
-    args << "--enable-filter" if build.with? "filter"
-
     system "./configure", *args
-
-    # Fix broken XML lint
-    # See: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=154624
-    inreplace %w[docs/man5/Makefile docs/man8/Makefile], "-f manpage",
-                                                         "-f manpage \\\n  -L"
-
     system "make", "install"
   end
 
@@ -52,39 +42,24 @@ class Tinyproxy < Formula
     (var/"run/tinyproxy").mkpath
   end
 
-  plist_options :manual => "tinyproxy"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-      <dict>
-        <key>Label</key>
-        <string>#{plist_name}</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <false/>
-        <key>ProgramArguments</key>
-        <array>
-            <string>#{opt_sbin}/tinyproxy</string>
-            <string>-d</string>
-        </array>
-        <key>WorkingDirectory</key>
-        <string>#{HOMEBREW_PREFIX}</string>
-      </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"tinyproxy", "-d"]
+    keep_alive false
+    working_dir HOMEBREW_PREFIX
   end
 
   test do
+    port = free_port
+    cp etc/"tinyproxy/tinyproxy.conf", testpath/"tinyproxy.conf"
+    inreplace testpath/"tinyproxy.conf", "Port 8888", "Port #{port}"
+
     pid = fork do
-      exec "#{sbin}/tinyproxy"
+      exec "#{bin}/tinyproxy", "-c", testpath/"tinyproxy.conf"
     end
     sleep 2
 
     begin
-      assert_match /tinyproxy/, shell_output("curl localhost:8888")
+      assert_match "tinyproxy", shell_output("curl localhost:#{port}")
     ensure
       Process.kill("SIGINT", pid)
       Process.wait(pid)

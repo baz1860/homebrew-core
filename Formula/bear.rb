@@ -1,27 +1,70 @@
 class Bear < Formula
   desc "Generate compilation database for clang tooling"
   homepage "https://github.com/rizsotto/Bear"
-  url "https://github.com/rizsotto/Bear/archive/2.3.11.tar.gz"
-  sha256 "4616237fd63066603793dca3fbf3f2c39e8c75bbe9967bdda103a56f31071cd4"
-  head "https://github.com/rizsotto/Bear.git"
+  url "https://github.com/rizsotto/Bear/archive/3.0.19.tar.gz"
+  sha256 "2fcfe2c6e029182cfc54ed26b3505c0ef12b0f43df03fb587f335afdc2ca9431"
+  license "GPL-3.0-or-later"
+  revision 4
+  head "https://github.com/rizsotto/Bear.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "dc87210799ab3fc9c541d14799a2a93e20eefc81d39b806c7fd9c74acf5504a7" => :high_sierra
-    sha256 "1faf6aa93e8963252e04d0658f6329a0738cd5891ebd47c98224f0fc1f3e0c0c" => :sierra
-    sha256 "771bdec380ed39cfcbe5cacc0ef05e3536702424c22ad30917fa9a8ef325e414" => :el_capitan
+    sha256 arm64_monterey: "46fda09b07595c10b4f1bae2cbd9f5c173e141cfb74ad0aa29c774ae209d4210"
+    sha256 arm64_big_sur:  "1840d46bfb570e651bbbfaca709a9872cf5a674125b3694213ac43b9bb756687"
+    sha256 monterey:       "52596f07897a556ef2e7ed8fe1410d472be84b1fb0824776bddf672854ea3a3e"
+    sha256 big_sur:        "5846258cbacc252bfd87a6d49b250e78e5408b513d7da02364e0c76596082115"
+    sha256 catalina:       "ff0993843631f66dc67851e65638331d7d038b2e8c12229485ac3e060000652f"
+    sha256 x86_64_linux:   "3c3fb34c3ea1936602996325f211f4c58d46d7660e0e3bf523a3498574150191"
   end
 
-  depends_on "python" if MacOS.version <= :snow_leopard
   depends_on "cmake" => :build
+  depends_on "pkg-config" => :build
+  depends_on "fmt"
+  depends_on "grpc"
+  depends_on "nlohmann-json"
+  depends_on "spdlog"
+
+  uses_from_macos "llvm" => :test
+
+  on_macos do
+    depends_on "llvm" if DevelopmentTools.clang_build_version <= 1100
+  end
+
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5" # needs C++17
+
+  fails_with :clang do
+    build 1100
+    cause <<-EOS
+      Undefined symbols for architecture x86_64:
+        "std::__1::__fs::filesystem::__current_path(std::__1::error_code*)"
+    EOS
+  end
 
   def install
-    system "cmake", ".", *std_cmake_args
-    system "make", "install"
+    ENV.llvm_clang if OS.mac? && (DevelopmentTools.clang_build_version <= 1100)
+
+    args = %w[
+      -DENABLE_UNIT_TESTS=OFF
+      -DENABLE_FUNC_TESTS=OFF
+    ]
+
+    system "cmake", "-S", ".", "-B", "build", *args, *std_cmake_args
+    system "cmake", "--build", "build"
+    system "cmake", "--install", "build"
   end
 
   test do
-    system "#{bin}/bear", "true"
+    (testpath/"test.c").write <<~EOS
+      #include <stdio.h>
+      int main() {
+        printf("hello, world!\\n");
+        return 0;
+      }
+    EOS
+    system bin/"bear", "--", "clang", "test.c"
     assert_predicate testpath/"compile_commands.json", :exist?
   end
 end

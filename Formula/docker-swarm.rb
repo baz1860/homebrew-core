@@ -1,22 +1,32 @@
 class DockerSwarm < Formula
   desc "Turn a pool of Docker hosts into a single, virtual host"
-  homepage "https://github.com/docker/swarm"
-  url "https://github.com/docker/swarm/archive/v1.2.8.tar.gz"
-  sha256 "be8d368000e2afbe4cda87330805978bbb2d9e33cd15bc82a8669a8cd0bcd4c6"
-  head "https://github.com/docker/swarm.git"
+  homepage "https://github.com/docker/classicswarm"
+  url "https://github.com/docker/classicswarm/archive/v1.2.9.tar.gz"
+  sha256 "13d0d39dbd2bccb32016e6aa782da67b6207f203e253e06b0f6eb4f25da85474"
+  license "Apache-2.0"
+  head "https://github.com/docker/classicswarm.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "f3940875a0cbb1cf562376e61ffb6206aa75e266931e54f52fe08c2ceaaf6329" => :high_sierra
-    sha256 "17efa0a36074c19516377ed860540ed5e8672794607d8a1a78b7f18b12b0f403" => :sierra
-    sha256 "de4c2cb59c9a198bec4bb6442cbb6fd0465964b27842d77d6d277429cfe51b27" => :el_capitan
-    sha256 "01b32b2a21df9ffb5f3e0721cbb33f65aa5ef8e0207ec9648feb769fcb4ae932" => :yosemite
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "6e5d1386efa30e9116f4f4d18be99f48d0953f45ae1b1e0c2634f7592b8e125d"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "63847c7c545c26275220e214dbf7af426ddd5ac11aaeabd9586b70d22768d764"
+    sha256 cellar: :any_skip_relocation, monterey:       "16b940f3f84c2edb617fd758284cf953c0903c0eb713b631922de2e0efcb4fc1"
+    sha256 cellar: :any_skip_relocation, catalina:       "e2d8d18ea613fd94a32e0918f29238836b89dd32464e8f6e1145e744348ab0cd"
+    sha256 cellar: :any_skip_relocation, mojave:         "d3cc672187adb5d73dfb2b6a90326de6ad228ccf48141ef3242447ca0416aee3"
+    sha256 cellar: :any_skip_relocation, high_sierra:    "29e47d799c8e2d2977dd58444095a51c9ac7f261f56eeb5d5b6f71ed299e7533"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "352ec826e8b8f007c10cc3db1a5a10fd85a7994936b5e2abc190e64912bcc51c"
   end
+
+  # "Classic Swarm has been archived and is no longer actively developed. You
+  # may want to use the Swarm mode built into the Docker Engine instead, or
+  # another orchestration system."
+  deprecate! date: "2020-06-11", because: :repo_archived
 
   depends_on "go" => :build
 
   def install
     ENV["GOPATH"] = buildpath
+    ENV["GO111MODULE"] = "auto"
     (buildpath/"src/github.com/docker/swarm").install buildpath.children
     cd "src/github.com/docker/swarm" do
       system "go", "build", "-o", bin/"docker-swarm"

@@ -1,64 +1,56 @@
 class Blastem < Formula
   desc "Fast and accurate Genesis emulator"
   homepage "https://www.retrodev.com/blastem/"
-  url "https://www.retrodev.com/repos/blastem/archive/3d48cb0c28be.tar.gz"
-  version "0.5.1"
-  sha256 "1929e39179ef46fd6b43b0bfd8f51dff29fc4ec001bd2e53811579707f5d9f1f"
-  head "https://www.retrodev.com/repos/blastem", :using => :hg
+  url "https://www.retrodev.com/repos/blastem/archive/v0.6.2.tar.gz"
+  sha256 "d460632eff7e2753a0048f6bd18e97b9d7c415580c358365ff35ac64af30a452"
+  license "GPL-3.0-or-later"
+  revision 1
+  head "https://www.retrodev.com/repos/blastem", using: :hg
+
+  livecheck do
+    url "https://www.retrodev.com/repos/blastem/json-tags"
+    regex(/["']tag["']:\s*?["']v?(\d+(?:\.\d+)+)["']/i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "950fdcccc00508c7648fb2df90267bf5a9a2bf1844f00a14e320ec274c9c30bd" => :high_sierra
-    sha256 "530e0fbfb551845ed326faa4942da3e4516b4fb77885f8a8cc7e99a40c2f179e" => :sierra
-    sha256 "572a00653d2a1c8d51ba5ae77d1ad0bddbcc69e9f535c594f334d73176d09f5b" => :el_capitan
+    sha256 cellar: :any,                 monterey:     "6f3f83fd9bc9b5a259eb21ea43bdc37e4d4a8665c809b8f34d456f681d3c1d17"
+    sha256 cellar: :any,                 big_sur:      "003bbd7d1f5f9d81fb471d1fff692951c9400a8bf2f1511f0d83c9bea9cb8e63"
+    sha256 cellar: :any,                 catalina:     "7b9652bffa8c28d6f23e1ad88534b5f2bbd49a916566650c3090366a556f11b2"
+    sha256 cellar: :any,                 mojave:       "9972096dbef1b35d3d98894c77575a4fce7c674660498e0877b95fe22383f1eb"
+    sha256 cellar: :any,                 high_sierra:  "74e39ac321fe48f06927b3ac455a382f14342c007b06b083860175edca1e0062"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "e55cd02a092ef31e3d13db74b551bdab7909fc5bdec0953a608407542976bf92"
   end
 
   depends_on "freetype" => :build
+  depends_on "gettext" => :build
+  depends_on "imagemagick" => :build
   depends_on "jpeg" => :build
-  depends_on "libpng" => :build # for xcftools
+  depends_on "libpng" => :build
+  depends_on "openjpeg" => :build
+  depends_on "pillow" => :build
   depends_on "pkg-config" => :build
+  depends_on "python@3.9" => :build
+  depends_on arch: :x86_64
   depends_on "glew"
   depends_on "sdl2"
 
-  resource "Pillow" do
-    url "https://files.pythonhosted.org/packages/8d/80/eca7a2d1a3c2dafb960f32f844d570de988e609f5fd17de92e1cf6a01b0a/Pillow-4.0.0.tar.gz"
-    sha256 "ee26d2d7e7e300f76ba7b796014c04011394d0c4a5ed9a288264a3e443abca50"
-  end
+  uses_from_macos "libffi"
 
   resource "vasm" do
-    url "http://server.owl.de/~frank/tags/vasm1_7e.tar.gz"
-    sha256 "2878c9c62bd7b33379111a66649f6de7f9267568946c097ffb7c08f0acd0df92"
+    url "http://phoenix.owl.de/tags/vasm1_8i.tar.gz"
+    sha256 "9ae0b37bca11cae5cf00e4d47e7225737bdaec4028e4db2a501b4eca7df8639d"
   end
 
-  resource "xcftools" do
-    url "http://henning.makholm.net/xcftools/xcftools-1.0.7.tar.gz"
-    sha256 "1ebf6d8405348600bc551712d9e4f7c33cc83e416804709f68d0700afde920a6"
+  # Convert Python 2 script to Python 3. Remove with next release.
+  patch do
+    url "https://www.retrodev.com/repos/blastem/raw-rev/dbbf0100f249"
+    sha256 "e332764bfa08e08e0f9cbbebefe73b88adb99a1e96a77a16a0aeeae827ac72ff"
   end
 
   def install
-    ENV.prepend_create_path "PYTHONPATH", buildpath/"vendor/lib/python2.7/site-packages"
-
-    unless MacOS::CLT.installed?
+    if MacOS.sdk_path_if_needed
       ENV.append "CPPFLAGS", "-I#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Versions/8.5/Headers"
       ENV.append "CPPFLAGS", "-I#{MacOS.sdk_path}/usr/include/ffi" # libffi
-    end
-
-    resource("Pillow").stage do
-      inreplace "setup.py" do |s|
-        sdkprefix = MacOS::CLT.installed? ? "" : MacOS.sdk_path
-        s.gsub! "ZLIB_ROOT = None", "ZLIB_ROOT = ('#{sdkprefix}/usr/lib', '#{sdkprefix}/usr/include')"
-        s.gsub! "JPEG_ROOT = None", "JPEG_ROOT = ('#{Formula["jpeg"].opt_prefix}/lib', '#{Formula["jpeg"].opt_prefix}/include')"
-        s.gsub! "FREETYPE_ROOT = None", "FREETYPE_ROOT = ('#{Formula["freetype"].opt_prefix}/lib', '#{Formula["freetype"].opt_prefix}/include')"
-      end
-
-      begin
-        # avoid triggering "helpful" distutils code that doesn't recognize Xcode 7 .tbd stubs
-        saved_sdkroot = ENV.delete "SDKROOT"
-        ENV.append "CFLAGS", "-I#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Versions/8.5/Headers" unless MacOS::CLT.installed?
-        system "python", *Language::Python.setup_install_args(buildpath/"vendor")
-      ensure
-        ENV["SDKROOT"] = saved_sdkroot
-      end
     end
 
     resource("vasm").stage do
@@ -66,23 +58,9 @@ class Blastem < Formula
       (buildpath/"tool").install "vasmm68k_mot"
     end
 
-    # FIXME: xcftools is not in the core tap
-    # https://github.com/Homebrew/homebrew-core/pull/1216
-    resource("xcftools").stage do
-      # Apply patch to build with libpng-1.5 or above
-      # https://anonscm.debian.org/cgit/collab-maint/xcftools.git/commit/?id=c40088b82c6a788792aae4068ddc8458de313a9b
-      inreplace "xcf2png.c", /png_(voidp|error_ptr)_NULL/, "NULL"
-
-      system "./configure"
-
-      # Avoid `touch` error from empty MANLINGUAS when building without NLS
-      ENV.deparallelize
-      touch "manpo/manpages.pot"
-      system "make", "manpo/manpages.pot"
-      touch "manpo/manpages.pot"
-      system "make"
-      (buildpath/"tool").install "xcf2png"
-    end
+    # Use imagemagick to convert XCF files instead of xcftools, which is unmaintained and broken.
+    # Fix was sent to upstream developer.
+    inreplace "Makefile", "xcf2png \$< > \$@", "convert $< $@"
 
     ENV.prepend_path "PATH", buildpath/"tool"
 

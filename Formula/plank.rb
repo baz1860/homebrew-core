@@ -1,16 +1,26 @@
 class Plank < Formula
   desc "Framework for generating immutable model objects"
   homepage "https://pinterest.github.io/plank/"
-  url "https://github.com/pinterest/plank/archive/v1.3.tar.gz"
-  sha256 "307d8e3c8d696b8de03a0789ce0ef11b39f533988a97d8b2cea4f9c5fd31310b"
+  url "https://github.com/pinterest/plank/archive/v1.6.tar.gz"
+  sha256 "6a233120905ff371b5c06a23b3fc7dd67e96355dd4d992a58ac087db22c500ef"
+  license "Apache-2.0"
+  head "https://github.com/pinterest/plank.git", branch: "master"
 
-  bottle do
-    cellar :any_skip_relocation
-    sha256 "0adac99e6dc8cc45a9d059c2438a0f6c703e2b3dedeafb79b28244864d91ecc4" => :high_sierra
-    sha256 "ee67fc2269b4f4920e6fcbd9311df017a4e2eb9dafe4940e1c1282d77999000b" => :sierra
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  depends_on :xcode => ["9.0", :build]
+  bottle do
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "6a91615ae4446513edd3ddb6fe91bcd8ae9768359da3af805ac7154e5a62487a"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ba560dc8f11ecdeef3e745cc00a0b7f6cae8074d4cfff100f43227e548c5db7a"
+    sha256 cellar: :any_skip_relocation, monterey:       "93cee4a7fa60747f1fc7f7e993d23b2af943bff41184ca681b807cfbc10582e3"
+    sha256 cellar: :any_skip_relocation, big_sur:        "ea5dbcccb44df98be951af22f29b81b24bdba7731f88a472708fe7c5bc3d53e3"
+    sha256 cellar: :any_skip_relocation, catalina:       "fc6838079a8a975c9bb77d17a050aa722d8446fcf9f62ca9fe09c8822d8651b4"
+    sha256 cellar: :any_skip_relocation, mojave:         "04d2dddb094914fa219304fea8f6e5aa3315c2e51b63ef4077fcf25a54c8b268"
+  end
+
+  depends_on xcode: ["11.3", :build]
 
   def install
     system "make", "install", "PREFIX=#{prefix}"
@@ -22,7 +32,7 @@ class Plank < Formula
         "id": "pin.json",
         "title": "pin",
         "description" : "Schema definition of a Pin",
-        "$schema": "http://json-schema.org/schema#",
+        "$schema": "https://json-schema.org/schema#",
         "type": "object",
         "properties": {
           "id": { "type": "string" },

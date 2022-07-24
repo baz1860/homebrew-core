@@ -3,26 +3,36 @@ class Libwmf < Formula
   homepage "https://wvware.sourceforge.io/libwmf.html"
   url "https://downloads.sourceforge.net/project/wvware/libwmf/0.2.8.4/libwmf-0.2.8.4.tar.gz"
   sha256 "5b345c69220545d003ad52bfd035d5d6f4f075e65204114a9e875e84895a7cf8"
+  license "LGPL-2.1-only" # http://wvware.sourceforge.net/libwmf.html#download
   revision 2
 
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/libwmf[._-]v?(\d+(?:\.\d+)+)\.t}i)
+  end
+
   bottle do
-    sha256 "a96fe2e0aef8cd0f8eecce05b8789c2637f973a6ae358924c451b8f36b3a70ef" => :high_sierra
-    sha256 "9df806eb6a4a3ca1a2b4b656ff02623175892981fbf136c89d4df5b5853bd20c" => :sierra
-    sha256 "205bf519460576ecf73e9314ba1171542be58ea22cea81c26424d661734f2d2f" => :el_capitan
-    sha256 "3554c19cc80eb6435ad630587a38dd094a3f33008c11a93a622f1eb62b2a3e2e" => :yosemite
+    rebuild 1
+    sha256 arm64_monterey: "5138927a0d8d528ab1a4f4929c1131c7c6e15995c22410ba722a8581b933de11"
+    sha256 arm64_big_sur:  "2f03f6ad89f67e27361b64a23ab0e231e09c3ef0e6be5c6456bbaa4cadc38f91"
+    sha256 monterey:       "c654530d1c940888ac542442827063f85850e18386008a4dedf1ca3711b80ca1"
+    sha256 big_sur:        "aece69a239468a68f86c84ed6eff00120c821aec6b8f69674776f3e6a46b7c6e"
+    sha256 catalina:       "9adf1c5052c7c0036c13a501f4f720fc7e8e511fcc8012ad8c8bfa3dcc457c94"
+    sha256 x86_64_linux:   "06c5049479f0c63291c8f7c8ed6f73a5f3cc4acf6e9a495aeb8635eeecc72642"
   end
 
   depends_on "pkg-config" => :build
-  depends_on "gd"
   depends_on "freetype"
-  depends_on "libpng"
+  depends_on "gd"
   depends_on "jpeg"
+  depends_on "libpng"
 
   def install
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--with-png=#{Formula["libpng"].opt_prefix}",
-                          "--with-freetype=#{Formula["freetype"].opt_prefix}"
+                          "--with-freetype=#{Formula["freetype"].opt_prefix}",
+                          "--with-jpeg=#{Formula["jpeg"].opt_prefix}"
     system "make"
     ENV.deparallelize # yet another rubbish Makefile
     system "make", "install"

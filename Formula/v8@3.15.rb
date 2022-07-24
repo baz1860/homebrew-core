@@ -1,23 +1,28 @@
 class V8AT315 < Formula
   desc "Google's open source JavaScript engine"
   homepage "https://github.com/v8/v8/wiki"
-  url "https://github.com/v8/v8-git-mirror/archive/3.15.11.18.tar.gz"
+  url "https://github.com/v8/v8/archive/3.15.11.18.tar.gz"
   sha256 "93a4945a550e5718d474113d9769a3c010ba21e3764df8f22932903cd106314d"
+  license "BSD-3-Clause"
   revision 1
 
   bottle do
-    cellar :any
-    sha256 "42c0c3b3f4dc7153023e14aef59c623f10c78ffe8f2d7a43ab984f2810a694dd" => :high_sierra
-    sha256 "4b845ce6a7fdc4110518dfbf48ab721d7f48b9e64f78e6d1cc199078ac9d874b" => :sierra
-    sha256 "9c191175be793dba50999f5ac1894f26b9eb39ca231f0618d5954833e5db8945" => :el_capitan
-    sha256 "f3b4dddabc17df3d84c3e1bbd894fa33a60e221a150eb7ede77d64daaef1088b" => :yosemite
+    sha256 cellar: :any, monterey:    "e8a4181b1af77730c7345d61cf38b2a0cb19135e2963d2bddf9bbcc07357e503"
+    sha256 cellar: :any, big_sur:     "8d1b84feddb4827106ad10d573f41fc6f4c1ddf6cbc65d78d8e168d7ab541e07"
+    sha256 cellar: :any, catalina:    "588e9a3b61c54705d918bc783e1aa2efa1fd31626ca20181c7fe3c38d0d50ca5"
+    sha256 cellar: :any, mojave:      "38ef56c652ac4f91ec1ddac61b8719ffba4c949103a6636e15aa1cd768e2d14d"
+    sha256 cellar: :any, high_sierra: "42c0c3b3f4dc7153023e14aef59c623f10c78ffe8f2d7a43ab984f2810a694dd"
+    sha256 cellar: :any, sierra:      "4b845ce6a7fdc4110518dfbf48ab721d7f48b9e64f78e6d1cc199078ac9d874b"
+    sha256 cellar: :any, el_capitan:  "9c191175be793dba50999f5ac1894f26b9eb39ca231f0618d5954833e5db8945"
   end
 
   keg_only :versioned_formula
 
+  deprecate! date: "2022-05-18", because: "depends on Python 2 to build"
+
   resource "gyp" do
     url "https://chromium.googlesource.com/external/gyp.git",
-        :revision => "f7bc250ccc4d619a1cf238db87e5979f89ff36d7"
+        revision: "f7bc250ccc4d619a1cf238db87e5979f89ff36d7"
   end
 
   def install

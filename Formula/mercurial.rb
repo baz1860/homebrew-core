@@ -3,26 +3,46 @@
 class Mercurial < Formula
   desc "Scalable distributed version control system"
   homepage "https://mercurial-scm.org/"
-  url "https://mercurial-scm.org/release/mercurial-4.5.tar.gz"
-  sha256 "4d9338d9f9d88dc90b836d1227a3677e3347efaf2a118cc97d7fd1f605f1f265"
+  url "https://www.mercurial-scm.org/release/mercurial-6.1.4.tar.gz"
+  sha256 "f361f9802b36e357ac019ceb712ca11de8332b07deadeed8dfa904f05bf7ca78"
+  license "GPL-2.0-or-later"
 
-  bottle do
-    sha256 "59816916c4767f5cb4da8fbcb14d2d47eef667f717a1602197332ed8b93ef549" => :high_sierra
-    sha256 "e7efe8fbb0870e4e6376ec64f1d8d6a7ed20d7471b456d43090202829b394b35" => :sierra
-    sha256 "3fb4fe819a7c332fe2ac24740c004d904abe3dfd0a902d7a3c97ff3c5d9f15d1" => :el_capitan
+  livecheck do
+    url "https://www.mercurial-scm.org/release/"
+    regex(/href=.*?mercurial[._-]v?(\d+(?:\.\d+)+)\.t/i)
   end
 
-  depends_on "python"
+  bottle do
+    sha256 arm64_monterey: "737ceba26e04326ea6b70c06d5ff14400c3cb7af5dd123d2445e7a816d47f0db"
+    sha256 arm64_big_sur:  "36452fa78b494b30f71cb1799ec4c3c612f7f6d2e2e89721f12f037128ca4b6f"
+    sha256 monterey:       "7f7d98d3e6f77fd87d64b496bcbc8ee942ad0264cea915ad5ddc307149953a84"
+    sha256 big_sur:        "e0b72286e4578b8a0775026e38a630597acdae17ca3da34fc725e97554d65877"
+    sha256 catalina:       "8a14ec66a7c520775e1e93d9097bf45a1707daf5cb10d39dd41693f3be71616e"
+    sha256 x86_64_linux:   "28ae090d3c606c984cc35a5ef1ed23889a6f3f1a0638a38bdc283a80afb3bf88"
+  end
+
+  depends_on "python@3.10"
 
   def install
-    ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
+    ENV["HGPYTHON3"] = "1"
 
-    system "make", "PREFIX=#{prefix}", "install-bin"
+    # FIXME: python@3.10 formula's "prefix scheme" patch tries to install into
+    # HOMEBREW_PREFIX/{lib,bin}, which fails due to sandbox. As workaround,
+    # manually set the installation paths to behave like prior python versions.
+    site_packages = prefix/Language::Python.site_packages("python3")
+    inreplace "Makefile",
+              "--prefix=\"$(PREFIX)\"",
+              "\\0 --install-lib=\"#{site_packages}\" --install-scripts=\"#{prefix}/bin\""
+
+    system "make", "PREFIX=#{prefix}",
+                   "PYTHON=#{which("python3")}",
+                   "install-bin"
 
     # Install chg (see https://www.mercurial-scm.org/wiki/CHg)
     cd "contrib/chg" do
-      system "make", "PREFIX=#{prefix}", "HGPATH=#{bin}/hg", \
-             "HG=#{bin}/hg"
+      system "make", "PREFIX=#{prefix}",
+                     "PYTHON=#{which("python3")}",
+                     "HGPATH=#{bin}/hg", "HG=#{bin}/hg"
       bin.install "chg"
     end
 
@@ -45,8 +65,10 @@ class Mercurial < Formula
 
   def caveats
     return unless (opt_bin/"hg").exist?
+
     cacerts_configured = `#{opt_bin}/hg config web.cacerts`.strip
     return if cacerts_configured.empty?
+
     <<~EOS
       Homebrew has detected that Mercurial is configured to use a certificate
       bundle file as its trust store for TLS connections instead of using the

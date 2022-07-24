@@ -1,10 +1,16 @@
 class ZshAutosuggestions < Formula
   desc "Fish-like fast/unobtrusive autosuggestions for zsh"
   homepage "https://github.com/zsh-users/zsh-autosuggestions"
-  url "https://github.com/zsh-users/zsh-autosuggestions/archive/v0.4.2.tar.gz"
-  sha256 "d2316f998338ee7a83ed1741a82e59f3c83757541291ca4eb0025625c1dae9dd"
+  url "https://github.com/zsh-users/zsh-autosuggestions/archive/v0.7.0.tar.gz"
+  sha256 "ccd97fe9d7250b634683c651ef8a2fe3513ea917d1b491e8696a2a352b714f08"
+  license "MIT"
 
-  bottle :unneeded
+  bottle do
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "4537653cbf3540a0785481966b36291255839f1be4012a22409ef97c46a1860b"
+  end
+
+  uses_from_macos "zsh" => :test
 
   def install
     pkgshare.install "zsh-autosuggestions.zsh"
@@ -16,14 +22,12 @@ class ZshAutosuggestions < Formula
 
         source #{HOMEBREW_PREFIX}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
-      You will also need to force reload of your .zshrc:
-
-        source ~/.zshrc
+      You will also need to restart your terminal for this change to take effect.
     EOS
   end
 
   test do
-    assert_match "default",
+    assert_match "history",
       shell_output("zsh -c '. #{pkgshare}/zsh-autosuggestions.zsh && echo $ZSH_AUTOSUGGEST_STRATEGY'")
   end
 end

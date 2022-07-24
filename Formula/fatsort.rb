@@ -1,16 +1,24 @@
 class Fatsort < Formula
   desc "Sorts FAT16 and FAT32 partitions"
   homepage "https://fatsort.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/fatsort/fatsort-1.4.2.439.tar.xz"
-  version "1.4.2"
-  sha256 "bdbcf99307baef3e76d99700691ac525c9a9cf96d8433b45c89314940cc6a1e0"
+  url "https://downloads.sourceforge.net/project/fatsort/fatsort-1.6.4.625.tar.xz"
+  version "1.6.4"
+  sha256 "9a6f89a0640bb782d82ff23a780c9f0aec3dfbe4682c0a8eda157e0810642ead"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/fatsort[._-]v?(\d+(?:\.\d+)+)\.\d+\.t}i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "83d3f92d45b4ed4cf71453c07a6728841d5329957ff681ef29419067397d7e83" => :high_sierra
-    sha256 "d4742a8453bf67a815b862328b3714b1b30d7633688496b18350114e7c2acdd4" => :sierra
-    sha256 "96cc7c6ad5e64d86121b27e9d86ef33e1d2a6e9abde741253c0f06cf76249c8f" => :el_capitan
-    sha256 "717b1b1c912dd49ee1d034e640f9fcdd556634e2a29fd01da195e5e6a1e9f48b" => :yosemite
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "b7d4a8f9701c12a1d3dd1acf54c007e7e554c139e13b1ec0038ef9c1203cb77e"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "8b9d29782c670f94450fadca0c8f79027da00b123811f405b0d3b09075ab8d5c"
+    sha256 cellar: :any_skip_relocation, monterey:       "422321e0d2f3d63e9d547a7e5b647cb6da4ba62f633c97aa065bfcbeb346a06c"
+    sha256 cellar: :any_skip_relocation, big_sur:        "01b749fcfecc1b3a506b7f4e61562625861d693086803b1251491027be95e682"
+    sha256 cellar: :any_skip_relocation, catalina:       "956dec116bc78d27db0553cf8f1bb9dcb499e22d7d162dfc1cd9ec13acc66412"
+    sha256 cellar: :any_skip_relocation, mojave:         "8e3d9f4a4a63557db3aa3016a611bf96f4a1c46e15b305cbc803bce2036b28f2"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "56f58efa4edaa7205e96e9267d2066dcb56e271c3e9140dd2edbaa63dc9ae617"
   end
 
   depends_on "help2man"
@@ -19,5 +27,9 @@ class Fatsort < Formula
     system "make", "CC=#{ENV.cc}"
     bin.install "src/fatsort"
     man1.install "man/fatsort.1"
+  end
+
+  test do
+    system "#{bin}/fatsort", "--version"
   end
 end

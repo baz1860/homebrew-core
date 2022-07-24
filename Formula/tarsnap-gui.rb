@@ -1,33 +1,64 @@
 class TarsnapGui < Formula
   desc "Cross-platform GUI for the Tarsnap command-line client"
   homepage "https://github.com/Tarsnap/tarsnap-gui/wiki"
-  url "https://github.com/Tarsnap/tarsnap-gui/archive/v1.0.tar.gz"
-  sha256 "cd21d2a85f073e72f10900632fdcb49956985255a5711fb4f6d434433b09dac9"
-  head "https://github.com/Tarsnap/tarsnap-gui.git"
+  url "https://github.com/Tarsnap/tarsnap-gui/archive/v1.0.2.tar.gz"
+  sha256 "3b271f474abc0bbeb3d5d62ee76b82785c7d64145e6e8b51fa7907b724c83eae"
+  license "BSD-2-Clause"
+  revision 1
+  head "https://github.com/Tarsnap/tarsnap-gui.git", branch: "master"
 
   bottle do
-    sha256 "95ce5a2a28ff6981d569ad264cd7ef97bfbb20a808309f199b4044d50ea59e9f" => :high_sierra
-    sha256 "65333d2097628d889e78ecb717a11de647f0d11058dd8ce7f263c573e828b54e" => :sierra
-    sha256 "2963c8328a97832660467d27207bdb92340b7e1d10c4f70b552a56b433db5c5d" => :el_capitan
-    sha256 "6c33861a277da0171c26ee389ab5e3f1d2277f3e577f18446e816909680cf9fb" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "f8f2504a74299c6fbcc41df3811498f6d4f8716ade39165f5fb8a2e611ae0aac"
+    sha256 cellar: :any,                 arm64_big_sur:  "0e8def1a5aad31ebe64570260d5c622bd350880034c26d35c0d564b2bda46a98"
+    sha256 cellar: :any,                 monterey:       "807c80d7626a0e7c1bb318e379e1e5fffe32d1f80bda8cf2cd09063434c0d447"
+    sha256 cellar: :any,                 big_sur:        "caa57be13fe93093dfd6fd275d7648f181db9508064308267bd3d5883974d00c"
+    sha256 cellar: :any,                 catalina:       "84c04aa45fbc4620b074386f5238731ad053e95b17309e27ce923c9e0439b3c0"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "47b23d0ded49784f629d78b087dc9af73993c59aa0c00108fa41c18b9318843c"
   end
 
-  depends_on "qt"
+  depends_on "qt@5"
   depends_on "tarsnap"
 
-  def install
-    # Fix "Project ERROR: Tarsnap-gui requires Qt 5.2 or higher."
-    # Reported 11 Dec 2017 https://github.com/Tarsnap/tarsnap-gui/issues/171
-    inreplace "Tarsnap.pro", "lessThan(QT_VERSION, 5.2)",
-                             "lessThan(QT_VERSION, 5.1)"
+  on_linux do
+    depends_on "gcc"
+  end
 
+  fails_with gcc: "5" # qt@5 is built with GCC
+
+  # Work around build error: Set: Entry, ":CFBundleGetInfoString", Does Not Exist
+  # Issue ref: https://github.com/Tarsnap/tarsnap-gui/issues/557
+  patch :DATA
+
+  def install
     system "qmake"
     system "make"
-    system "macdeployqt", "Tarsnap.app"
-    prefix.install "Tarsnap.app"
+    if OS.mac?
+      prefix.install "Tarsnap.app"
+      bin.install_symlink prefix/"Tarsnap.app/Contents/MacOS/Tarsnap" => "tarsnap-gui"
+    else
+      bin.install "tarsnap-gui"
+    end
   end
 
   test do
-    system "#{opt_prefix}/Tarsnap.app/Contents/MacOS/Tarsnap", "--version"
+    # Set QT_QPA_PLATFORM to minimal to avoid error "could not connect to display"
+    ENV["QT_QPA_PLATFORM"] = "minimal" if OS.linux? && ENV["HOMEBREW_GITHUB_ACTIONS"]
+    system bin/"tarsnap-gui", "--version"
   end
 end
+
+__END__
+diff --git a/Tarsnap.pro b/Tarsnap.pro
+index 9954fc5c..560621b1 100644
+--- a/Tarsnap.pro
++++ b/Tarsnap.pro
+@@ -131,5 +131,8 @@ osx {
+ 
+     # Add VERSION to the app bundle.  (Why doesn't qmake do this?)
+     INFO_PLIST_PATH = $$shell_quote($${OUT_PWD}/$${TARGET}.app/Contents/Info.plist)
+-    QMAKE_POST_LINK += /usr/libexec/PlistBuddy -c \"Set :CFBundleGetInfoString $${VERSION}\" $${INFO_PLIST_PATH} ;
++    QMAKE_POST_LINK += /usr/libexec/PlistBuddy \
++                            -c \"Add :CFBundleVersionString string $${VERSION}\" \
++                            -c \"Add :CFBundleShortVersionString string $${VERSION}\" \
++                            $${INFO_PLIST_PATH} ;
+ }

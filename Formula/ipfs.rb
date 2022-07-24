@@ -2,51 +2,43 @@ class Ipfs < Formula
   desc "Peer-to-peer hypermedia protocol"
   homepage "https://ipfs.io/"
   url "https://github.com/ipfs/go-ipfs.git",
-      :tag => "v0.4.13",
-      :revision => "cc01b7f188622e7148ce041b9d09252c85041d9f"
-  head "https://github.com/ipfs/go-ipfs.git"
+      tag:      "v0.13.1",
+      revision: "8ffc7a8a6c0d9ecdffd3624688fbf0cf348752d2"
+  license all_of: [
+    "MIT",
+    any_of: ["MIT", "Apache-2.0"],
+  ]
+  head "https://github.com/ipfs/go-ipfs.git", branch: "master"
+
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
+  end
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "fe4eeb4a7e62352b7fea0a279f2826f66a5efbb7d75f379d24f0fa0c2b5d0fb5" => :high_sierra
-    sha256 "d7a6736094edcca57bc4c6a9c63a4934f818f5efc6edaf82765deee3416068c7" => :sierra
-    sha256 "016cf5df0044524e8fd8129ef420293971c9c0d25b956c3855571bfc41252873" => :el_capitan
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "a68be749f551169e5ff7808f6b8ee91a6e7c6b5558d8e8dd2318236fe8e45976"
+    sha256 cellar: :any_skip_relocation, arm64_big_sur:  "ac28495163521e0a0126d06f80fa6f2eb8ec7689024d6e02b5a5c8a059e7ad41"
+    sha256 cellar: :any_skip_relocation, monterey:       "b02c6d7c9db1d9b53e9897ed83512ab6f106f22dd048c992084e68566414f2fc"
+    sha256 cellar: :any_skip_relocation, big_sur:        "59fe2e71a982dc444c375121b22d30faf7bc3968316ae74a77e79eb3bc9d3e54"
+    sha256 cellar: :any_skip_relocation, catalina:       "1acdf6e3a2eadc3d4409b66ab67d52c6bfd00d38b930b9d367b7114805465d14"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "e7bdee033cd72bd8432f1fd2db5013cc0f59b9d6de805e2c9944aaa47b1a5490"
   end
 
   depends_on "go" => :build
-  depends_on "godep" => :build
-  depends_on "gx"
-  depends_on "gx-go"
 
   def install
-    ENV["GOPATH"] = buildpath
-    (buildpath/"src/github.com/ipfs/go-ipfs").install buildpath.children
-    cd("src/github.com/ipfs/go-ipfs") { system "make", "install" }
-    bin.install "bin/ipfs"
+    system "make", "build"
+    bin.install "cmd/ipfs/ipfs"
+
+    bash_output = Utils.safe_popen_read(bin/"ipfs", "commands", "completion", "bash")
+    (bash_completion/"ipfs-completion.bash").write bash_output
   end
 
-  plist_options :manual => "ipfs daemon"
-
-  def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>Label</key>
-      <string>#{plist_name}</string>
-      <key>ProgramArguments</key>
-      <array>
-        <string>#{opt_bin}/ipfs</string>
-        <string>daemon</string>
-      </array>
-      <key>RunAtLoad</key>
-      <true/>
-    </dict>
-    </plist>
-    EOS
+  service do
+    run [opt_bin/"ipfs", "daemon"]
   end
 
   test do
-    system bin/"ipfs", "version"
+    assert_match "initializing IPFS node", shell_output(bin/"ipfs init")
   end
 end

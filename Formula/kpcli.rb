@@ -1,17 +1,55 @@
+require "language/perl"
+
 class Kpcli < Formula
+  include Language::Perl::Shebang
+
   desc "Command-line interface to KeePass database files"
   homepage "https://kpcli.sourceforge.io/"
-  url "https://downloads.sourceforge.net/project/kpcli/kpcli-3.2.pl"
-  sha256 "615a1bae19ed0c132076a809b162a66ea0dc22c1d992a8c6e1f2e1aaedfae687"
+  url "https://downloads.sourceforge.net/project/kpcli/kpcli-3.8.1.pl"
+  sha256 "6c84f8639245799bf9b2d5ce297c41b5d4ec0789f7f5fa9e8767556816ea472c"
+  license any_of: ["Artistic-1.0-Perl", "GPL-1.0-or-later"]
+
+  livecheck do
+    url :stable
+    regex(%r{url=.*?/kpcli[._-]v?(\d+(?:\.\d+)+)\.pl}i)
+  end
 
   bottle do
-    cellar :any
-    sha256 "4485a38bd908295b8f738d866280d35ab0216bfa3de58c1feb0833b90fac0acd" => :high_sierra
-    sha256 "7b0dafa06f46018a7c339debafdc192b062d0056700d804f4750759beae31528" => :sierra
-    sha256 "2c2fad454c54b2ce0cab0ae750345d28a96e24e6fb985db0497f701cbe246bea" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "3e5541f5e3c1031e77cbce3f2953f5e6d9865a24afb83cb39827a6f89874d9e7"
+    sha256 cellar: :any,                 arm64_big_sur:  "e29f7d4ceba1334bbbd57b110628eb655ca3a5ee076cc74fc32935d50fdb2ab1"
+    sha256 cellar: :any,                 monterey:       "ad7799e6aacc9bcd1c76e308758036e3eadf1fbc652e7d9c95e28a2b0291d3c6"
+    sha256 cellar: :any,                 big_sur:        "d5c9ca1dee1bf7965ddf8e47d386192f72f1565c98cf5ab21fea51eb18f2c4d6"
+    sha256 cellar: :any,                 catalina:       "165749beb5e97fe99a928abe2ed0e42c85110fc78b06f7c8560664217f7e64df"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "1f6d692a8118172a86bf4f09e37b3b8102c83799ef4d32b6bbaae647c018f6f3"
   end
 
   depends_on "readline"
+
+  uses_from_macos "perl"
+
+  on_macos do
+    resource "Mac::Pasteboard" do
+      url "https://cpan.metacpan.org/authors/id/W/WY/WYANT/Mac-Pasteboard-0.103.tar.gz"
+      sha256 "2f5e8dd2db0d6445558484ca6d42d839c5a97ee8aa1b250e694d67d5b7f6634c"
+    end
+  end
+
+  on_linux do
+    resource "Clone" do
+      url "https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/Clone-0.45.tar.gz"
+      sha256 "cbb6ee348afa95432e4878893b46752549e70dc68fe6d9e430d1d2e99079a9e6"
+    end
+
+    resource "TermReadKey" do
+      url "https://cpan.metacpan.org/authors/id/J/JS/JSTOWE/TermReadKey-2.38.tar.gz"
+      sha256 "5a645878dc570ac33661581fbb090ff24ebce17d43ea53fd22e105a856a47290"
+    end
+  end
+
+  resource "Module::Build" do
+    url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Module-Build-0.4231.tar.gz"
+    sha256 "7e0f4c692c1740c1ac84ea14d7ea3d8bc798b2fb26c09877229e04f430b2b717"
+  end
 
   resource "File::KeePass" do
     url "https://cpan.metacpan.org/authors/id/R/RH/RHANDOM/File-KeePass-2.03.tar.gz"
@@ -19,8 +57,8 @@ class Kpcli < Formula
   end
 
   resource "Crypt::Rijndael" do
-    url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Crypt-Rijndael-1.13.tar.gz"
-    sha256 "cd7209a6dfe0a3dc8caffe1aa2233b0e6effec7572d76a7a93feefffe636214e"
+    url "https://cpan.metacpan.org/authors/id/L/LE/LEONT/Crypt-Rijndael-1.16.tar.gz"
+    sha256 "6540085e3804b82a6f0752c1122cf78cadd221990136dd6fd4c097d056c84d40"
   end
 
   resource "Sort::Naturally" do
@@ -33,9 +71,9 @@ class Kpcli < Formula
     sha256 "3279c01c76227335eeff09032a40f4b02b285151b3576c04cacd15be05942bdb"
   end
 
-  resource "Term::Readline::Gnu" do
-    url "https://cpan.metacpan.org/authors/id/H/HA/HAYASHI/Term-ReadLine-Gnu-1.35.tar.gz"
-    sha256 "575d32d4ab67cd656f314e8d0ee3d45d2491078f3b2421e520c4273e92eb9125"
+  resource "Term::ReadLine::Gnu" do
+    url "https://cpan.metacpan.org/authors/id/H/HA/HAYASHI/Term-ReadLine-Gnu-1.42.tar.gz"
+    sha256 "3c5f1281da2666777af0f34de0289564e6faa823aea54f3945c74c98e95a5e73"
   end
 
   resource "Data::Password" do
@@ -44,42 +82,34 @@ class Kpcli < Formula
   end
 
   resource "Clipboard" do
-    url "https://cpan.metacpan.org/authors/id/K/KI/KING/Clipboard-0.13.tar.gz"
-    sha256 "eebf1c9cb2484be850abdae017147967cf47f8ccd99293771517674b0046ec8a"
-  end
-
-  resource "Mac::Pasteboard" do
-    url "https://cpan.metacpan.org/authors/id/W/WY/WYANT/Mac-Pasteboard-0.009.tar.gz"
-    sha256 "85b1d5e9630973b997c3c1634e2df964d6a8d6cb57d9abe1f7093385cf26cf54"
+    url "https://cpan.metacpan.org/authors/id/S/SH/SHLOMIF/Clipboard-0.28.tar.gz"
+    sha256 "9e8d79015194263357c25a0f5d094800fff43bdbf9f8601ec3b0ed5eb0966d26"
   end
 
   resource "Capture::Tiny" do
-    url "https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/Capture-Tiny-0.46.tar.gz"
-    sha256 "5d7a6a830cf7f2b2960bf8b8afaac16a537ede64f3023827acea5bd24ca77015"
+    url "https://cpan.metacpan.org/authors/id/D/DA/DAGOLDEN/Capture-Tiny-0.48.tar.gz"
+    sha256 "6c23113e87bad393308c90a207013e505f659274736638d8c79bac9c67cc3e19"
   end
 
   def install
     ENV.prepend_create_path "PERL5LIB", libexec/"lib/perl5"
     ENV.prepend_path "PERL5LIB", libexec/"lib"
 
-    resources = [
-      "File::KeePass",
-      "Crypt::Rijndael",
-      "Sort::Naturally",
-      "Term::ShellUI",
-      "Data::Password",
-      "Clipboard",
-      "Mac::Pasteboard",
-      "Capture::Tiny",
-    ]
-    resources.each do |r|
+    res = resources.map(&:name).to_set - ["Clipboard", "Term::Readline::Gnu"]
+    res.each do |r|
       resource(r).stage do
         system "perl", "Makefile.PL", "INSTALL_BASE=#{libexec}"
         system "make", "install"
       end
     end
 
-    resource("Term::Readline::Gnu").stage do
+    resource("Clipboard").stage do
+      system "perl", "Build.PL", "--install_base", libexec
+      system "./Build"
+      system "./Build", "install"
+    end
+
+    resource("Term::ReadLine::Gnu").stage do
       # Prevent the Makefile to try and build universal binaries
       ENV.refurbish_args
 
@@ -89,9 +119,11 @@ class Kpcli < Formula
       system "make", "install"
     end
 
+    rewrite_shebang detected_perl_shebang, "kpcli-#{version}.pl"
+
     libexec.install "kpcli-#{version}.pl" => "kpcli"
     chmod 0755, libexec/"kpcli"
-    (bin/"kpcli").write_env_script("#{libexec}/kpcli", :PERL5LIB => ENV["PERL5LIB"])
+    (bin/"kpcli").write_env_script(libexec/"kpcli", PERL5LIB: ENV["PERL5LIB"])
   end
 
   test do

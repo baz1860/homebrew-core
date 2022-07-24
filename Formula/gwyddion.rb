@@ -1,32 +1,49 @@
 class Gwyddion < Formula
   desc "Scanning Probe Microscopy visualization and analysis tool"
   homepage "http://gwyddion.net/"
-  url "http://gwyddion.net/download/2.50/gwyddion-2.50.tar.gz"
-  sha256 "f3834dae31d9bf696e8d59e2aa79a373a30d5f6caa6033601d2f9d57afa154f3"
+  url "http://gwyddion.net/download/2.61/gwyddion-2.61.tar.gz"
+  sha256 "ae9d647b1c8c44d91d4ebec3d22d7536299fdb16bfa0bacccdf64e4704cd355e"
+  license "GPL-2.0-or-later"
+
+  livecheck do
+    url "http://gwyddion.net/download.php"
+    regex(/stable version Gwyddion v?(\d+(?:\.\d+)+):/i)
+  end
 
   bottle do
-    sha256 "298b62b2a21506f10dc8f8ce315fcfee9fc078ffac58fde0d8b29d0e998efad0" => :high_sierra
-    sha256 "a701145954bc8f36f4bef4711286a758bb62445bf59d65bff638c6a9559e4379" => :sierra
-    sha256 "36866a752fc238aefbb298c343d1e31a3741590dab97efbce94a1c1cb83088b0" => :el_capitan
+    sha256 arm64_monterey: "af9865335f78231bee3ff95b2def880998fc437853112b03696a4d2c52c5580e"
+    sha256 arm64_big_sur:  "9a5ba5a71bd35ec492de7fe9840419ec8922daf04a31c9ebb58ba8bee59c9723"
+    sha256 monterey:       "d64d78a7b938e5147a787e9ea6276496f6e4b97fd7979534d715a04bc19ff79d"
+    sha256 big_sur:        "acfbd4430428e964b062cd8f5e43cf96fad56127801b57e07493f3550efe3eac"
+    sha256 catalina:       "ea3562016bd81e226579e0f92aa161d4551a870e46edb25dfae5bf38c0d0874b"
+    sha256 x86_64_linux:   "991d25f826d4903328f4c15bd88ad8a405aba45074408deaef8982a8c24cb41b"
   end
 
   depends_on "pkg-config" => :build
   depends_on "fftw"
   depends_on "gtk+"
-  depends_on "gtk-mac-integration"
   depends_on "gtkglext"
+  depends_on "gtksourceview"
   depends_on "libxml2"
   depends_on "minizip"
 
-  depends_on "python" => :optional
-  depends_on "pygtk" if build.with? "python"
-  depends_on "gtksourceview" if build.with? "python"
+  on_macos do
+    # Regenerate autoconf files to avoid flat namespace in library
+    # (autoreconf runs gtkdocize, provided by gtk-doc)
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "gtk-doc" => :build
+    depends_on "libtool" => :build
+    depends_on "gtk-mac-integration"
+  end
 
   def install
+    system "autoreconf", "--force", "--install", "--verbose" if OS.mac?
     system "./configure", "--disable-dependency-tracking",
                           "--disable-desktop-file-update",
                           "--prefix=#{prefix}",
-                          "--with-html-dir=#{doc}"
+                          "--with-html-dir=#{doc}",
+                          "--disable-pygwy"
     system "make", "install"
   end
 
@@ -92,28 +109,34 @@ class Gwyddion < Formula
       -lfftw3
       -lfontconfig
       -lfreetype
-      -lgdk-quartz-2.0
       -lgdk_pixbuf-2.0
-      -lgdkglext-quartz-1.0
       -lgio-2.0
       -lglib-2.0
       -lgmodule-2.0
       -lgobject-2.0
-      -lgtk-quartz-2.0
-      -lgtkglext-quartz-1.0
       -lgwyapp2
       -lgwyddion2
       -lgwydgets2
       -lgwydraw2
       -lgwymodule2
       -lgwyprocess2
-      -lintl
       -lpango-1.0
       -lpangocairo-1.0
       -lpangoft2-1.0
-      -framework AppKit
-      -framework OpenGL
     ]
+
+    if OS.mac?
+      flags += %w[
+        -lintl
+        -lgdk-quartz-2.0
+        -lgdkglext-quartz-1.0
+        -lgtk-quartz-2.0
+        -lgtkglext-quartz-1.0
+        -framework AppKit
+        -framework OpenGL
+      ]
+    end
+
     system ENV.cc, "test.c", "-o", "test", *flags
     system "./test"
   end

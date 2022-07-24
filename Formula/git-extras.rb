@@ -1,28 +1,31 @@
 class GitExtras < Formula
   desc "Small git utilities"
   homepage "https://github.com/tj/git-extras"
-  url "https://github.com/tj/git-extras/archive/4.5.0.tar.gz"
-  sha256 "cb099d9e155c3bf863f95dd91c72bcc2e05fb28e3ebce527cd70d1b517402615"
-  head "https://github.com/tj/git-extras.git"
+  url "https://github.com/tj/git-extras/archive/6.4.0.tar.gz"
+  sha256 "d8943c0caab43e70c23890816a9775844d33261c40d5be03c1e012c276b1aa63"
+  license "MIT"
+  head "https://github.com/tj/git-extras.git", branch: "master"
 
   bottle do
-    cellar :any_skip_relocation
-    sha256 "49889ba523c2dcbb773abad6d4ae0cc0d8d2179b9d5872953b1f208e52091571" => :high_sierra
-    sha256 "49889ba523c2dcbb773abad6d4ae0cc0d8d2179b9d5872953b1f208e52091571" => :sierra
-    sha256 "49889ba523c2dcbb773abad6d4ae0cc0d8d2179b9d5872953b1f208e52091571" => :el_capitan
+    sha256 cellar: :any_skip_relocation, all: "75cbcd4fe8ad39801a46a6abadc8831aaacdb0bbf6f65eccc190c65c8b220985"
+  end
+
+  on_linux do
+    depends_on "util-linux" # for `column`
   end
 
   conflicts_with "git-utils",
-    :because => "both install a `git-pull-request` script"
+    because: "both install a `git-pull-request` script"
 
   def install
     system "make", "PREFIX=#{prefix}", "INSTALL_VIA=brew", "install"
     pkgshare.install "etc/git-extras-completion.zsh"
   end
 
-  def caveats; <<~EOS
-    To load Zsh completions, add the following to your .zschrc:
-      source #{opt_pkgshare}/git-extras-completion.zsh
+  def caveats
+    <<~EOS
+      To load Zsh completions, add the following to your .zshrc:
+        source #{opt_pkgshare}/git-extras-completion.zsh
     EOS
   end
 

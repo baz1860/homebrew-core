@@ -1,32 +1,52 @@
 class Pcb2gcode < Formula
   desc "Command-line tool for isolation, routing and drilling of PCBs"
   homepage "https://github.com/pcb2gcode/pcb2gcode"
-  url "https://github.com/pcb2gcode/pcb2gcode/releases/download/v1.3.2/pcb2gcode-1.3.2.tar.gz"
-  sha256 "c4135cd3981c4a5d6baffa81b7f8e890ae29776107b0d1938b744a8dfebdbc63"
-  revision 2
+  url "https://github.com/pcb2gcode/pcb2gcode/archive/v2.4.0.tar.gz"
+  sha256 "5d4f06f7041fe14a108780bdb953aa520f7e556773a7b9fb8435e9b92fef614d"
+  license "GPL-3.0-or-later"
+  revision 1
+  head "https://github.com/pcb2gcode/pcb2gcode.git", branch: "master"
 
   bottle do
-    cellar :any
-    sha256 "cb1dd175729534cc8629db3a2ca577106cba0cbec844b436d07bbba429ac47da" => :high_sierra
-    sha256 "1e5aa984afb12cebb770c670f29554e7f447804c1997babf225cbae55e86b8ab" => :sierra
-    sha256 "76e311cada9b598a7f47d88969a75995d18689f4b9f8066ea93153ba0a72cf51" => :el_capitan
-    sha256 "76b51585b0b780305de0060e7614c6c35f3e738682dafb4e10092624eb03ef89" => :yosemite
+    sha256 cellar: :any,                 arm64_monterey: "70b7a09bf490ec4ab251bba4f11e384eee7ab4fdf0155b42b1586f78526cefe6"
+    sha256 cellar: :any,                 arm64_big_sur:  "8982e5d343c3a2f70ad92953144d8ab89f934c40f838e607a7e4914480de6a10"
+    sha256 cellar: :any,                 monterey:       "3bc721515abad735514715ac571306c65889b538faae0ea862e161f60beb84c6"
+    sha256 cellar: :any,                 big_sur:        "fb2caa63d391b966d8fd3949ea76158b46f72a2ed43797bdca557e921e31d386"
+    sha256 cellar: :any,                 catalina:       "febb8b969830b3c659a78e0512e7a8925f8436110185da77bd3d4556b79fb078"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "096aa7ced11dea9c634d936462848bc2b75e0197370dc16adaedb7881ccfeb3f"
   end
 
-  head do
-    url "https://github.com/pcb2gcode/pcb2gcode.git"
-
-    depends_on "autoconf" => :build
-    depends_on "automake" => :build
-    depends_on "libtool" => :build
-  end
-
+  # Release 2.0.0 doesn't include an autoreconfed tarball
+  # glibmm, gtkmm and librsvg are used only in unittests,
+  # and are therefore not needed at runtime.
+  depends_on "atkmm@2.28" => :build
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "cairomm@1.14" => :build
+  depends_on "glibmm@2.66" => :build
+  depends_on "gtkmm" => :build
+  depends_on "librsvg" => :build
+  depends_on "libsigc++@2" => :build
+  depends_on "libtool" => :build
+  depends_on "pangomm@2.46" => :build
+  depends_on "pkg-config" => :build
   depends_on "boost"
-  depends_on "gtkmm"
   depends_on "gerbv"
 
+  on_linux do
+    depends_on "gcc"
+  end
+
+  fails_with gcc: "5"
+
+  # Apply upstream commit to fix build with GCC 11.  Remove with next release.
+  patch do
+    url "https://github.com/pcb2gcode/pcb2gcode/commit/01cd18a6d859ab1aac6c532c99be9109f083448d.patch?full_index=1"
+    sha256 "b5b316b14e9b615ee9114261eb5d04a0b234823847a18bb5ab4d8e2af4210750"
+  end
+
   def install
-    system "autoreconf", "-fvi" if build.head?
+    system "autoreconf", "-fvi"
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--prefix=#{prefix}"
@@ -80,7 +100,6 @@ class Pcb2gcode < Formula
       M30
     EOS
     (testpath/"millproject").write <<~EOS
-      dpi=500
       metric=true
       zchange=10
       zsafe=5
@@ -98,7 +117,6 @@ class Pcb2gcode < Formula
       cut-speed=10000
       cutter-diameter=3
       fill-outline=true
-      outline-width=0.15
       zbridges=-0.6
       zcut=-2.5
       al-front=true

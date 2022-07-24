@@ -1,59 +1,58 @@
 class Exult < Formula
   desc "Recreation of Ultima 7"
   homepage "https://exult.sourceforge.io/"
-  url "https://github.com/exult/exult.git", :revision => "75aff2e97a4867d7810f8907796f58cb11b87a39"
-  version "1.4.9rc1+r7520"
-  head "https://github.com/exult/exult.git"
+  url "https://github.com/exult/exult/archive/v1.8.tar.gz"
+  sha256 "dae6b7b08925d3db1dda3aca612bdc08d934ca04de817a008f305320e667faf9"
+  license "GPL-2.0-or-later"
+  head "https://github.com/exult/exult.git", branch: "master"
 
-  bottle do
-    sha256 "903c0ab936349d37871b211146ffee34e7471ba8c0230cc81b583f67003bf7d0" => :sierra
-    sha256 "e7359d920d31832d74a01e3fa367d65065fa0c9c921534732d947eb968173d3a" => :el_capitan
-    sha256 "5fdcf6dd02cd1fef6863e30ed382b23391ebba2ebd06a34b991c88f4238a559e" => :yosemite
+  livecheck do
+    url :stable
+    regex(/^v?(\d+(?:\.\d+)+)$/i)
   end
 
-  option "with-audio-pack", "Install audio pack"
+  bottle do
+    sha256                               arm64_monterey: "28380485157dd2a521e9c72ff3baa1f1e392694f636697478606c89eb7f0e179"
+    sha256                               arm64_big_sur:  "1ac2db0c3d8b26091435336777f22f72594b0474bdd4d13092886f4630a87479"
+    sha256                               monterey:       "5202bc6cd443aadfb76b48c6734f03b15c0b20d3cc13eeb7ff90e0233997ce73"
+    sha256                               big_sur:        "21159eb863130508a83690868d84c499789c12d4e84594a6156846074e97ef0d"
+    sha256                               catalina:       "fc44b27ff30145ab9647dd2336513a376fee5e2884c354697a98925b324788c8"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "8576be4d556f2f557252d541fd91efc5ca46e7d526cf014ba1a5a87d0a5a239b"
+  end
 
   depends_on "autoconf" => :build
   depends_on "automake" => :build
   depends_on "libtool" => :build
   depends_on "pkg-config" => :build
-  depends_on "sdl2"
   depends_on "libogg"
   depends_on "libvorbis"
-
-  resource "audio" do
-    url "https://downloads.sourceforge.net/project/exult/exult-data/exult_audio.zip"
-    sha256 "72e10efa8664a645470ceb99f6b749ce99c3d5fd1c8387c63640499cfcdbbc68"
-  end
+  depends_on "sdl2"
 
   def install
-    # Use ~/Library/... instead of /Library for the games
-    inreplace "files/utils.cc" do |s|
-      s.gsub! /(gamehome_dir)\("\."\)/, '\1(home_dir)'
-      s.gsub! /(gamehome_dir) =/, '\1 +='
-    end
-
     system "./autogen.sh"
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
                           "--prefix=#{prefix}"
     system "make", "EXULT_DATADIR=#{pkgshare}/data"
-    system "make", "bundle"
-    pkgshare.install "Exult.app/Contents/Resources/data"
-    (pkgshare/"data").install resource("audio") if build.with? "audio-pack"
-    prefix.install "Exult.app"
-    bin.write_exec_script "#{prefix}/Exult.app/Contents/MacOS/exult"
+    if OS.mac?
+      system "make", "bundle"
+      pkgshare.install "Exult.app/Contents/Resources/data"
+      prefix.install "Exult.app"
+      bin.write_exec_script "#{prefix}/Exult.app/Contents/MacOS/exult"
+    else
+      system "make", "install"
+    end
   end
 
-  def caveats; <<~EOS
-    Note that this includes only the game engine; you will need to supply your own
-    own legal copy of the Ultima 7 game files. Try here (amazon.com):
-      https://bit.ly/8JzovU
+  def caveats
+    <<~EOS
+      This formula only includes the game engine; you will need to supply your own
+      own legal copy of the Ultima 7 game files for the software to fully function.
 
-    Update audio settings accordingly with configuration file:
-      ~/Library/Preferences/exult.cfg
+      Update audio settings accordingly with configuration file:
+        ~/Library/Preferences/exult.cfg
 
-      To use CoreAudio, set `driver` to `CoreAudio`.
-      To use audio pack, set `use_oggs` to `yes`.
+        To use CoreAudio, set `driver` to `CoreAudio`.
+        To use audio pack, set `use_oggs` to `yes`.
     EOS
   end
 

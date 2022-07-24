@@ -1,14 +1,17 @@
 class Librem < Formula
   desc "Toolkit library for real-time audio and video processing"
-  homepage "http://www.creytiv.com"
-  url "http://www.creytiv.com/pub/rem-0.5.2.tar.gz"
-  sha256 "fbc54e81ed4fd28a11d525f4384d06bee4c11e10975395668e8260ef0d4a64eb"
+  homepage "https://github.com/baresip/rem"
+  url "https://github.com/baresip/rem/archive/refs/tags/v2.5.0.tar.gz"
+  sha256 "f0872c3e88e2d3ea6c68afe2bcc9edc4fa4c56c0d863d0981a8753e5b37e4967"
+  license "BSD-3-Clause"
 
   bottle do
-    cellar :any
-    sha256 "d7ded43ee81a52ebd7c845938ad7190bf91b7efaf4a547cbfd929af965a9dd81" => :high_sierra
-    sha256 "cdca7bd06d6fd9fd0eaa45db2dd5fd523ee1280ffb7d6f8fdd545839221a1688" => :sierra
-    sha256 "ffbb2918eeaecda2dc46722a77d7a03344ffe9e8c2be921c5d373f1463c407cf" => :el_capitan
+    sha256 cellar: :any,                 arm64_monterey: "699e3eab63cd9cf5866b49f5e8983fb5ac55780ddb5167ce2ca5dec5a04fa82f"
+    sha256 cellar: :any,                 arm64_big_sur:  "b178354be3ffaa400644548e9129b6d0dbb1ef18f9f51a165420ea13b2c7527d"
+    sha256 cellar: :any,                 monterey:       "a8836ec9dffaccca68e922a0cb0a704b2485f904ddc7f80328bd7547abe88cc0"
+    sha256 cellar: :any,                 big_sur:        "53ef8d92e586a48a92f6f7497297be6c9257c50b390fa72d1c039d5b405593d9"
+    sha256 cellar: :any,                 catalina:       "99aba430d95b96c6f1549e2b5ec177553681ddf629556d056faf5352040a46f1"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:   "80ab1e9df9f49c15c3f47db89d1415d96be6c65e8fd8ad6c85d75e97e5269784"
   end
 
   depends_on "libre"
@@ -23,6 +26,7 @@ class Librem < Formula
 
   test do
     (testpath/"test.c").write <<~EOS
+      #include <stdint.h>
       #include <re/re.h>
       #include <rem/rem.h>
       int main() {

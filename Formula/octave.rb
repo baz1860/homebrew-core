@@ -1,30 +1,34 @@
 class Octave < Formula
   desc "High-level interpreted language for numerical computing"
   homepage "https://www.gnu.org/software/octave/index.html"
-  url "https://ftp.gnu.org/gnu/octave/octave-4.2.1.tar.gz"
-  mirror "https://ftpmirror.gnu.org/octave/octave-4.2.1.tar.gz"
-  sha256 "80c28f6398576b50faca0e602defb9598d6f7308b0903724442c2a35a605333b"
-  revision 11
+  url "https://ftp.gnu.org/gnu/octave/octave-7.1.0.tar.xz"
+  mirror "https://ftpmirror.gnu.org/octave/octave-7.1.0.tar.xz"
+  sha256 "3fd4615ebbab02c38c93ea6ba318756aedec38d98a5c732d409899e8b4356273"
+  license "GPL-3.0-or-later"
+  revision 1
 
   bottle do
-    sha256 "190f425162c3fc497eb04886bea95a58b00b88320114d742aaedb35efb097648" => :high_sierra
-    sha256 "e0fce65db933fc1b7df215dcfa02733e2075ef3c3ace27e2fa00038ab67d9254" => :sierra
-    sha256 "cb9015369c8c7ef9866ed448493426354c43f860393835f91a9cc1ba8e1e86d1" => :el_capitan
+    sha256 arm64_monterey: "0ece8d7d02a7cc2e18be91949f5fd3561310f2a1f9c5c00b907aa1d6ab43caf6"
+    sha256 arm64_big_sur:  "82db6fcc9cc74df705b8c8b859ab3061d0f39cfc730c868c0b59861ae0905fd8"
+    sha256 monterey:       "55de37c7c7e5de2174ce76e16c8b0bdbc81a48b6623bd94535848ffd5eab6cb6"
+    sha256 big_sur:        "c9ce843da78b1a12f732716d8f4b62ff64606c2acd03609736be242a244a4bb8"
+    sha256 catalina:       "a860d2b307b4356fabaae372d20b6f517cc16ad280664bf91a6a5ded2eaffc81"
+    sha256 x86_64_linux:   "1a907e64c8e7272e6c23043644faca4203106daea1fb87cdfb24b17f61380ece"
   end
 
   head do
-    url "https://hg.savannah.gnu.org/hgweb/octave", :branch => "default", :using => :hg
-    depends_on "mercurial" => :build
+    url "https://hg.savannah.gnu.org/hgweb/octave", branch: "default", using: :hg
+
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
     depends_on "bison" => :build
     depends_on "icoutils" => :build
     depends_on "librsvg" => :build
-    depends_on "sundials"
   end
 
   # Complete list of dependencies at https://wiki.octave.org/Building
-  depends_on "automake" => :build
-  depends_on "autoconf" => :build
   depends_on "gnu-sed" => :build # https://lists.gnu.org/archive/html/octave-maintainers/2016-09/msg00193.html
+  depends_on "openjdk" => :build
   depends_on "pkg-config" => :build
   depends_on "arpack"
   depends_on "epstool"
@@ -41,79 +45,118 @@ class Octave < Formula
   depends_on "graphicsmagick"
   depends_on "hdf5"
   depends_on "libsndfile"
-  depends_on "libtool" => :run
+  depends_on "libtool"
+  depends_on "openblas"
   depends_on "pcre"
   depends_on "portaudio"
   depends_on "pstoedit"
   depends_on "qhull"
   depends_on "qrupdate"
+  depends_on "qscintilla2"
+  depends_on "qt@5"
   depends_on "readline"
   depends_on "suite-sparse"
-  depends_on "veclibfort"
-  depends_on :java => ["1.6+", :optional]
+  depends_on "sundials"
+  depends_on "texinfo"
+
+  uses_from_macos "curl"
+
+  on_linux do
+    depends_on "autoconf"
+    depends_on "automake"
+    depends_on "mesa"
+    depends_on "mesa-glu"
+  end
 
   # Dependencies use Fortran, leading to spurious messages about GCC
   cxxstdlib_check :skip
 
-  def install
-    if build.stable?
-      # Remove for > 4.2.1
-      # Remove inline keyword on file_stat destructor which breaks macOS
-      # compilation (bug #50234).
-      # Upstream commit from 24 Feb 2017 https://hg.savannah.gnu.org/hgweb/octave/rev/a6e4157694ef
-      inreplace "liboctave/system/file-stat.cc",
-        "inline file_stat::~file_stat () { }", "file_stat::~file_stat () { }"
-      inreplace "scripts/java/module.mk",
-        "-source 1.3 -target 1.3", "" # necessary for java >1.8
-    end
+  fails_with gcc: "5"
 
+  def install
     # Default configuration passes all linker flags to mkoctfile, to be
     # inserted into every oct/mex build. This is unnecessary and can cause
     # cause linking problems.
-    inreplace "src/mkoctfile.in.cc", /%OCTAVE_CONF_OCT(AVE)?_LINK_(DEPS|OPTS)%/, '""'
+    inreplace "src/mkoctfile.in.cc",
+              /%OCTAVE_CONF_OCT(AVE)?_LINK_(DEPS|OPTS)%/,
+              '""'
 
-    # allow for recent Oracle Java (>=1.8) without requiring the old Apple Java 1.6
-    # this is more or less the same as in https://savannah.gnu.org/patch/index.php?9439
-    inreplace "libinterp/octave-value/ov-java.cc",
-      "#if ! defined (__APPLE__) && ! defined (__MACH__)", "#if 1" # treat mac's java like others
-    inreplace "configure.ac",
-      "-framework JavaVM", "" # remove framework JavaVM as it requires Java 1.6 after build
-
-    args = %W[
-      --prefix=#{prefix}
-      --disable-dependency-tracking
-      --disable-silent-rules
-      --enable-link-all-dependencies
-      --enable-shared
-      --disable-static
-      --disable-docs
-      --without-OSMesa
-      --without-qt
-      --with-hdf5-includedir=#{Formula["hdf5"].opt_include}
-      --with-hdf5-libdir=#{Formula["hdf5"].opt_lib}
-      --with-x=no
-      --with-blas=-L#{Formula["veclibfort"].opt_lib}\ -lvecLibFort
-      --with-portaudio
-      --with-sndfile
-    ]
-
-    args << "--disable-java" if build.without? "java"
+    # Qt 5.12 compatibility
+    # https://savannah.gnu.org/bugs/?55187
+    ENV["QCOLLECTIONGENERATOR"] = "qhelpgenerator"
+    # These "shouldn't" be necessary, but the build breaks without them.
+    # https://savannah.gnu.org/bugs/?55883
+    ENV["QT_CPPFLAGS"]="-I#{Formula["qt@5"].opt_include}"
+    ENV.append "CPPFLAGS", "-I#{Formula["qt@5"].opt_include}"
+    ENV["QT_LDFLAGS"]="-F#{Formula["qt@5"].opt_lib}"
+    ENV.append "LDFLAGS", "-F#{Formula["qt@5"].opt_lib}"
 
     system "./bootstrap" if build.head?
+    args = ["--prefix=#{prefix}",
+            "--disable-dependency-tracking",
+            "--disable-silent-rules",
+            "--enable-link-all-dependencies",
+            "--enable-shared",
+            "--disable-static",
+            "--with-hdf5-includedir=#{Formula["hdf5"].opt_include}",
+            "--with-hdf5-libdir=#{Formula["hdf5"].opt_lib}",
+            "--with-java-homedir=#{Formula["openjdk"].opt_prefix}",
+            "--with-x=no",
+            "--with-blas=-L#{Formula["openblas"].opt_lib} -lopenblas",
+            "--with-portaudio",
+            "--with-sndfile"]
+
+    if OS.linux?
+      # Explicitly specify aclocal and automake without versions
+      args << "ACLOCAL=aclocal"
+      args << "AUTOMAKE=automake"
+
+      # Mesa OpenGL location must be supplied by LDFLAGS on Linux
+      args << "LDFLAGS=-L#{Formula["mesa"].opt_lib} -L#{Formula["mesa-glu"].opt_lib}"
+
+      # Docs building is broken on Linux
+      args << "--disable-docs"
+
+      # Need to regenerate aclocal.m4 so that it will work with brewed automake
+      system "aclocal"
+    end
+
     system "./configure", *args
     system "make", "all"
+
+    # Avoid revision bumps whenever fftw's, gcc's or OpenBLAS' Cellar paths change
+    inreplace "src/mkoctfile.cc" do |s|
+      s.gsub! Formula["fftw"].prefix.realpath, Formula["fftw"].opt_prefix
+      s.gsub! Formula["gcc"].prefix.realpath, Formula["gcc"].opt_prefix
+    end
+
+    # Make sure that Octave uses the modern texinfo at run time
+    rcfile = buildpath/"scripts/startup/site-rcfile"
+    rcfile.append_lines "makeinfo_program(\"#{Formula["texinfo"].opt_bin}/makeinfo\");"
+
     system "make", "install"
   end
 
   test do
     system bin/"octave", "--eval", "(22/7 - pi)/pi"
-    # This is supposed to crash octave if there is a problem with veclibfort
+    # This is supposed to crash octave if there is a problem with BLAS
     system bin/"octave", "--eval", "single ([1+i 2+i 3+i]) * single ([ 4+i ; 5+i ; 6+i])"
-    # Test java bindings: check if javaclasspath is working, return error if not
-    system bin/"octave", "--eval", "try; javaclasspath; catch; quit(1); end;" if build.with? "java"
-
-    output = shell_output("#{bin}/mkoctfile -p FLIBS")
-    assert_match Formula["gcc"].prefix.realpath.to_s, output,
-                 "The octave formula needs to be revision bumped for gcc!"
+    # Test basic compilation
+    (testpath/"oct_demo.cc").write <<~EOS
+      #include <octave/oct.h>
+      DEFUN_DLD (oct_demo, args, /*nargout*/, "doc str")
+      { return ovl (42); }
+    EOS
+    system bin/"octave", "--eval", <<~EOS
+      mkoctfile ('-v', '-std=c++11', '-L#{lib}/octave/#{version}', 'oct_demo.cc');
+      assert(oct_demo, 42)
+    EOS
+    # Test FLIBS environment variable
+    system bin/"octave", "--eval", <<~EOS
+      args = strsplit (mkoctfile ('-p', 'FLIBS'));
+      args = args(~cellfun('isempty', args));
+      mkoctfile ('-v', '-std=c++11', '-L#{lib}/octave/#{version}', args{:}, 'oct_demo.cc');
+      assert(oct_demo, 42)
+    EOS
   end
 end

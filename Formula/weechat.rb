@@ -1,80 +1,61 @@
 class Weechat < Formula
   desc "Extensible IRC client"
   homepage "https://www.weechat.org"
-  head "https://github.com/weechat/weechat.git"
-
-  stable do
-    url "https://weechat.org/files/src/weechat-2.0.1.tar.xz"
-    sha256 "6943582eabbd8a6fb6dca860a86f896492cae5fceacaa396dbc9eeaa722305d1"
-
-    # Recognise Ruby 2.5.x as valid.
-    patch do
-      url "https://github.com/weechat/weechat/commit/cb98f528.patch?full_index=1"
-      sha256 "e9700e24606447edfbd5de15b4d9dc822454a38ed85f678b15f84b4db2323066"
-    end
-  end
+  url "https://weechat.org/files/src/weechat-3.6.tar.xz"
+  sha256 "9d85d71b3b7d04c03bd35ab6501afa8b5b3c609dce7691709ec740fecc31f2de"
+  license "GPL-3.0-or-later"
+  head "https://github.com/weechat/weechat.git", branch: "master"
 
   bottle do
-    sha256 "86f9c7062cd5f4ca6625b175144ec37b55f462a9463a3f9852d74f56b404302b" => :high_sierra
-    sha256 "1655ae54d7be8e9617c7d65d7ccc3f25e3ea1cd93d301b3ccb2d4fd056029db7" => :sierra
-    sha256 "e8070f500a5f922b3f862ea67104ee9e8c7dd0f929caf408700c664ef07bfb7a" => :el_capitan
+    sha256 arm64_monterey: "7e7f561e05ebc99826c83c677f5c08fd6ebd56d26618134457bd810724328db7"
+    sha256 arm64_big_sur:  "4f6ef5eea5ffbaf080cb8b61b0c7051900ba1052dcd341db6a5f51fa41ccca83"
+    sha256 monterey:       "7313b4ff56fe4d99b23ccc4a80c19f1d1339e7a04ccac9bbbe5a3cef0be71342"
+    sha256 big_sur:        "cfc3defaa0cb38b6618417922ebbeaaf4f03ab9840d8e969ef39176a1644087e"
+    sha256 catalina:       "0ab97c7f5aea9dd8d2e4eb4d4e0154224281fc8d20eb9e060b77f3035c0228f2"
+    sha256 x86_64_linux:   "cbf6804df535149c79dcae50e4f7c902a14fd7391a31e6e5d8973586be600e51"
   end
 
-  option "with-perl", "Build the perl module"
-  option "with-ruby", "Build the ruby module"
-  option "with-curl", "Build with brewed curl"
-  option "with-debug", "Build with debug information"
-  option "without-tcl", "Do not build the tcl module"
-
+  depends_on "asciidoctor" => :build
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
+  depends_on "aspell"
+  depends_on "gettext"
   depends_on "gnutls"
   depends_on "libgcrypt"
-  depends_on "gettext"
-  depends_on "aspell" => :optional
-  depends_on "lua" => :optional
-  depends_on "perl" => :optional
-  depends_on "python" => :optional
-  depends_on "ruby" => :optional if MacOS.version <= :sierra
-  depends_on "curl" => :optional
+  depends_on "lua"
+  depends_on "ncurses"
+  depends_on "perl"
+  depends_on "python@3.10"
+  depends_on "ruby"
+  depends_on "zstd"
+
+  uses_from_macos "curl"
+  uses_from_macos "tcl-tk"
+
+  on_macos do
+    depends_on "libiconv"
+  end
 
   def install
     args = std_cmake_args + %W[
+      -DENABLE_MAN=ON
       -DENABLE_GUILE=OFF
-      -DCA_FILE=#{etc}/openssl/cert.pem
+      -DCA_FILE=#{Formula["gnutls"].pkgetc}/cert.pem
       -DENABLE_JAVASCRIPT=OFF
+      -DENABLE_PHP=OFF
     ]
-    if build.with? "debug"
-      args -= %w[-DCMAKE_BUILD_TYPE=Release]
-      args << "-DCMAKE_BUILD_TYPE=Debug"
-    end
 
-    if build.without? "ruby"
-      args << "-DENABLE_RUBY=OFF"
-    elsif build.with?("ruby") && MacOS.version >= :sierra
-      args << "-DRUBY_EXECUTABLE=/usr/bin/ruby"
-      args << "-DRUBY_LIB=/usr/lib/libruby.dylib"
-    end
+    # Fix error: '__declspec' attributes are not enabled
+    # See https://github.com/weechat/weechat/issues/1605
+    args << "-DCMAKE_C_FLAGS=-fdeclspec" if ENV.compiler == :clang
 
-    args << "-DENABLE_LUA=OFF" if build.without? "lua"
-    args << "-DENABLE_PERL=OFF" if build.without? "perl"
-    args << "-DENABLE_ASPELL=OFF" if build.without? "aspell"
-    args << "-DENABLE_TCL=OFF" if build.without? "tcl"
-    args << "-DENABLE_PYTHON=OFF" if build.without? "python"
+    # Fix system gem on Mojave
+    ENV["SDKROOT"] = ENV["HOMEBREW_SDKROOT"]
 
     mkdir "build" do
       system "cmake", "..", *args
       system "make", "install", "VERBOSE=1"
     end
-  end
-
-  def caveats
-    <<~EOS
-      Weechat can depend on Aspell if you choose the --with-aspell option, but
-      Aspell should be installed manually before installing Weechat so that
-      you can choose the dictionaries you want.  If Aspell was installed
-      automatically as part of weechat, there won't be any dictionaries.
-    EOS
   end
 
   test do

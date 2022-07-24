@@ -1,28 +1,26 @@
 class Chezscheme < Formula
-  desc "Chez Scheme"
+  desc "Implementation of the Chez Scheme language"
   homepage "https://cisco.github.io/ChezScheme/"
-  url "https://github.com/cisco/ChezScheme/archive/v9.5.tar.gz"
-  sha256 "a1d9f93bd8a683ea3d8f2f1b4880f85ea40bf9a482ee6b84cb0fe0ab6148a98c"
+  url "https://github.com/cisco/ChezScheme/archive/v9.5.8.tar.gz"
+  sha256 "a00b1fb1c175dd51ab2efee298c3323f44fe901ab3ec6fbb6d7a3d9ef66bf989"
+  license "Apache-2.0"
 
   bottle do
-    sha256 "6d2cbd144310fa2c0fcd8aed0e673ed5b301bea98351122b98aad497ca474db1" => :high_sierra
-    sha256 "e3a63252006520a340f1a208506cca2c4210e08865b322bfd9be7cf83babbeaf" => :sierra
-    sha256 "684d39c61e2d1279106dba378d1d1d9de0b1a10a7668a73d9c59f44e6a450f1c" => :el_capitan
+    sha256                               monterey:     "543881937eaf579ac51632831a010c6a95c1e8cf0757d3e55b7dd882e0899a16"
+    sha256                               big_sur:      "dd2412bb1590f7d03c8bbc9a668daefb1eb847c76862f1e57c3b8c44441f5e74"
+    sha256                               catalina:     "93730ca19f3472845b787b7d7e14de4f805c92b08da845a30f55e668dd54338f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "baa942f1a73a26f74723ef398c88f8126fb481d7b313897d5cc07beff343c09c"
   end
 
-  depends_on :x11 => :build
+  depends_on "libx11" => :build
+  depends_on "xterm"
+  uses_from_macos "ncurses"
 
   def install
-    # dyld: lazy symbol binding failed: Symbol not found: _clock_gettime
-    # Reported 20 Feb 2017 https://github.com/cisco/ChezScheme/issues/146
-    if MacOS.version == "10.11" && MacOS::Xcode.installed? && MacOS::Xcode.version >= "8.0"
-      inreplace "c/stats.c" do |s|
-        s.gsub! "CLOCK_MONOTONIC", "UNDEFINED_GIBBERISH"
-        s.gsub! "CLOCK_PROCESS_CPUTIME_ID", "UNDEFINED_GIBBERISH"
-        s.gsub! "CLOCK_REALTIME", "UNDEFINED_GIBBERISH"
-        s.gsub! "CLOCK_THREAD_CPUTIME_ID", "UNDEFINED_GIBBERISH"
-      end
-    end
+    inreplace "configure", "/opt/X11", Formula["libx11"].opt_prefix
+    inreplace Dir["c/Mf-*osx"], "/opt/X11", Formula["libx11"].opt_prefix
+    inreplace "c/version.h", "/usr/X11R6", Formula["libx11"].opt_prefix
+    inreplace "c/expeditor.c", "/usr/X11/bin/resize", Formula["xterm"].opt_bin/"resize"
 
     system "./configure",
               "--installprefix=#{prefix}",
